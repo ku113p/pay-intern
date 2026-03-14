@@ -1,4 +1,4 @@
-ARG RUST_VERSION=1.86.0
+ARG RUST_VERSION=1.88.0
 ARG APP_NAME=devstage
 
 # Stage 1: Build
