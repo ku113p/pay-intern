@@ -35,6 +35,7 @@ RUN adduser \
 
 WORKDIR /app
 
+COPY --from=builder /bin/server /bin/
 COPY migrations ./migrations
 
 RUN mkdir -p data && chown -R appuser:appuser /app
