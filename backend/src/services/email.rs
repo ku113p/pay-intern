@@ -31,16 +31,27 @@ pub async fn send_magic_link_email(
         .map_err(|e| AppError::Internal(format!("Failed to build email: {e}")))?;
 
     let mailer = if config.smtp_user.is_empty() {
+        // No auth — plain unencrypted connection (local dev / mailhog)
         AsyncSmtpTransport::<Tokio1Executor>::builder_dangerous(&config.smtp_host)
             .port(config.smtp_port)
             .build()
     } else {
         let creds = Credentials::new(config.smtp_user.clone(), config.smtp_pass.clone());
-        AsyncSmtpTransport::<Tokio1Executor>::relay(&config.smtp_host)
-            .map_err(|e| AppError::Internal(format!("SMTP relay error: {e}")))?
-            .port(config.smtp_port)
-            .credentials(creds)
-            .build()
+        if config.smtp_port == 465 {
+            // Port 465: implicit TLS (SMTPS)
+            AsyncSmtpTransport::<Tokio1Executor>::relay(&config.smtp_host)
+                .map_err(|e| AppError::Internal(format!("SMTP relay error: {e}")))?
+                .port(465)
+                .credentials(creds)
+                .build()
+        } else {
+            // Port 587 (or other): STARTTLS
+            AsyncSmtpTransport::<Tokio1Executor>::starttls_relay(&config.smtp_host)
+                .map_err(|e| AppError::Internal(format!("SMTP STARTTLS error: {e}")))?
+                .port(config.smtp_port)
+                .credentials(creds)
+                .build()
+        }
     };
 
     mailer
