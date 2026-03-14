@@ -1,0 +1,71 @@
+import api from './client';
+
+export interface Listing {
+  id: string;
+  author_id: string;
+  listing_type: string;
+  title: string;
+  description: string;
+  tech_stack: string[];
+  duration_weeks: number;
+  price_usd: number | null;
+  format: string;
+  outcome_criteria: string[] | null;
+  visibility: string;
+  status: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PaginatedResponse<T> {
+  data: T[];
+  pagination: {
+    page: number;
+    per_page: number;
+    total: number;
+    total_pages: number;
+  };
+}
+
+export interface ListingFeedParams {
+  page?: number;
+  per_page?: number;
+  tech?: string;
+  format?: string;
+  min_weeks?: number;
+  max_weeks?: number;
+  min_price?: number;
+  max_price?: number;
+  sort?: string;
+}
+
+export interface CreateListingRequest {
+  title: string;
+  description: string;
+  tech_stack: string[];
+  duration_weeks: number;
+  price_usd?: number;
+  format: string;
+  outcome_criteria?: string[];
+  visibility?: string;
+}
+
+export const listingsApi = {
+  getDeveloperFeed: (params?: ListingFeedParams) =>
+    api.get<PaginatedResponse<Listing>>('/listings/feed/developers', { params }),
+
+  getCompanyFeed: (params?: ListingFeedParams) =>
+    api.get<PaginatedResponse<Listing>>('/listings/feed/companies', { params }),
+
+  getListing: (id: string) =>
+    api.get<Listing>(`/listings/${id}`),
+
+  createListing: (data: CreateListingRequest) =>
+    api.post<Listing>('/listings', data),
+
+  updateListing: (id: string, data: Partial<CreateListingRequest> & { status?: string }) =>
+    api.put<Listing>(`/listings/${id}`, data),
+
+  deleteListing: (id: string) =>
+    api.delete(`/listings/${id}`),
+};
