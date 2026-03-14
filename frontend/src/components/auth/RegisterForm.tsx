@@ -1,41 +1,20 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { authApi } from '../../api/auth';
-import { useAuthStore } from '../../stores/auth';
 
 export function RegisterForm() {
   const [email, setEmail] = useState('');
   const [role, setRole] = useState<'developer' | 'company'>('developer');
   const [magicLinkSent, setMagicLinkSent] = useState(false);
-  const [devLink, setDevLink] = useState('');
   const [error, setError] = useState('');
-  const navigate = useNavigate();
-  const setTokens = useAuthStore((s) => s.setTokens);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     try {
-      const res = await authApi.requestMagicLink(email, role);
+      await authApi.requestMagicLink(email, role);
       setMagicLinkSent(true);
-      if (res.data.dev_link) {
-        setDevLink(res.data.dev_link);
-      }
     } catch (err: any) {
       setError(err.response?.data?.error || 'Registration failed');
-    }
-  };
-
-  const handleDevVerify = async () => {
-    try {
-      const url = new URL(devLink);
-      const token = url.searchParams.get('token') || '';
-      const emailParam = url.searchParams.get('email') || '';
-      const res = await authApi.verifyMagicLink(emailParam, token);
-      setTokens(res.data.access_token, res.data.refresh_token);
-      navigate('/profile');
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'Verification failed');
     }
   };
 
@@ -44,18 +23,8 @@ export function RegisterForm() {
       <div className="space-y-4">
         <div className="bg-green-50 border border-green-200 rounded-md p-4">
           <p className="text-green-800">Magic link sent to {email}!</p>
+          <p className="text-green-600 text-sm mt-1">Check your email and click the link to sign up.</p>
         </div>
-        {devLink && (
-          <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4">
-            <p className="text-yellow-800 text-sm font-medium">Dev mode: Click to verify</p>
-            <button
-              onClick={handleDevVerify}
-              className="mt-2 bg-yellow-600 text-white px-4 py-2 rounded text-sm hover:bg-yellow-700"
-            >
-              Verify (Dev)
-            </button>
-          </div>
-        )}
       </div>
     );
   }

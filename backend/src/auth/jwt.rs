@@ -115,6 +115,8 @@ mod tests {
             google_redirect_uri: String::new(),
             smtp_host: String::new(),
             smtp_port: 1025,
+            smtp_user: String::new(),
+            smtp_pass: String::new(),
             smtp_from: String::new(),
             magic_link_base_url: String::new(),
             server_port: 3000,

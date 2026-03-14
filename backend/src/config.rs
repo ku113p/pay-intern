@@ -12,6 +12,8 @@ pub struct Config {
     pub google_redirect_uri: String,
     pub smtp_host: String,
     pub smtp_port: u16,
+    pub smtp_user: String,
+    pub smtp_pass: String,
     pub smtp_from: String,
     pub magic_link_base_url: String,
     pub server_port: u16,
@@ -32,6 +34,8 @@ impl Config {
             google_redirect_uri: optional("GOOGLE_REDIRECT_URI"),
             smtp_host: optional_default("SMTP_HOST", "localhost"),
             smtp_port: optional_parse("SMTP_PORT", 1025),
+            smtp_user: optional("SMTP_USER"),
+            smtp_pass: optional("SMTP_PASS"),
             smtp_from: optional_default("SMTP_FROM", "noreply@devstage.local"),
             magic_link_base_url: optional_default(
                 "MAGIC_LINK_BASE_URL",

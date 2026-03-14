@@ -5,6 +5,7 @@ use serde::Deserialize;
 use crate::auth::middleware::AuthUser;
 use crate::error::AppError;
 use crate::services::auth as auth_service;
+use crate::services::email as email_service;
 use crate::AppState;
 
 #[derive(Deserialize)]
@@ -61,14 +62,10 @@ pub async fn request_magic_link(
         state.config.magic_link_base_url, raw_token, req.email
     );
 
-    // In production, send email via lettre. For MVP, log the link.
-    tracing::info!("Magic link for {}: {}", req.email, magic_link);
+    email_service::send_magic_link_email(&req.email, &magic_link, &state.config).await?;
 
-    // TODO: Send email via lettre
-    // For now, return the link in dev mode
     Ok(Json(serde_json::json!({
-        "message": "Magic link sent to your email",
-        "dev_link": magic_link
+        "message": "Magic link sent to your email"
     })))
 }
 
