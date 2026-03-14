@@ -1,0 +1,27 @@
+services:
+  backend:
+    image: ghcr.io/ku113p/pay-intern/backend:latest
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      - backend-data:/app/data
+    env_file:
+      - backend/.env
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  frontend:
+    image: ghcr.io/ku113p/pay-intern/frontend:latest
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+
+volumes:
+  backend-data:

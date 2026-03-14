@@ -1,0 +1,7 @@
+target/
+data/
+.env
+.sqlx/
+*.db
+*.db-shm
+*.db-wal
