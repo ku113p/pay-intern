@@ -1,0 +1,285 @@
+use sqlx::SqlitePool;
+use uuid::Uuid;
+
+use crate::error::AppError;
+use crate::models::listing::*;
+
+pub async fn create_listing(
+    author_id: &Uuid,
+    author_role: &str,
+    req: &CreateListingRequest,
+    write_db: &SqlitePool,
+) -> Result<Listing, AppError> {
+    let listing_type = match author_role {
+        "developer" => "developer",
+        "company" => "company",
+        _ => return Err(AppError::BadRequest("Invalid role".into())),
+    };
+
+    if !["remote", "onsite", "hybrid"].contains(&req.format.as_str()) {
+        return Err(AppError::BadRequest("Invalid format".into()));
+    }
+
+    // Company listings must have outcome_criteria with at least 3 items
+    if listing_type == "company" {
+        match &req.outcome_criteria {
+            Some(criteria) if criteria.len() >= 3 => {}
+            _ => {
+                return Err(AppError::BadRequest(
+                    "Company listings require at least 3 outcome criteria".into(),
+                ));
+            }
+        }
+    }
+
+    if let Some(price) = req.price_usd {
+        if price < 0.0 {
+            return Err(AppError::BadRequest("Price must be non-negative".into()));
+        }
+    }
+
+    let id = Uuid::new_v4().to_string();
+    let tech_stack = serde_json::to_string(&req.tech_stack).unwrap_or_default();
+    let outcome_criteria = req
+        .outcome_criteria
+        .as_ref()
+        .map(|c| serde_json::to_string(c).unwrap_or_default());
+    let visibility = req.visibility.as_deref().unwrap_or("public");
+
+    if !["public", "authenticated", "private"].contains(&visibility) {
+        return Err(AppError::BadRequest("Invalid visibility".into()));
+    }
+
+    sqlx::query(
+        "INSERT INTO listings (id, author_id, type, title, description, tech_stack, duration_weeks, price_usd, format, outcome_criteria, visibility, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active')"
+    )
+    .bind(&id)
+    .bind(author_id.to_string())
+    .bind(listing_type)
+    .bind(&req.title)
+    .bind(&req.description)
+    .bind(&tech_stack)
+    .bind(req.duration_weeks)
+    .bind(req.price_usd)
+    .bind(&req.format)
+    .bind(&outcome_criteria)
+    .bind(visibility)
+    .execute(write_db)
+    .await?;
+
+    sqlx::query_as::<_, Listing>("SELECT * FROM listings WHERE id = ?")
+        .bind(&id)
+        .fetch_one(write_db)
+        .await
+        .map_err(Into::into)
+}
+
+pub async fn get_listing(
+    id: &str,
+    viewer_id: Option<&Uuid>,
+    read_db: &SqlitePool,
+) -> Result<Listing, AppError> {
+    let listing = sqlx::query_as::<_, Listing>("SELECT * FROM listings WHERE id = ?")
+        .bind(id)
+        .fetch_one(read_db)
+        .await?;
+
+    // Visibility check
+    match listing.visibility.as_str() {
+        "public" => Ok(listing),
+        "authenticated" => {
+            if viewer_id.is_some() {
+                Ok(listing)
+            } else {
+                Err(AppError::Unauthorized("Authentication required".into()))
+            }
+        }
+        "private" => {
+            if viewer_id.map(|v| v.to_string()) == Some(listing.author_id.clone()) {
+                Ok(listing)
+            } else {
+                Err(AppError::NotFound("Listing not found".into()))
+            }
+        }
+        _ => Ok(listing),
+    }
+}
+
+pub async fn update_listing(
+    id: &str,
+    owner_id: &Uuid,
+    req: &UpdateListingRequest,
+    write_db: &SqlitePool,
+) -> Result<Listing, AppError> {
+    let listing = sqlx::query_as::<_, Listing>("SELECT * FROM listings WHERE id = ?")
+        .bind(id)
+        .fetch_one(write_db)
+        .await?;
+
+    if listing.author_id != owner_id.to_string() {
+        return Err(AppError::Forbidden("Not the listing owner".into()));
+    }
+
+    if listing.status == "closed" {
+        return Err(AppError::BadRequest("Cannot edit a closed listing".into()));
+    }
+
+    let title = req.title.as_deref().unwrap_or(&listing.title);
+    let description = req.description.as_deref().unwrap_or(&listing.description);
+    let tech_stack = req
+        .tech_stack
+        .as_ref()
+        .map(|ts| serde_json::to_string(ts).unwrap_or_default())
+        .unwrap_or(listing.tech_stack);
+    let duration_weeks = req.duration_weeks.unwrap_or(listing.duration_weeks);
+    let price_usd = req.price_usd.or(listing.price_usd);
+    let format = req.format.as_deref().unwrap_or(&listing.format);
+    let outcome_criteria = req
+        .outcome_criteria
+        .as_ref()
+        .map(|c| serde_json::to_string(c).unwrap_or_default())
+        .or(listing.outcome_criteria);
+    let visibility = req.visibility.as_deref().unwrap_or(&listing.visibility);
+    let status = req.status.as_deref().unwrap_or(&listing.status);
+
+    sqlx::query(
+        "UPDATE listings SET title = ?, description = ?, tech_stack = ?, duration_weeks = ?, price_usd = ?, format = ?, outcome_criteria = ?, visibility = ?, status = ?, updated_at = datetime('now') WHERE id = ?"
+    )
+    .bind(title)
+    .bind(description)
+    .bind(&tech_stack)
+    .bind(duration_weeks)
+    .bind(price_usd)
+    .bind(format)
+    .bind(&outcome_criteria)
+    .bind(visibility)
+    .bind(status)
+    .bind(id)
+    .execute(write_db)
+    .await?;
+
+    sqlx::query_as::<_, Listing>("SELECT * FROM listings WHERE id = ?")
+        .bind(id)
+        .fetch_one(write_db)
+        .await
+        .map_err(Into::into)
+}
+
+pub async fn delete_listing(
+    id: &str,
+    owner_id: &Uuid,
+    write_db: &SqlitePool,
+) -> Result<(), AppError> {
+    let listing = sqlx::query_as::<_, Listing>("SELECT * FROM listings WHERE id = ?")
+        .bind(id)
+        .fetch_one(write_db)
+        .await?;
+
+    if listing.author_id != owner_id.to_string() {
+        return Err(AppError::Forbidden("Not the listing owner".into()));
+    }
+
+    sqlx::query("UPDATE listings SET status = 'closed', updated_at = datetime('now') WHERE id = ?")
+        .bind(id)
+        .execute(write_db)
+        .await?;
+
+    Ok(())
+}
+
+pub async fn get_feed(
+    listing_type: &str,
+    query: &ListingFeedQuery,
+    viewer_id: Option<&Uuid>,
+    read_db: &SqlitePool,
+) -> Result<PaginatedResponse<ListingResponse>, AppError> {
+    let mut where_clauses = vec![
+        "type = ?".to_string(),
+        "status = 'active'".to_string(),
+    ];
+    let mut bind_values: Vec<String> = vec![listing_type.to_string()];
+
+    // Visibility filter
+    match viewer_id {
+        Some(_) => {
+            where_clauses.push("visibility IN ('public', 'authenticated')".to_string());
+        }
+        None => {
+            where_clauses.push("visibility = 'public'".to_string());
+        }
+    }
+
+    if let Some(format) = &query.format {
+        where_clauses.push("format = ?".to_string());
+        bind_values.push(format.clone());
+    }
+
+    if let Some(min_weeks) = query.min_weeks {
+        where_clauses.push(format!("duration_weeks >= {min_weeks}"));
+    }
+    if let Some(max_weeks) = query.max_weeks {
+        where_clauses.push(format!("duration_weeks <= {max_weeks}"));
+    }
+    if let Some(min_price) = query.min_price {
+        where_clauses.push(format!("price_usd >= {min_price}"));
+    }
+    if let Some(max_price) = query.max_price {
+        where_clauses.push(format!("price_usd <= {max_price}"));
+    }
+
+    let where_sql = where_clauses.join(" AND ");
+
+    let order_by = match query.sort.as_deref() {
+        Some("price_asc") => "price_usd ASC NULLS LAST",
+        Some("price_desc") => "price_usd DESC NULLS LAST",
+        _ => "created_at DESC",
+    };
+
+    // Count total
+    let count_sql = format!("SELECT COUNT(*) as count FROM listings WHERE {where_sql}");
+    let mut count_query = sqlx::query_scalar::<_, i64>(&count_sql);
+    for val in &bind_values {
+        count_query = count_query.bind(val);
+    }
+    let total = count_query.fetch_one(read_db).await? as u32;
+
+    // Fetch page
+    let select_sql = format!(
+        "SELECT * FROM listings WHERE {where_sql} ORDER BY {order_by} LIMIT ? OFFSET ?"
+    );
+    let mut select_query = sqlx::query_as::<_, Listing>(&select_sql);
+    for val in &bind_values {
+        select_query = select_query.bind(val);
+    }
+    select_query = select_query.bind(query.per_page() as i64);
+    select_query = select_query.bind(query.offset() as i64);
+
+    let listings = select_query.fetch_all(read_db).await?;
+
+    // Filter by tech stack in application layer (SQLite JSON support is limited)
+    let mut results: Vec<ListingResponse> = listings.into_iter().map(Into::into).collect();
+
+    if let Some(tech_filter) = &query.tech {
+        let techs: Vec<&str> = tech_filter.split(',').collect();
+        results.retain(|l| {
+            techs.iter().any(|t| {
+                l.tech_stack
+                    .iter()
+                    .any(|ts| ts.to_lowercase().contains(&t.to_lowercase()))
+            })
+        });
+    }
+
+    let per_page = query.per_page();
+    let total_pages = if total == 0 { 1 } else { (total + per_page - 1) / per_page };
+
+    Ok(PaginatedResponse {
+        data: results,
+        pagination: PaginationMeta {
+            page: query.page(),
+            per_page,
+            total,
+            total_pages,
+        },
+    })
+}

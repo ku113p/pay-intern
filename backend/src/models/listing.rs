@@ -1,0 +1,138 @@
+use serde::{Deserialize, Serialize};
+use validator::Validate;
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
+pub struct Listing {
+    pub id: String,
+    pub author_id: String,
+    #[sqlx(rename = "type")]
+    pub listing_type: String,
+    pub title: String,
+    pub description: String,
+    pub tech_stack: String,
+    pub duration_weeks: i32,
+    pub price_usd: Option<f64>,
+    pub format: String,
+    pub outcome_criteria: Option<String>,
+    pub visibility: String,
+    pub status: String,
+    pub created_at: String,
+    pub updated_at: String,
+}
+
+#[derive(Debug, Deserialize, Validate)]
+pub struct CreateListingRequest {
+    #[validate(length(min = 3, max = 200))]
+    pub title: String,
+    #[validate(length(min = 10, max = 5000))]
+    pub description: String,
+    pub tech_stack: Vec<String>,
+    #[validate(range(min = 1, max = 52))]
+    pub duration_weeks: i32,
+    pub price_usd: Option<f64>,
+    pub format: String,
+    pub outcome_criteria: Option<Vec<String>>,
+    pub visibility: Option<String>,
+}
+
+#[derive(Debug, Deserialize, Validate)]
+pub struct UpdateListingRequest {
+    #[validate(length(min = 3, max = 200))]
+    pub title: Option<String>,
+    #[validate(length(min = 10, max = 5000))]
+    pub description: Option<String>,
+    pub tech_stack: Option<Vec<String>>,
+    #[validate(range(min = 1, max = 52))]
+    pub duration_weeks: Option<i32>,
+    pub price_usd: Option<f64>,
+    pub format: Option<String>,
+    pub outcome_criteria: Option<Vec<String>>,
+    pub visibility: Option<String>,
+    pub status: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct ListingFeedQuery {
+    pub page: Option<u32>,
+    pub per_page: Option<u32>,
+    pub tech: Option<String>,
+    pub format: Option<String>,
+    pub min_weeks: Option<i32>,
+    pub max_weeks: Option<i32>,
+    pub min_price: Option<f64>,
+    pub max_price: Option<f64>,
+    pub sort: Option<String>,
+}
+
+impl ListingFeedQuery {
+    pub fn page(&self) -> u32 {
+        self.page.unwrap_or(1).max(1)
+    }
+
+    pub fn per_page(&self) -> u32 {
+        self.per_page.unwrap_or(20).min(100).max(1)
+    }
+
+    pub fn offset(&self) -> u32 {
+        (self.page() - 1) * self.per_page()
+    }
+}
+
+#[derive(Debug, Serialize)]
+pub struct ListingResponse {
+    pub id: String,
+    pub author_id: String,
+    pub listing_type: String,
+    pub title: String,
+    pub description: String,
+    pub tech_stack: Vec<String>,
+    pub duration_weeks: i32,
+    pub price_usd: Option<f64>,
+    pub format: String,
+    pub outcome_criteria: Option<Vec<String>>,
+    pub visibility: String,
+    pub status: String,
+    pub created_at: String,
+    pub updated_at: String,
+}
+
+impl From<Listing> for ListingResponse {
+    fn from(l: Listing) -> Self {
+        let tech_stack: Vec<String> =
+            serde_json::from_str(&l.tech_stack).unwrap_or_default();
+        let outcome_criteria: Option<Vec<String>> = l
+            .outcome_criteria
+            .as_ref()
+            .and_then(|c| serde_json::from_str(c).ok());
+        Self {
+            id: l.id,
+            author_id: l.author_id,
+            listing_type: l.listing_type,
+            title: l.title,
+            description: l.description,
+            tech_stack,
+            duration_weeks: l.duration_weeks,
+            price_usd: l.price_usd,
+            format: l.format,
+            outcome_criteria,
+            visibility: l.visibility,
+            status: l.status,
+            created_at: l.created_at,
+            updated_at: l.updated_at,
+        }
+    }
+}
+
+#[derive(Debug, Serialize)]
+pub struct PaginatedResponse<T: Serialize> {
+    pub data: Vec<T>,
+    pub pagination: PaginationMeta,
+}
+
+#[derive(Debug, Serialize)]
+pub struct PaginationMeta {
+    pub page: u32,
+    pub per_page: u32,
+    pub total: u32,
+    pub total_pages: u32,
+}
