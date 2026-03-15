@@ -2,6 +2,7 @@ use lettre::message::header::ContentType;
 use lettre::transport::smtp::authentication::Credentials;
 use lettre::transport::smtp::client::{Tls, TlsParametersBuilder};
 use lettre::{AsyncSmtpTransport, AsyncTransport, Message, Tokio1Executor};
+use uuid::Uuid;
 
 use crate::config::Config;
 use crate::error::AppError;
@@ -11,7 +12,15 @@ pub async fn send_magic_link_email(
     magic_link: &str,
     config: &Config,
 ) -> Result<(), AppError> {
+    let domain = config
+        .smtp_from
+        .rsplit_once('@')
+        .map(|(_, d)| d.trim_end_matches('>'))
+        .unwrap_or("localhost");
+    let message_id = format!("<{}@{}>", Uuid::new_v4(), domain);
+
     let email = Message::builder()
+        .message_id(Some(message_id))
         .from(
             config
                 .smtp_from
