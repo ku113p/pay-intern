@@ -15,6 +15,7 @@ pub struct Config {
     pub smtp_user: String,
     pub smtp_pass: String,
     pub smtp_from: String,
+    pub smtp_tls_insecure: bool,
     pub magic_link_base_url: String,
     pub server_port: u16,
 }
@@ -37,6 +38,7 @@ impl Config {
             smtp_user: optional("SMTP_USER"),
             smtp_pass: optional("SMTP_PASS"),
             smtp_from: optional_default("SMTP_FROM", "noreply@devstage.local"),
+            smtp_tls_insecure: optional_parse("SMTP_TLS_INSECURE", false),
             magic_link_base_url: optional_default(
                 "MAGIC_LINK_BASE_URL",
                 "http://localhost:5173/auth/verify",

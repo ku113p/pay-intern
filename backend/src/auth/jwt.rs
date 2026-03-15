@@ -118,6 +118,7 @@ mod tests {
             smtp_user: String::new(),
             smtp_pass: String::new(),
             smtp_from: String::new(),
+            smtp_tls_insecure: false,
             magic_link_base_url: String::new(),
             server_port: 3000,
         }

@@ -1,5 +1,6 @@
 use lettre::message::header::ContentType;
 use lettre::transport::smtp::authentication::Credentials;
+use lettre::transport::smtp::client::{Tls, TlsParametersBuilder};
 use lettre::{AsyncSmtpTransport, AsyncTransport, Message, Tokio1Executor};
 
 use crate::config::Config;
@@ -37,18 +38,23 @@ pub async fn send_magic_link_email(
             .build()
     } else {
         let creds = Credentials::new(config.smtp_user.clone(), config.smtp_pass.clone());
+        let tls_params = TlsParametersBuilder::new(config.smtp_host.clone())
+            .dangerous_accept_invalid_certs(config.smtp_tls_insecure)
+            .build()
+            .map_err(|e| AppError::Internal(format!("TLS params error: {e}")))?;
+
         if config.smtp_port == 465 {
             // Port 465: implicit TLS (SMTPS)
-            AsyncSmtpTransport::<Tokio1Executor>::relay(&config.smtp_host)
-                .map_err(|e| AppError::Internal(format!("SMTP relay error: {e}")))?
+            AsyncSmtpTransport::<Tokio1Executor>::builder_dangerous(&config.smtp_host)
                 .port(465)
+                .tls(Tls::Wrapper(tls_params))
                 .credentials(creds)
                 .build()
         } else {
             // Port 587 (or other): STARTTLS
-            AsyncSmtpTransport::<Tokio1Executor>::starttls_relay(&config.smtp_host)
-                .map_err(|e| AppError::Internal(format!("SMTP STARTTLS error: {e}")))?
+            AsyncSmtpTransport::<Tokio1Executor>::builder_dangerous(&config.smtp_host)
                 .port(config.smtp_port)
+                .tls(Tls::Required(tls_params))
                 .credentials(creds)
                 .build()
         }
