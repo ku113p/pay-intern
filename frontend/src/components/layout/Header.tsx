@@ -76,20 +76,12 @@ export function Header() {
               </button>
             </div>
           ) : (
-            <div className="flex flex-col md:flex-row items-start md:items-center gap-3 w-full md:w-auto">
-              <Link
-                to="/login"
-                className="text-gray-600 hover:text-gray-900"
-              >
-                Log in
-              </Link>
-              <Link
-                to="/register"
-                className="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm hover:bg-indigo-700 text-center w-full md:w-auto"
-              >
-                Sign up
-              </Link>
-            </div>
+            <Link
+              to="/login"
+              className="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm hover:bg-indigo-700 text-center w-full md:w-auto"
+            >
+              Sign in
+            </Link>
           )}
         </nav>
       </div>
