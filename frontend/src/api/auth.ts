@@ -14,11 +14,14 @@ export const authApi = {
   requestMagicLink: (email: string, role: string) =>
     api.post<{ message: string; dev_link: string }>('/auth/magic-link/request', { email, role }),
 
+  requestLoginLink: (email: string) =>
+    api.post<{ message: string }>('/auth/magic-link/login', { email }),
+
   verifyMagicLink: (email: string, token: string) =>
     api.post<TokenResponse>('/auth/magic-link/verify', { email, token }),
 
   refresh: (refreshToken: string) =>
-    api.post<TokenResponse>('/auth/refresh', { refresh_token: refreshToken }),
+    api.post<TokenResponse>('/auth/refresh', { refresh_token: refreshToken }, { _skipAuthRetry: true } as never),
 
   logout: () => api.post('/auth/logout'),
 };
