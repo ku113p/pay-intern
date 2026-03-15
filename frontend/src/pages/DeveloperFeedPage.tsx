@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useDeveloperFeed } from '../hooks/useListings';
 import { useFeedFilters } from '../hooks/useFeedFilters';
+import { useAuthStore } from '../stores/auth';
 import { ListingCard } from '../components/listings/ListingCard';
 import { FeedFilters } from '../components/listings/FeedFilters';
 
@@ -8,10 +9,15 @@ export function DeveloperFeedPage() {
   const { filters, setFilters } = useFeedFilters();
   const { data, isLoading, error } = useDeveloperFeed(filters);
   const [showFilters, setShowFilters] = useState(false);
+  const user = useAuthStore((s) => s.user);
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">Developer Listings</h1>
+      <h1 className="text-2xl font-bold text-gray-900">Developer Listings</h1>
+      {user?.role === 'company' && (
+        <p className="text-sm text-gray-500 mt-1 mb-6">Find developers ready to prove their skills</p>
+      )}
+      {user?.role !== 'company' && <div className="mb-6" />}
       <button
         onClick={() => setShowFilters(!showFilters)}
         className="md:hidden mb-4 text-sm font-medium text-indigo-600 border border-indigo-200 px-4 py-2 rounded-md"
@@ -32,7 +38,7 @@ export function DeveloperFeedPage() {
           {error && <p className="text-red-600">Failed to load listings</p>}
           {data?.data.length === 0 && <p className="text-gray-500">No listings found.</p>}
           {data?.data.map((listing) => (
-            <ListingCard key={listing.id} listing={listing} />
+            <ListingCard key={listing.id} listing={listing} currentUserId={user?.id} />
           ))}
           {data && data.pagination.total_pages > 1 && (
             <div className="flex items-center justify-center gap-2 pt-4">
