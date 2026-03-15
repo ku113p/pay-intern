@@ -207,6 +207,23 @@ pub async fn get_feed(
     ];
     let mut bind_values: Vec<String> = vec![listing_type.to_string()];
 
+    // Validate enum filter values
+    if let Some(format) = &query.format {
+        if !["remote", "onsite", "hybrid"].contains(&format.as_str()) {
+            return Err(AppError::BadRequest("Invalid format filter".into()));
+        }
+    }
+    if let Some(level) = &query.experience_level {
+        if !["junior", "mid", "senior", "any"].contains(&level.as_str()) {
+            return Err(AppError::BadRequest("Invalid experience_level filter".into()));
+        }
+    }
+    if let Some(sort) = &query.sort {
+        if !["newest", "price_asc", "price_desc"].contains(&sort.as_str()) {
+            return Err(AppError::BadRequest("Invalid sort value".into()));
+        }
+    }
+
     // Visibility filter
     match viewer_id {
         Some(_) => {
@@ -223,16 +240,20 @@ pub async fn get_feed(
     }
 
     if let Some(min_weeks) = query.min_weeks {
-        where_clauses.push(format!("l.duration_weeks >= {min_weeks}"));
+        where_clauses.push("l.duration_weeks >= ?".to_string());
+        bind_values.push(min_weeks.to_string());
     }
     if let Some(max_weeks) = query.max_weeks {
-        where_clauses.push(format!("l.duration_weeks <= {max_weeks}"));
+        where_clauses.push("l.duration_weeks <= ?".to_string());
+        bind_values.push(max_weeks.to_string());
     }
     if let Some(min_price) = query.min_price {
-        where_clauses.push(format!("l.price_usd >= {min_price}"));
+        where_clauses.push("l.price_usd >= ?".to_string());
+        bind_values.push(min_price.to_string());
     }
     if let Some(max_price) = query.max_price {
-        where_clauses.push(format!("l.price_usd <= {max_price}"));
+        where_clauses.push("l.price_usd <= ?".to_string());
+        bind_values.push(max_price.to_string());
     }
 
     if let Some(level) = &query.experience_level {
@@ -245,10 +266,17 @@ pub async fn get_feed(
     if let Some(tech_filter) = &query.tech {
         let techs: Vec<&str> = tech_filter.split(',').map(|t| t.trim()).filter(|t| !t.is_empty()).collect();
         if !techs.is_empty() {
-            let like_clauses: Vec<String> = techs.iter().map(|_| "l.tech_stack LIKE ?".to_string()).collect();
-            where_clauses.push(format!("({})", like_clauses.join(" OR ")));
+            let like_clauses: Vec<String> = techs
+                .iter()
+                .map(|_| "LOWER(je.value) LIKE ?".to_string())
+                .collect();
+            where_clauses.push(format!(
+                "EXISTS (SELECT 1 FROM json_each(l.tech_stack) je WHERE {})",
+                like_clauses.join(" OR ")
+            ));
             for tech in &techs {
-                bind_values.push(format!("%\"{}\"%", tech.to_lowercase()));
+                let escaped = tech.to_lowercase().replace('%', "\\%").replace('_', "\\_");
+                bind_values.push(format!("%{}%", escaped));
             }
         }
     }

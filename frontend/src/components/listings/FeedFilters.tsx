@@ -5,9 +5,13 @@ import { useDebounce } from '../../hooks/useDebounce';
 interface Props {
   filters: ListingFeedParams;
   onChange: (filters: ListingFeedParams) => void;
+  feedType: 'developer' | 'company';
 }
 
-export function FeedFilters({ filters, onChange }: Props) {
+export function FeedFilters({ filters, onChange, feedType }: Props) {
+  const labels = feedType === 'developer'
+    ? { tech: 'Skills', level: 'Developer Level', minPrice: 'Min rate', maxPrice: 'Max rate', sortPriceAsc: 'Rate: Low to High', sortPriceDesc: 'Rate: High to Low' }
+    : { tech: 'Required Tech', level: 'Required Level', minPrice: 'Min budget', maxPrice: 'Max budget', sortPriceAsc: 'Budget: Low to High', sortPriceDesc: 'Budget: High to Low' };
   const [tech, setTech] = useState(filters.tech || '');
   const [minWeeks, setMinWeeks] = useState(filters.min_weeks?.toString() || '');
   const [maxWeeks, setMaxWeeks] = useState(filters.max_weeks?.toString() || '');
@@ -62,7 +66,7 @@ export function FeedFilters({ filters, onChange }: Props) {
       <h3 className="font-medium text-gray-900">Filters</h3>
 
       <div>
-        <label className="block text-sm text-gray-600 mb-1">Tech Stack</label>
+        <label className="block text-sm text-gray-600 mb-1">{labels.tech}</label>
         <input
           type="text"
           placeholder="e.g. rust,react"
@@ -87,7 +91,7 @@ export function FeedFilters({ filters, onChange }: Props) {
       </div>
 
       <div>
-        <label className="block text-sm text-gray-600 mb-1">Experience Level</label>
+        <label className="block text-sm text-gray-600 mb-1">{labels.level}</label>
         <select
           value={filters.experience_level || ''}
           onChange={(e) => onChange({ ...filters, experience_level: e.target.value || undefined, page: 1 })}
@@ -108,8 +112,8 @@ export function FeedFilters({ filters, onChange }: Props) {
           className="w-full border border-gray-300 rounded px-3 py-1.5 text-sm"
         >
           <option value="newest">Newest</option>
-          <option value="price_asc">Budget: Low to High</option>
-          <option value="price_desc">Budget: High to Low</option>
+          <option value="price_asc">{labels.sortPriceAsc}</option>
+          <option value="price_desc">{labels.sortPriceDesc}</option>
         </select>
       </div>
 
@@ -138,7 +142,7 @@ export function FeedFilters({ filters, onChange }: Props) {
 
       <div className="grid grid-cols-2 gap-2">
         <div>
-          <label className="block text-sm text-gray-600 mb-1">Min budget</label>
+          <label className="block text-sm text-gray-600 mb-1">{labels.minPrice}</label>
           <input
             type="number"
             min={0}
@@ -150,7 +154,7 @@ export function FeedFilters({ filters, onChange }: Props) {
           />
         </div>
         <div>
-          <label className="block text-sm text-gray-600 mb-1">Max budget</label>
+          <label className="block text-sm text-gray-600 mb-1">{labels.maxPrice}</label>
           <input
             type="number"
             min={0}

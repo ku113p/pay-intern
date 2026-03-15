@@ -26,7 +26,7 @@ export function DeveloperFeedPage() {
       </button>
       <div className="flex flex-col md:flex-row gap-6">
         <aside className={`${showFilters ? 'block' : 'hidden'} md:block w-full md:w-64 flex-shrink-0`}>
-          <FeedFilters filters={filters} onChange={setFilters} />
+          <FeedFilters filters={filters} onChange={setFilters} feedType="developer" />
         </aside>
         <div className="flex-1 space-y-4">
           {data && (
