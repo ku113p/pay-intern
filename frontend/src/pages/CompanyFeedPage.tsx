@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useCompanyFeed } from '../hooks/useListings';
 import { useFeedFilters } from '../hooks/useFeedFilters';
 import { ListingCard } from '../components/listings/ListingCard';
@@ -6,12 +7,19 @@ import { FeedFilters } from '../components/listings/FeedFilters';
 export function CompanyFeedPage() {
   const { filters, setFilters } = useFeedFilters();
   const { data, isLoading, error } = useCompanyFeed(filters);
+  const [showFilters, setShowFilters] = useState(false);
 
   return (
     <div>
       <h1 className="text-2xl font-bold text-gray-900 mb-6">Company Internship Listings</h1>
-      <div className="flex gap-6">
-        <aside className="w-64 flex-shrink-0">
+      <button
+        onClick={() => setShowFilters(!showFilters)}
+        className="md:hidden mb-4 text-sm font-medium text-indigo-600 border border-indigo-200 px-4 py-2 rounded-md"
+      >
+        {showFilters ? 'Hide Filters' : 'Filters'}
+      </button>
+      <div className="flex flex-col md:flex-row gap-6">
+        <aside className={`${showFilters ? 'block' : 'hidden'} md:block w-full md:w-64 flex-shrink-0`}>
           <FeedFilters filters={filters} onChange={setFilters} />
         </aside>
         <div className="flex-1 space-y-4">
