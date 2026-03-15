@@ -46,6 +46,7 @@ pub fn build_router(state: AppState) -> Router {
 
     let listing_routes = Router::new()
         .route("/", post(handlers::listings::create_listing))
+        .route("/mine", get(handlers::listings::my_listings))
         .route("/{id}", get(handlers::listings::get_listing))
         .route("/{id}", put(handlers::listings::update_listing))
         .route("/{id}", delete(handlers::listings::delete_listing))

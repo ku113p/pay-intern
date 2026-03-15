@@ -309,3 +309,29 @@ pub async fn get_feed(
         },
     })
 }
+
+pub async fn get_user_listings(
+    user_id: &Uuid,
+    read_db: &SqlitePool,
+) -> Result<Vec<ListingResponse>, AppError> {
+    let listings = sqlx::query_as::<_, ListingWithAuthor>(
+        "SELECT l.id, l.author_id, l.type, l.title, l.description, l.tech_stack, \
+         l.duration_weeks, l.price_usd, l.format, l.outcome_criteria, \
+         l.visibility, l.status, l.experience_level, l.created_at, l.updated_at, \
+         u.display_name AS author_display_name, \
+         cp.company_name AS company_name, \
+         cp.website AS company_website, \
+         dp.level AS developer_level \
+         FROM listings l \
+         JOIN users u ON u.id = l.author_id \
+         LEFT JOIN company_profiles cp ON cp.user_id = l.author_id \
+         LEFT JOIN developer_profiles dp ON dp.user_id = l.author_id \
+         WHERE l.author_id = ? \
+         ORDER BY l.created_at DESC",
+    )
+    .bind(user_id)
+    .fetch_all(read_db)
+    .await?;
+
+    Ok(listings.into_iter().map(Into::into).collect())
+}
