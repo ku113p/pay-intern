@@ -13,8 +13,13 @@ export interface Listing {
   outcome_criteria: string[] | null;
   visibility: string;
   status: string;
+  experience_level: string;
   created_at: string;
   updated_at: string;
+  author_display_name: string | null;
+  company_name: string | null;
+  company_website: string | null;
+  developer_level: string | null;
 }
 
 export interface PaginatedResponse<T> {
@@ -37,6 +42,7 @@ export interface ListingFeedParams {
   min_price?: number;
   max_price?: number;
   sort?: string;
+  experience_level?: string;
 }
 
 export interface CreateListingRequest {
@@ -48,6 +54,7 @@ export interface CreateListingRequest {
   format: string;
   outcome_criteria?: string[];
   visibility?: string;
+  experience_level?: string;
 }
 
 export const listingsApi = {

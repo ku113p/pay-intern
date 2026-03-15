@@ -1,11 +1,10 @@
-import { useState } from 'react';
 import { useDeveloperFeed } from '../hooks/useListings';
+import { useFeedFilters } from '../hooks/useFeedFilters';
 import { ListingCard } from '../components/listings/ListingCard';
 import { FeedFilters } from '../components/listings/FeedFilters';
-import type { ListingFeedParams } from '../api/listings';
 
 export function DeveloperFeedPage() {
-  const [filters, setFilters] = useState<ListingFeedParams>({ sort: 'newest' });
+  const { filters, setFilters } = useFeedFilters();
   const { data, isLoading, error } = useDeveloperFeed(filters);
 
   return (
@@ -16,6 +15,11 @@ export function DeveloperFeedPage() {
           <FeedFilters filters={filters} onChange={setFilters} />
         </aside>
         <div className="flex-1 space-y-4">
+          {data && (
+            <p className="text-sm text-gray-500 mb-4">
+              {data.pagination.total} {data.pagination.total === 1 ? 'listing' : 'listings'} found
+            </p>
+          )}
           {isLoading && <p className="text-gray-500">Loading...</p>}
           {error && <p className="text-red-600">Failed to load listings</p>}
           {data?.data.length === 0 && <p className="text-gray-500">No listings found.</p>}

@@ -14,6 +14,7 @@ export function ListingForm() {
     tech_stack: [],
     duration_weeks: 4,
     format: 'remote',
+    experience_level: 'any',
     outcome_criteria: isCompany ? ['', '', ''] : undefined,
   });
   const [techInput, setTechInput] = useState('');
@@ -157,6 +158,20 @@ export function ListingForm() {
           <option value="remote">Remote</option>
           <option value="onsite">Onsite</option>
           <option value="hybrid">Hybrid</option>
+        </select>
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700">Experience Level</label>
+        <select
+          value={form.experience_level || 'any'}
+          onChange={(e) => setForm({ ...form, experience_level: e.target.value })}
+          className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2"
+        >
+          <option value="any">Any level</option>
+          <option value="junior">Junior</option>
+          <option value="mid">Mid</option>
+          <option value="senior">Senior</option>
         </select>
       </div>
 

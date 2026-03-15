@@ -6,6 +6,13 @@ interface Props {
 }
 
 export function FeedFilters({ filters, onChange }: Props) {
+  const hasFilters = !!(
+    filters.tech || filters.format || filters.experience_level ||
+    filters.min_weeks || filters.max_weeks ||
+    filters.min_price != null || filters.max_price != null ||
+    (filters.sort && filters.sort !== 'newest')
+  );
+
   return (
     <div className="bg-white rounded-lg border border-gray-200 p-4 space-y-4">
       <h3 className="font-medium text-gray-900">Filters</h3>
@@ -32,6 +39,20 @@ export function FeedFilters({ filters, onChange }: Props) {
           <option value="remote">Remote</option>
           <option value="onsite">Onsite</option>
           <option value="hybrid">Hybrid</option>
+        </select>
+      </div>
+
+      <div>
+        <label className="block text-sm text-gray-600 mb-1">Experience Level</label>
+        <select
+          value={filters.experience_level || ''}
+          onChange={(e) => onChange({ ...filters, experience_level: e.target.value || undefined, page: 1 })}
+          className="w-full border border-gray-300 rounded px-3 py-1.5 text-sm"
+        >
+          <option value="">All</option>
+          <option value="junior">Junior</option>
+          <option value="mid">Mid</option>
+          <option value="senior">Senior</option>
         </select>
       </div>
 
@@ -105,6 +126,16 @@ export function FeedFilters({ filters, onChange }: Props) {
           />
         </div>
       </div>
+
+      {hasFilters && (
+        <button
+          type="button"
+          onClick={() => onChange({ sort: 'newest' })}
+          className="text-sm text-indigo-600 hover:text-indigo-800"
+        >
+          Clear filters
+        </button>
+      )}
     </div>
   );
 }
