@@ -1,6 +1,8 @@
+use axum::http::header::{AUTHORIZATION, CONTENT_TYPE};
+use axum::http::{HeaderValue, Method};
 use axum::routing::{delete, get, post, put};
 use axum::Router;
-use tower_http::cors::{Any, CorsLayer};
+use tower_http::cors::CorsLayer;
 use tower_http::limit::RequestBodyLimitLayer;
 use tower_http::trace::TraceLayer;
 
@@ -10,15 +12,25 @@ use crate::AppState;
 
 pub fn build_router(state: AppState) -> Router {
     let cors = CorsLayer::new()
-        .allow_origin(Any)
-        .allow_methods(Any)
-        .allow_headers(Any);
+        .allow_origin(
+            state
+                .config
+                .cors_origin
+                .parse::<HeaderValue>()
+                .expect("Invalid CORS_ORIGIN value"),
+        )
+        .allow_methods([Method::GET, Method::POST, Method::PUT, Method::DELETE])
+        .allow_headers([AUTHORIZATION, CONTENT_TYPE]);
 
     let auth_routes = Router::new()
         .route("/google", post(handlers::auth::google_auth))
         .route(
             "/magic-link/request",
             post(handlers::auth::request_magic_link),
+        )
+        .route(
+            "/magic-link/login",
+            post(handlers::auth::request_magic_link_login),
         )
         .route(
             "/magic-link/verify",

@@ -88,9 +88,18 @@ pub async fn get_applications(
     let total = count_query.fetch_one(read_db).await? as u32;
 
     let select_sql = format!(
-        "SELECT a.* FROM applications a WHERE {where_sql}{extra_where} ORDER BY a.created_at DESC LIMIT ? OFFSET ?"
+        "SELECT a.id, a.listing_id, a.applicant_id, a.message, a.status, \
+         a.created_at, a.updated_at, \
+         l.title AS listing_title, \
+         l.type AS listing_type, \
+         u.display_name AS applicant_name, \
+         u.role AS applicant_role \
+         FROM applications a \
+         JOIN listings l ON l.id = a.listing_id \
+         JOIN users u ON u.id = a.applicant_id \
+         WHERE {where_sql}{extra_where} ORDER BY a.created_at DESC LIMIT ? OFFSET ?"
     );
-    let mut select_query = sqlx::query_as::<_, Application>(&select_sql);
+    let mut select_query = sqlx::query_as::<_, ApplicationWithDetails>(&select_sql);
     for val in &bind_values {
         select_query = select_query.bind(val);
     }

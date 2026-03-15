@@ -62,6 +62,9 @@ export function Header() {
               <Link to="/listings/new" className="text-gray-600 hover:text-gray-900">
                 Post Listing
               </Link>
+              <Link to="/listings/mine" className="text-gray-600 hover:text-gray-900">
+                My Listings
+              </Link>
               <Link to="/applications" className="text-gray-600 hover:text-gray-900">
                 Applications
               </Link>

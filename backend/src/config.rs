@@ -18,6 +18,7 @@ pub struct Config {
     pub smtp_tls_insecure: bool,
     pub magic_link_base_url: String,
     pub server_port: u16,
+    pub cors_origin: String,
 }
 
 impl Config {
@@ -44,6 +45,7 @@ impl Config {
                 "http://localhost:5173/auth/verify",
             ),
             server_port: optional_parse("SERVER_PORT", 3000),
+            cors_origin: optional_default("CORS_ORIGIN", "http://localhost:5173"),
         }
     }
 }

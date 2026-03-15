@@ -21,6 +21,11 @@ pub struct MagicLinkRequest {
 }
 
 #[derive(Deserialize)]
+pub struct MagicLinkLoginRequest {
+    pub email: String,
+}
+
+#[derive(Deserialize)]
 pub struct MagicLinkVerifyRequest {
     pub email: String,
     pub token: String,
@@ -54,15 +59,38 @@ pub async fn request_magic_link(
         return Err(AppError::BadRequest("Role must be 'developer' or 'company'".into()));
     }
 
+    create_and_send_magic_link(&req.email, &req.role, &state).await
+}
+
+pub async fn request_magic_link_login(
+    State(state): State<AppState>,
+    Json(req): Json<MagicLinkLoginRequest>,
+) -> Result<Json<serde_json::Value>, AppError> {
+    let user: crate::models::user::User = sqlx::query_as(
+        "SELECT * FROM users WHERE email = ?",
+    )
+    .bind(&req.email)
+    .fetch_optional(&state.read_db)
+    .await?
+    .ok_or_else(|| AppError::NotFound("No account found. Please register first.".into()))?;
+
+    create_and_send_magic_link(&req.email, &user.role, &state).await
+}
+
+async fn create_and_send_magic_link(
+    email: &str,
+    role: &str,
+    state: &AppState,
+) -> Result<Json<serde_json::Value>, AppError> {
     let raw_token =
-        auth_service::create_magic_link_token(&req.email, &req.role, &state.write_db).await?;
+        auth_service::create_magic_link_token(email, role, &state.write_db).await?;
 
     let magic_link = format!(
         "{}?token={}&email={}",
-        state.config.magic_link_base_url, raw_token, req.email
+        state.config.magic_link_base_url, raw_token, email
     );
 
-    email_service::send_magic_link_email(&req.email, &magic_link, &state.config).await?;
+    email_service::send_magic_link_email(email, &magic_link, &state.config).await?;
 
     Ok(Json(serde_json::json!({
         "message": "Magic link sent to your email"

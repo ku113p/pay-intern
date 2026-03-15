@@ -13,6 +13,8 @@ import { MyApplicationsPage } from './pages/MyApplicationsPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { PublicProfilePage } from './pages/PublicProfilePage';
 import { PromoPage } from './pages/PromoPage';
+import { MyListingsPage } from './pages/MyListingsPage';
+import { EditListingPage } from './pages/EditListingPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -33,6 +35,8 @@ function App() {
             <Route path="/login" element={<LoginPage />} />
             <Route path="/auth/verify" element={<MagicLinkVerifyPage />} />
             <Route path="/developers" element={<DeveloperFeedPage />} />
+            <Route path="/listings/mine" element={<ProtectedRoute><MyListingsPage /></ProtectedRoute>} />
+            <Route path="/listings/:id/edit" element={<ProtectedRoute><EditListingPage /></ProtectedRoute>} />
             <Route path="/listings/:id" element={<ListingDetailPage />} />
             <Route path="/profiles/:type/:id" element={<PublicProfilePage />} />
 

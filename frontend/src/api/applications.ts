@@ -9,6 +9,10 @@ export interface Application {
   status: string;
   created_at: string;
   updated_at: string;
+  listing_title?: string;
+  listing_type?: string;
+  applicant_name?: string;
+  applicant_role?: string;
 }
 
 export const applicationsApi = {

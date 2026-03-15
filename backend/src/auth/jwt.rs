@@ -121,6 +121,7 @@ mod tests {
             smtp_tls_insecure: false,
             magic_link_base_url: String::new(),
             server_port: 3000,
+            cors_origin: "http://localhost:5173".into(),
         }
     }
 

@@ -48,7 +48,12 @@ impl From<sqlx::Error> for AppError {
         match &err {
             sqlx::Error::RowNotFound => AppError::NotFound("Resource not found".into()),
             sqlx::Error::Database(db_err) if db_err.message().contains("UNIQUE constraint") => {
-                AppError::Conflict("Resource already exists".into())
+                let msg = if db_err.message().contains("applications.listing_id") {
+                    "You have already applied to this listing"
+                } else {
+                    "Resource already exists"
+                };
+                AppError::Conflict(msg.into())
             }
             _ => AppError::Internal(err.to_string()),
         }

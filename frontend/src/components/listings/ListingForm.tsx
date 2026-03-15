@@ -1,21 +1,30 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { listingsApi, type CreateListingRequest } from '../../api/listings';
+import { listingsApi, type CreateListingRequest, type Listing } from '../../api/listings';
 import { useAuthStore } from '../../stores/auth';
 
-export function ListingForm() {
+interface ListingFormProps {
+  initialData?: Listing;
+  onSuccess?: () => void;
+}
+
+export function ListingForm({ initialData, onSuccess }: ListingFormProps) {
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
   const isCompany = user?.role === 'company';
 
   const [form, setForm] = useState<CreateListingRequest>({
-    title: '',
-    description: '',
-    tech_stack: [],
-    duration_weeks: 4,
-    format: 'remote',
-    experience_level: 'any',
-    outcome_criteria: isCompany ? ['', '', ''] : undefined,
+    title: initialData?.title ?? '',
+    description: initialData?.description ?? '',
+    tech_stack: initialData?.tech_stack ?? [],
+    duration_weeks: initialData?.duration_weeks ?? 4,
+    price_usd: initialData?.price_usd ?? undefined,
+    format: initialData?.format ?? 'remote',
+    experience_level: initialData?.experience_level ?? 'any',
+    visibility: initialData?.visibility ?? 'public',
+    outcome_criteria: initialData
+      ? (initialData.outcome_criteria ?? undefined)
+      : (isCompany ? ['', '', ''] : undefined),
   });
   const [techInput, setTechInput] = useState('');
   const [error, setError] = useState('');
@@ -57,10 +66,16 @@ export function ListingForm() {
         ...form,
         outcome_criteria: form.outcome_criteria?.filter((c) => c.trim()),
       };
-      const res = await listingsApi.createListing(payload);
-      navigate(`/listings/${res.data.id}`);
+      const res = initialData
+        ? await listingsApi.updateListing(initialData.id, payload)
+        : await listingsApi.createListing(payload);
+      if (onSuccess) {
+        onSuccess();
+      } else {
+        navigate(`/listings/${res.data.id}`);
+      }
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to create listing');
+      setError(err.response?.data?.error || `Failed to ${initialData ? 'update' : 'create'} listing`);
     } finally {
       setLoading(false);
     }
@@ -208,7 +223,7 @@ export function ListingForm() {
         disabled={loading}
         className="w-full bg-indigo-600 text-white py-2 rounded-md hover:bg-indigo-700 disabled:opacity-50"
       >
-        {loading ? 'Creating...' : 'Create Listing'}
+        {loading ? (initialData ? 'Saving...' : 'Creating...') : (initialData ? 'Save Changes' : 'Create Listing')}
       </button>
     </form>
   );

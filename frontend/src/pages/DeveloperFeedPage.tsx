@@ -4,6 +4,7 @@ import { useFeedFilters } from '../hooks/useFeedFilters';
 import { useAuthStore } from '../stores/auth';
 import { ListingCard } from '../components/listings/ListingCard';
 import { FeedFilters } from '../components/listings/FeedFilters';
+import { Pagination } from '../components/common/Pagination';
 
 export function DeveloperFeedPage() {
   const { filters, setFilters } = useFeedFilters();
@@ -40,26 +41,13 @@ export function DeveloperFeedPage() {
           {data?.data.map((listing) => (
             <ListingCard key={listing.id} listing={listing} currentUserId={user?.id} />
           ))}
-          {data && data.pagination.total_pages > 1 && (
-            <div className="flex items-center justify-center gap-2 pt-4">
-              <button
-                disabled={filters.page === 1 || !filters.page}
-                onClick={() => setFilters({ ...filters, page: (filters.page || 1) - 1 })}
-                className="px-3 py-1 border rounded text-sm disabled:opacity-50"
-              >
-                Prev
-              </button>
-              <span className="text-sm text-gray-600">
-                Page {data.pagination.page} of {data.pagination.total_pages}
-              </span>
-              <button
-                disabled={data.pagination.page >= data.pagination.total_pages}
-                onClick={() => setFilters({ ...filters, page: (filters.page || 1) + 1 })}
-                className="px-3 py-1 border rounded text-sm disabled:opacity-50"
-              >
-                Next
-              </button>
-            </div>
+          {data && (
+            <Pagination
+              page={data.pagination.page}
+              totalPages={data.pagination.total_pages}
+              onPrev={() => setFilters({ ...filters, page: (filters.page || 1) - 1 })}
+              onNext={() => setFilters({ ...filters, page: (filters.page || 1) + 1 })}
+            />
           )}
         </div>
       </div>

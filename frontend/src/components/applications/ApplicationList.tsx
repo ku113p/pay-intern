@@ -1,6 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Link } from 'react-router-dom';
 import { applicationsApi } from '../../api/applications';
 import { useAuthStore } from '../../stores/auth';
+import { StatusBadge } from '../common/StatusBadge';
 
 export function ApplicationList() {
   const user = useAuthStore((s) => s.user);
@@ -39,7 +41,9 @@ export function ApplicationList() {
             {myApps.data.map((app) => (
               <div key={app.id} className="bg-white border border-gray-200 rounded-lg p-4">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center sm:justify-between gap-1">
-                  <p className="text-sm text-gray-600">Listing: {app.listing_id.slice(0, 8)}...</p>
+                  <Link to={`/listings/${app.listing_id}`} className="text-sm text-indigo-600 hover:text-indigo-500">
+                    {app.listing_title || app.listing_id.slice(0, 8) + '...'}
+                  </Link>
                   <StatusBadge status={app.status} />
                 </div>
                 <p className="text-sm text-gray-700 mt-2">{app.message}</p>
@@ -65,7 +69,17 @@ export function ApplicationList() {
               <div key={app.id} className="bg-white border border-gray-200 rounded-lg p-4">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center sm:justify-between gap-1">
                   <p className="text-sm text-gray-600">
-                    From: {app.applicant_id.slice(0, 8)}... &middot; Listing: {app.listing_id.slice(0, 8)}...
+                    {app.applicant_role ? (
+                      <Link to={`/profiles/${app.applicant_role}/${app.applicant_id}`} className="text-indigo-600 hover:text-indigo-500">
+                        {app.applicant_name || 'Applicant'}
+                      </Link>
+                    ) : (
+                      <span>{app.applicant_id.slice(0, 8)}...</span>
+                    )}
+                    {' · '}
+                    <Link to={`/listings/${app.listing_id}`} className="text-indigo-600 hover:text-indigo-500">
+                      {app.listing_title || app.listing_id.slice(0, 8) + '...'}
+                    </Link>
                   </p>
                   <StatusBadge status={app.status} />
                 </div>
@@ -92,18 +106,5 @@ export function ApplicationList() {
         )}
       </section>
     </div>
-  );
-}
-
-function StatusBadge({ status }: { status: string }) {
-  const colors: Record<string, string> = {
-    pending: 'bg-yellow-100 text-yellow-700',
-    accepted: 'bg-green-100 text-green-700',
-    rejected: 'bg-red-100 text-red-700',
-  };
-  return (
-    <span className={`text-xs font-medium px-2 py-0.5 rounded ${colors[status] || 'bg-gray-100 text-gray-600'}`}>
-      {status}
-    </span>
   );
 }
