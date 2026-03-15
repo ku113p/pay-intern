@@ -16,8 +16,33 @@ pub struct Listing {
     pub outcome_criteria: Option<String>,
     pub visibility: String,
     pub status: String,
+    pub experience_level: String,
     pub created_at: String,
     pub updated_at: String,
+}
+
+#[derive(Debug, Clone, sqlx::FromRow)]
+pub struct ListingWithAuthor {
+    pub id: String,
+    pub author_id: String,
+    #[sqlx(rename = "type")]
+    pub listing_type: String,
+    pub title: String,
+    pub description: String,
+    pub tech_stack: String,
+    pub duration_weeks: i32,
+    pub price_usd: Option<f64>,
+    pub format: String,
+    pub outcome_criteria: Option<String>,
+    pub visibility: String,
+    pub status: String,
+    pub experience_level: String,
+    pub created_at: String,
+    pub updated_at: String,
+    pub author_display_name: Option<String>,
+    pub company_name: Option<String>,
+    pub company_website: Option<String>,
+    pub developer_level: Option<String>,
 }
 
 #[derive(Debug, Deserialize, Validate)]
@@ -33,6 +58,7 @@ pub struct CreateListingRequest {
     pub format: String,
     pub outcome_criteria: Option<Vec<String>>,
     pub visibility: Option<String>,
+    pub experience_level: Option<String>,
 }
 
 #[derive(Debug, Deserialize, Validate)]
@@ -49,6 +75,7 @@ pub struct UpdateListingRequest {
     pub outcome_criteria: Option<Vec<String>>,
     pub visibility: Option<String>,
     pub status: Option<String>,
+    pub experience_level: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -62,6 +89,7 @@ pub struct ListingFeedQuery {
     pub min_price: Option<f64>,
     pub max_price: Option<f64>,
     pub sort: Option<String>,
+    pub experience_level: Option<String>,
 }
 
 impl ListingFeedQuery {
@@ -92,8 +120,13 @@ pub struct ListingResponse {
     pub outcome_criteria: Option<Vec<String>>,
     pub visibility: String,
     pub status: String,
+    pub experience_level: String,
     pub created_at: String,
     pub updated_at: String,
+    pub author_display_name: Option<String>,
+    pub company_name: Option<String>,
+    pub company_website: Option<String>,
+    pub developer_level: Option<String>,
 }
 
 impl From<Listing> for ListingResponse {
@@ -117,8 +150,45 @@ impl From<Listing> for ListingResponse {
             outcome_criteria,
             visibility: l.visibility,
             status: l.status,
+            experience_level: l.experience_level,
             created_at: l.created_at,
             updated_at: l.updated_at,
+            author_display_name: None,
+            company_name: None,
+            company_website: None,
+            developer_level: None,
+        }
+    }
+}
+
+impl From<ListingWithAuthor> for ListingResponse {
+    fn from(l: ListingWithAuthor) -> Self {
+        let tech_stack: Vec<String> =
+            serde_json::from_str(&l.tech_stack).unwrap_or_default();
+        let outcome_criteria: Option<Vec<String>> = l
+            .outcome_criteria
+            .as_ref()
+            .and_then(|c| serde_json::from_str(c).ok());
+        Self {
+            id: l.id,
+            author_id: l.author_id,
+            listing_type: l.listing_type,
+            title: l.title,
+            description: l.description,
+            tech_stack,
+            duration_weeks: l.duration_weeks,
+            price_usd: l.price_usd,
+            format: l.format,
+            outcome_criteria,
+            visibility: l.visibility,
+            status: l.status,
+            experience_level: l.experience_level,
+            created_at: l.created_at,
+            updated_at: l.updated_at,
+            author_display_name: l.author_display_name,
+            company_name: l.company_name,
+            company_website: l.company_website,
+            developer_level: l.developer_level,
         }
     }
 }

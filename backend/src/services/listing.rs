@@ -50,8 +50,13 @@ pub async fn create_listing(
         return Err(AppError::BadRequest("Invalid visibility".into()));
     }
 
+    let experience_level = req.experience_level.as_deref().unwrap_or("any");
+    if !["junior", "mid", "senior", "any"].contains(&experience_level) {
+        return Err(AppError::BadRequest("experience_level must be junior, mid, senior, or any".into()));
+    }
+
     sqlx::query(
-        "INSERT INTO listings (id, author_id, type, title, description, tech_stack, duration_weeks, price_usd, format, outcome_criteria, visibility, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active')"
+        "INSERT INTO listings (id, author_id, type, title, description, tech_stack, duration_weeks, price_usd, format, outcome_criteria, visibility, experience_level, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active')"
     )
     .bind(&id)
     .bind(author_id.to_string())
@@ -64,6 +69,7 @@ pub async fn create_listing(
     .bind(&req.format)
     .bind(&outcome_criteria)
     .bind(visibility)
+    .bind(experience_level)
     .execute(write_db)
     .await?;
 
@@ -141,9 +147,10 @@ pub async fn update_listing(
         .or(listing.outcome_criteria);
     let visibility = req.visibility.as_deref().unwrap_or(&listing.visibility);
     let status = req.status.as_deref().unwrap_or(&listing.status);
+    let experience_level = req.experience_level.as_deref().unwrap_or(&listing.experience_level);
 
     sqlx::query(
-        "UPDATE listings SET title = ?, description = ?, tech_stack = ?, duration_weeks = ?, price_usd = ?, format = ?, outcome_criteria = ?, visibility = ?, status = ?, updated_at = datetime('now') WHERE id = ?"
+        "UPDATE listings SET title = ?, description = ?, tech_stack = ?, duration_weeks = ?, price_usd = ?, format = ?, outcome_criteria = ?, visibility = ?, status = ?, experience_level = ?, updated_at = datetime('now') WHERE id = ?"
     )
     .bind(title)
     .bind(description)
@@ -154,6 +161,7 @@ pub async fn update_listing(
     .bind(&outcome_criteria)
     .bind(visibility)
     .bind(status)
+    .bind(experience_level)
     .bind(id)
     .execute(write_db)
     .await?;
@@ -194,60 +202,78 @@ pub async fn get_feed(
     read_db: &SqlitePool,
 ) -> Result<PaginatedResponse<ListingResponse>, AppError> {
     let mut where_clauses = vec![
-        "type = ?".to_string(),
-        "status = 'active'".to_string(),
+        "l.type = ?".to_string(),
+        "l.status = 'active'".to_string(),
     ];
     let mut bind_values: Vec<String> = vec![listing_type.to_string()];
 
     // Visibility filter
     match viewer_id {
         Some(_) => {
-            where_clauses.push("visibility IN ('public', 'authenticated')".to_string());
+            where_clauses.push("l.visibility IN ('public', 'authenticated')".to_string());
         }
         None => {
-            where_clauses.push("visibility = 'public'".to_string());
+            where_clauses.push("l.visibility = 'public'".to_string());
         }
     }
 
     if let Some(format) = &query.format {
-        where_clauses.push("format = ?".to_string());
+        where_clauses.push("l.format = ?".to_string());
         bind_values.push(format.clone());
     }
 
     if let Some(min_weeks) = query.min_weeks {
-        where_clauses.push(format!("duration_weeks >= {min_weeks}"));
+        where_clauses.push(format!("l.duration_weeks >= {min_weeks}"));
     }
     if let Some(max_weeks) = query.max_weeks {
-        where_clauses.push(format!("duration_weeks <= {max_weeks}"));
+        where_clauses.push(format!("l.duration_weeks <= {max_weeks}"));
     }
     if let Some(min_price) = query.min_price {
-        where_clauses.push(format!("price_usd >= {min_price}"));
+        where_clauses.push(format!("l.price_usd >= {min_price}"));
     }
     if let Some(max_price) = query.max_price {
-        where_clauses.push(format!("price_usd <= {max_price}"));
+        where_clauses.push(format!("l.price_usd <= {max_price}"));
+    }
+
+    if let Some(level) = &query.experience_level {
+        if level != "any" {
+            where_clauses.push("(l.experience_level = ? OR l.experience_level = 'any')".to_string());
+            bind_values.push(level.clone());
+        }
     }
 
     let where_sql = where_clauses.join(" AND ");
 
     let order_by = match query.sort.as_deref() {
-        Some("price_asc") => "price_usd ASC NULLS LAST",
-        Some("price_desc") => "price_usd DESC NULLS LAST",
-        _ => "created_at DESC",
+        Some("price_asc") => "l.price_usd ASC NULLS LAST",
+        Some("price_desc") => "l.price_usd DESC NULLS LAST",
+        _ => "l.created_at DESC",
     };
 
     // Count total
-    let count_sql = format!("SELECT COUNT(*) as count FROM listings WHERE {where_sql}");
+    let count_sql = format!("SELECT COUNT(*) as count FROM listings l WHERE {where_sql}");
     let mut count_query = sqlx::query_scalar::<_, i64>(&count_sql);
     for val in &bind_values {
         count_query = count_query.bind(val);
     }
     let total = count_query.fetch_one(read_db).await? as u32;
 
-    // Fetch page
+    // Fetch page with author info via JOINs
     let select_sql = format!(
-        "SELECT * FROM listings WHERE {where_sql} ORDER BY {order_by} LIMIT ? OFFSET ?"
+        "SELECT l.id, l.author_id, l.type, l.title, l.description, l.tech_stack, \
+         l.duration_weeks, l.price_usd, l.format, l.outcome_criteria, \
+         l.visibility, l.status, l.experience_level, l.created_at, l.updated_at, \
+         u.display_name AS author_display_name, \
+         cp.company_name AS company_name, \
+         cp.website AS company_website, \
+         dp.level AS developer_level \
+         FROM listings l \
+         JOIN users u ON u.id = l.author_id \
+         LEFT JOIN company_profiles cp ON cp.user_id = l.author_id \
+         LEFT JOIN developer_profiles dp ON dp.user_id = l.author_id \
+         WHERE {where_sql} ORDER BY {order_by} LIMIT ? OFFSET ?"
     );
-    let mut select_query = sqlx::query_as::<_, Listing>(&select_sql);
+    let mut select_query = sqlx::query_as::<_, ListingWithAuthor>(&select_sql);
     for val in &bind_values {
         select_query = select_query.bind(val);
     }
