@@ -193,6 +193,26 @@ impl From<ListingWithAuthor> for ListingResponse {
     }
 }
 
+#[derive(Debug, Deserialize)]
+pub struct PaginationQuery {
+    pub page: Option<u32>,
+    pub per_page: Option<u32>,
+}
+
+impl PaginationQuery {
+    pub fn page(&self) -> u32 {
+        self.page.unwrap_or(1).max(1)
+    }
+
+    pub fn per_page(&self) -> u32 {
+        self.per_page.unwrap_or(20).min(100).max(1)
+    }
+
+    pub fn offset(&self) -> u32 {
+        (self.page() - 1) * self.per_page()
+    }
+}
+
 #[derive(Debug, Serialize)]
 pub struct PaginatedResponse<T: Serialize> {
     pub data: Vec<T>,

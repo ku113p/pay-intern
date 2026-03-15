@@ -24,11 +24,11 @@ export function useListing(id: string) {
   });
 }
 
-export function useMyListings() {
+export function useMyListings(params?: { page?: number; per_page?: number }) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   return useQuery({
-    queryKey: ['listings', 'mine'],
-    queryFn: () => listingsApi.getMyListings().then((r) => r.data),
+    queryKey: ['listings', 'mine', params],
+    queryFn: () => listingsApi.getMyListings(params).then((r) => r.data),
     enabled: isAuthenticated,
   });
 }

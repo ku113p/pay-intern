@@ -5,6 +5,7 @@ use tower_http::limit::RequestBodyLimitLayer;
 use tower_http::trace::TraceLayer;
 
 use crate::handlers;
+use crate::middleware::rate_limit::global_rate_limiter;
 use crate::AppState;
 
 pub fn build_router(state: AppState) -> Router {
@@ -86,6 +87,7 @@ pub fn build_router(state: AppState) -> Router {
         .layer(RequestBodyLimitLayer::new(1024 * 1024)) // 1MB
         .layer(cors)
         .layer(TraceLayer::new_for_http())
+        .layer(global_rate_limiter())
         .with_state(state)
 }
 

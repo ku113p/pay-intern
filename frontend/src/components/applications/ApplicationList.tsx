@@ -8,12 +8,12 @@ export function ApplicationList() {
 
   const { data: myApps, isLoading: loadingMine } = useQuery({
     queryKey: ['applications', 'mine'],
-    queryFn: () => applicationsApi.getMine().then((r) => r.data),
+    queryFn: () => applicationsApi.getMine({ per_page: 20 }).then((r) => r.data),
   });
 
   const { data: received, isLoading: loadingReceived } = useQuery({
     queryKey: ['applications', 'received'],
-    queryFn: () => applicationsApi.getMine({ as: 'listing_owner' }).then((r) => r.data),
+    queryFn: () => applicationsApi.getMine({ as: 'listing_owner', per_page: 20 }).then((r) => r.data),
   });
 
   const statusMutation = useMutation({

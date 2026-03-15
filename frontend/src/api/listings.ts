@@ -76,6 +76,6 @@ export const listingsApi = {
   deleteListing: (id: string) =>
     api.delete(`/listings/${id}`),
 
-  getMyListings: () =>
-    api.get<Listing[]>('/listings/mine'),
+  getMyListings: (params?: { page?: number; per_page?: number }) =>
+    api.get<PaginatedResponse<Listing>>('/listings/mine', { params }),
 };

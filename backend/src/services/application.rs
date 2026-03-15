@@ -70,29 +70,33 @@ pub async fn get_applications(
         ("a.applicant_id = ?".to_string(), user_str.clone())
     };
 
-    let status_filter = if let Some(status) = &query.status {
-        format!(" AND a.status = '{}'", status.replace('\'', ""))
-    } else {
-        String::new()
-    };
+    let mut extra_where = String::new();
+    let mut bind_values: Vec<String> = vec![bind_user];
+
+    if let Some(status) = &query.status {
+        extra_where.push_str(" AND a.status = ?");
+        bind_values.push(status.clone());
+    }
 
     let count_sql = format!(
-        "SELECT COUNT(*) FROM applications a WHERE {where_sql}{status_filter}"
+        "SELECT COUNT(*) FROM applications a WHERE {where_sql}{extra_where}"
     );
-    let total = sqlx::query_scalar::<_, i64>(&count_sql)
-        .bind(&bind_user)
-        .fetch_one(read_db)
-        .await? as u32;
+    let mut count_query = sqlx::query_scalar::<_, i64>(&count_sql);
+    for val in &bind_values {
+        count_query = count_query.bind(val);
+    }
+    let total = count_query.fetch_one(read_db).await? as u32;
 
     let select_sql = format!(
-        "SELECT a.* FROM applications a WHERE {where_sql}{status_filter} ORDER BY a.created_at DESC LIMIT ? OFFSET ?"
+        "SELECT a.* FROM applications a WHERE {where_sql}{extra_where} ORDER BY a.created_at DESC LIMIT ? OFFSET ?"
     );
-    let applications = sqlx::query_as::<_, Application>(&select_sql)
-        .bind(&bind_user)
-        .bind(query.per_page() as i64)
-        .bind(query.offset() as i64)
-        .fetch_all(read_db)
-        .await?;
+    let mut select_query = sqlx::query_as::<_, Application>(&select_sql);
+    for val in &bind_values {
+        select_query = select_query.bind(val);
+    }
+    select_query = select_query.bind(query.per_page() as i64);
+    select_query = select_query.bind(query.offset() as i64);
+    let applications = select_query.fetch_all(read_db).await?;
 
     let per_page = query.per_page();
     let total_pages = if total == 0 { 1 } else { (total + per_page - 1) / per_page };

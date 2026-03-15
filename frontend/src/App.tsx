@@ -16,7 +16,7 @@ import { PublicProfilePage } from './pages/PublicProfilePage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
-    queries: { retry: 1, refetchOnWindowFocus: false },
+    queries: { retry: 1, refetchOnWindowFocus: false, staleTime: 1000 * 60 * 2 },
   },
 });
 

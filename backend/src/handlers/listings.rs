@@ -78,7 +78,8 @@ pub async fn company_feed(
 pub async fn my_listings(
     State(state): State<AppState>,
     auth: AuthUser,
-) -> Result<Json<Vec<ListingResponse>>, AppError> {
-    let listings = listing_service::get_user_listings(&auth.user_id, &state.read_db).await?;
+    Query(query): Query<PaginationQuery>,
+) -> Result<Json<PaginatedResponse<ListingResponse>>, AppError> {
+    let listings = listing_service::get_user_listings(&auth.user_id, &query, &state.read_db).await?;
     Ok(Json(listings))
 }

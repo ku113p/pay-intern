@@ -242,6 +242,17 @@ pub async fn get_feed(
         }
     }
 
+    if let Some(tech_filter) = &query.tech {
+        let techs: Vec<&str> = tech_filter.split(',').map(|t| t.trim()).filter(|t| !t.is_empty()).collect();
+        if !techs.is_empty() {
+            let like_clauses: Vec<String> = techs.iter().map(|_| "l.tech_stack LIKE ?".to_string()).collect();
+            where_clauses.push(format!("({})", like_clauses.join(" OR ")));
+            for tech in &techs {
+                bind_values.push(format!("%\"{}\"%", tech.to_lowercase()));
+            }
+        }
+    }
+
     let where_sql = where_clauses.join(" AND ");
 
     let order_by = match query.sort.as_deref() {
@@ -281,20 +292,7 @@ pub async fn get_feed(
     select_query = select_query.bind(query.offset() as i64);
 
     let listings = select_query.fetch_all(read_db).await?;
-
-    // Filter by tech stack in application layer (SQLite JSON support is limited)
-    let mut results: Vec<ListingResponse> = listings.into_iter().map(Into::into).collect();
-
-    if let Some(tech_filter) = &query.tech {
-        let techs: Vec<&str> = tech_filter.split(',').collect();
-        results.retain(|l| {
-            techs.iter().any(|t| {
-                l.tech_stack
-                    .iter()
-                    .any(|ts| ts.to_lowercase().contains(&t.to_lowercase()))
-            })
-        });
-    }
+    let results: Vec<ListingResponse> = listings.into_iter().map(Into::into).collect();
 
     let per_page = query.per_page();
     let total_pages = if total == 0 { 1 } else { (total + per_page - 1) / per_page };
@@ -312,8 +310,16 @@ pub async fn get_feed(
 
 pub async fn get_user_listings(
     user_id: &Uuid,
+    query: &PaginationQuery,
     read_db: &SqlitePool,
-) -> Result<Vec<ListingResponse>, AppError> {
+) -> Result<PaginatedResponse<ListingResponse>, AppError> {
+    let total = sqlx::query_scalar::<_, i64>(
+        "SELECT COUNT(*) FROM listings WHERE author_id = ?"
+    )
+    .bind(user_id)
+    .fetch_one(read_db)
+    .await? as u32;
+
     let listings = sqlx::query_as::<_, ListingWithAuthor>(
         "SELECT l.id, l.author_id, l.type, l.title, l.description, l.tech_stack, \
          l.duration_weeks, l.price_usd, l.format, l.outcome_criteria, \
@@ -327,11 +333,25 @@ pub async fn get_user_listings(
          LEFT JOIN company_profiles cp ON cp.user_id = l.author_id \
          LEFT JOIN developer_profiles dp ON dp.user_id = l.author_id \
          WHERE l.author_id = ? \
-         ORDER BY l.created_at DESC",
+         ORDER BY l.created_at DESC \
+         LIMIT ? OFFSET ?",
     )
     .bind(user_id)
+    .bind(query.per_page() as i64)
+    .bind(query.offset() as i64)
     .fetch_all(read_db)
     .await?;
 
-    Ok(listings.into_iter().map(Into::into).collect())
+    let per_page = query.per_page();
+    let total_pages = if total == 0 { 1 } else { (total + per_page - 1) / per_page };
+
+    Ok(PaginatedResponse {
+        data: listings.into_iter().map(Into::into).collect(),
+        pagination: PaginationMeta {
+            page: query.page(),
+            per_page,
+            total,
+            total_pages,
+        },
+    })
 }

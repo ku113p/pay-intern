@@ -1,4 +1,6 @@
+import { useState, useEffect, useRef } from 'react';
 import type { ListingFeedParams } from '../../api/listings';
+import { useDebounce } from '../../hooks/useDebounce';
 
 interface Props {
   filters: ListingFeedParams;
@@ -6,10 +8,52 @@ interface Props {
 }
 
 export function FeedFilters({ filters, onChange }: Props) {
+  const [tech, setTech] = useState(filters.tech || '');
+  const [minWeeks, setMinWeeks] = useState(filters.min_weeks?.toString() || '');
+  const [maxWeeks, setMaxWeeks] = useState(filters.max_weeks?.toString() || '');
+  const [minPrice, setMinPrice] = useState(filters.min_price?.toString() || '');
+  const [maxPrice, setMaxPrice] = useState(filters.max_price?.toString() || '');
+
+  const debouncedTech = useDebounce(tech, 400);
+  const debouncedMinWeeks = useDebounce(minWeeks, 400);
+  const debouncedMaxWeeks = useDebounce(maxWeeks, 400);
+  const debouncedMinPrice = useDebounce(minPrice, 400);
+  const debouncedMaxPrice = useDebounce(maxPrice, 400);
+
+  const isInitialMount = useRef(true);
+  const filtersRef = useRef(filters);
+  filtersRef.current = filters;
+
+  useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
+    onChange({
+      ...filtersRef.current,
+      tech: debouncedTech || undefined,
+      min_weeks: debouncedMinWeeks ? +debouncedMinWeeks : undefined,
+      max_weeks: debouncedMaxWeeks ? +debouncedMaxWeeks : undefined,
+      min_price: debouncedMinPrice ? +debouncedMinPrice : undefined,
+      max_price: debouncedMaxPrice ? +debouncedMaxPrice : undefined,
+      page: 1,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedTech, debouncedMinWeeks, debouncedMaxWeeks, debouncedMinPrice, debouncedMaxPrice]);
+
+  // Sync local state when filters change externally (e.g. "Clear filters")
+  useEffect(() => {
+    setTech(filters.tech || '');
+    setMinWeeks(filters.min_weeks?.toString() || '');
+    setMaxWeeks(filters.max_weeks?.toString() || '');
+    setMinPrice(filters.min_price?.toString() || '');
+    setMaxPrice(filters.max_price?.toString() || '');
+  }, [filters.tech, filters.min_weeks, filters.max_weeks, filters.min_price, filters.max_price]);
+
   const hasFilters = !!(
-    filters.tech || filters.format || filters.experience_level ||
-    filters.min_weeks || filters.max_weeks ||
-    filters.min_price != null || filters.max_price != null ||
+    tech || filters.format || filters.experience_level ||
+    minWeeks || maxWeeks ||
+    minPrice || maxPrice ||
     (filters.sort && filters.sort !== 'newest')
   );
 
@@ -22,8 +66,8 @@ export function FeedFilters({ filters, onChange }: Props) {
         <input
           type="text"
           placeholder="e.g. rust,react"
-          value={filters.tech || ''}
-          onChange={(e) => onChange({ ...filters, tech: e.target.value || undefined, page: 1 })}
+          value={tech}
+          onChange={(e) => setTech(e.target.value)}
           className="w-full border border-gray-300 rounded px-3 py-1.5 text-sm"
         />
       </div>
@@ -75,10 +119,8 @@ export function FeedFilters({ filters, onChange }: Props) {
           <input
             type="number"
             min={1}
-            value={filters.min_weeks || ''}
-            onChange={(e) =>
-              onChange({ ...filters, min_weeks: e.target.value ? +e.target.value : undefined, page: 1 })
-            }
+            value={minWeeks}
+            onChange={(e) => setMinWeeks(e.target.value)}
             className="w-full border border-gray-300 rounded px-3 py-1.5 text-sm"
           />
         </div>
@@ -87,10 +129,8 @@ export function FeedFilters({ filters, onChange }: Props) {
           <input
             type="number"
             min={1}
-            value={filters.max_weeks || ''}
-            onChange={(e) =>
-              onChange({ ...filters, max_weeks: e.target.value ? +e.target.value : undefined, page: 1 })
-            }
+            value={maxWeeks}
+            onChange={(e) => setMaxWeeks(e.target.value)}
             className="w-full border border-gray-300 rounded px-3 py-1.5 text-sm"
           />
         </div>
@@ -104,10 +144,8 @@ export function FeedFilters({ filters, onChange }: Props) {
             min={0}
             step={100}
             placeholder="$0"
-            value={filters.min_price ?? ''}
-            onChange={(e) =>
-              onChange({ ...filters, min_price: e.target.value ? +e.target.value : undefined, page: 1 })
-            }
+            value={minPrice}
+            onChange={(e) => setMinPrice(e.target.value)}
             className="w-full border border-gray-300 rounded px-3 py-1.5 text-sm"
           />
         </div>
@@ -118,10 +156,8 @@ export function FeedFilters({ filters, onChange }: Props) {
             min={0}
             step={100}
             placeholder="Any"
-            value={filters.max_price ?? ''}
-            onChange={(e) =>
-              onChange({ ...filters, max_price: e.target.value ? +e.target.value : undefined, page: 1 })
-            }
+            value={maxPrice}
+            onChange={(e) => setMaxPrice(e.target.value)}
             className="w-full border border-gray-300 rounded px-3 py-1.5 text-sm"
           />
         </div>

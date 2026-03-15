@@ -102,12 +102,12 @@ function Dashboard({ user }: { user: UserResponse }) {
       <section>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold text-gray-900">
-            Your Listings{myListings ? ` (${myListings.length})` : ''}
+            Your Listings{myListings ? ` (${myListings.pagination.total})` : ''}
           </h2>
         </div>
-        {myListings && myListings.length > 0 ? (
+        {myListings && myListings.data.length > 0 ? (
           <div className="space-y-3">
-            {myListings.slice(0, 3).map((listing) => (
+            {myListings.data.slice(0, 3).map((listing: typeof myListings.data[number]) => (
               <div key={listing.id} className="relative">
                 {listing.status !== 'active' && (
                   <div className="absolute inset-0 bg-gray-50/60 rounded-lg z-10 pointer-events-none" />
@@ -115,9 +115,9 @@ function Dashboard({ user }: { user: UserResponse }) {
                 <ListingCard listing={listing} currentUserId={user.id} />
               </div>
             ))}
-            {myListings.length > 3 && (
+            {myListings.pagination.total > 3 && (
               <p className="text-sm text-gray-500 text-center pt-1">
-                and {myListings.length - 3} more
+                and {myListings.pagination.total - 3} more
               </p>
             )}
           </div>
