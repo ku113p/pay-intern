@@ -271,7 +271,7 @@ pub async fn get_feed(
                 .map(|_| "LOWER(je.value) LIKE ?".to_string())
                 .collect();
             where_clauses.push(format!(
-                "EXISTS (SELECT 1 FROM json_each(l.tech_stack) je WHERE {})",
+                "l.tech_stack IS NOT NULL AND l.tech_stack != '' AND json_valid(l.tech_stack) AND EXISTS (SELECT 1 FROM json_each(l.tech_stack) je WHERE {})",
                 like_clauses.join(" OR ")
             ));
             for tech in &techs {
