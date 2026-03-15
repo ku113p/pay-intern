@@ -7,7 +7,7 @@ import { ListingCard } from '../components/listings/ListingCard';
 function DeveloperHero() {
   return (
     <div className="mt-8 max-w-3xl mx-auto text-center">
-      <h1 className="text-4xl font-bold text-gray-900 leading-tight">
+      <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 leading-tight">
         You can't get hired without experience.<br />
         You can't get experience without getting hired.<br />
         <span className="text-indigo-600">We fixed that.</span>
@@ -17,16 +17,16 @@ function DeveloperHero() {
         mentored engagements &mdash; production code, dedicated mentorship,
         and measurable outcomes you can prove to your next employer.
       </p>
-      <div className="flex justify-center gap-4 mt-8">
+      <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4 mt-8">
         <Link
           to="/developers"
-          className="bg-indigo-600 text-white px-6 py-3 rounded-md text-sm font-medium hover:bg-indigo-700"
+          className="bg-indigo-600 text-white px-6 py-3 rounded-md text-sm font-medium hover:bg-indigo-700 text-center"
         >
           Browse Company Listings
         </Link>
         <Link
           to="/listings/new"
-          className="border border-indigo-600 text-indigo-600 px-6 py-3 rounded-md text-sm font-medium hover:bg-indigo-50"
+          className="border border-indigo-600 text-indigo-600 px-6 py-3 rounded-md text-sm font-medium hover:bg-indigo-50 text-center"
         >
           Post a Developer Listing
         </Link>
@@ -38,7 +38,7 @@ function DeveloperHero() {
 function CompanyHero() {
   return (
     <div className="mt-8 max-w-3xl mx-auto text-center">
-      <h1 className="text-4xl font-bold text-gray-900 leading-tight">
+      <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 leading-tight">
         Stop paying to find developers.<br />
         <span className="text-indigo-600">Get paid to evaluate them.</span>
       </h1>
@@ -47,16 +47,16 @@ function CompanyHero() {
         Or post listings with structured outcomes and attract
         self-selected candidates.
       </p>
-      <div className="flex justify-center gap-4 mt-8">
+      <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4 mt-8">
         <Link
           to="/companies"
-          className="bg-indigo-600 text-white px-6 py-3 rounded-md text-sm font-medium hover:bg-indigo-700"
+          className="bg-indigo-600 text-white px-6 py-3 rounded-md text-sm font-medium hover:bg-indigo-700 text-center"
         >
           Browse Developer Listings
         </Link>
         <Link
           to="/listings/new"
-          className="border border-indigo-600 text-indigo-600 px-6 py-3 rounded-md text-sm font-medium hover:bg-indigo-50"
+          className="border border-indigo-600 text-indigo-600 px-6 py-3 rounded-md text-sm font-medium hover:bg-indigo-50 text-center"
         >
           Post a Company Listing
         </Link>
@@ -68,7 +68,7 @@ function CompanyHero() {
 function DefaultHero() {
   return (
     <div className="mt-8 max-w-3xl mx-auto text-center">
-      <h1 className="text-4xl font-bold text-gray-900 leading-tight">
+      <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 leading-tight">
         Real experience. Real proof.
       </h1>
       <p className="text-lg text-gray-600 mt-4">
@@ -103,7 +103,7 @@ function HowItWorks({ role }: { role: 'developer' | 'company' | null }) {
       <h2 className="text-xl font-semibold text-gray-900 text-center mb-8">
         {role ? 'How It Works' : 'Two Sides, One Marketplace'}
       </h2>
-      <div className="grid grid-cols-3 gap-8 text-left">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 md:gap-8 text-left">
         {steps.map((step, i) => (
           <div key={i} className="space-y-2">
             <h3 className="font-semibold text-gray-900">
