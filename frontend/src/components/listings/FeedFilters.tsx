@@ -43,8 +43,8 @@ export function FeedFilters({ filters, onChange }: Props) {
           className="w-full border border-gray-300 rounded px-3 py-1.5 text-sm"
         >
           <option value="newest">Newest</option>
-          <option value="price_asc">Price: Low to High</option>
-          <option value="price_desc">Price: High to Low</option>
+          <option value="price_asc">Budget: Low to High</option>
+          <option value="price_desc">Budget: High to Low</option>
         </select>
       </div>
 
@@ -69,6 +69,37 @@ export function FeedFilters({ filters, onChange }: Props) {
             value={filters.max_weeks || ''}
             onChange={(e) =>
               onChange({ ...filters, max_weeks: e.target.value ? +e.target.value : undefined, page: 1 })
+            }
+            className="w-full border border-gray-300 rounded px-3 py-1.5 text-sm"
+          />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-2">
+        <div>
+          <label className="block text-sm text-gray-600 mb-1">Min budget</label>
+          <input
+            type="number"
+            min={0}
+            step={100}
+            placeholder="$0"
+            value={filters.min_price ?? ''}
+            onChange={(e) =>
+              onChange({ ...filters, min_price: e.target.value ? +e.target.value : undefined, page: 1 })
+            }
+            className="w-full border border-gray-300 rounded px-3 py-1.5 text-sm"
+          />
+        </div>
+        <div>
+          <label className="block text-sm text-gray-600 mb-1">Max budget</label>
+          <input
+            type="number"
+            min={0}
+            step={100}
+            placeholder="Any"
+            value={filters.max_price ?? ''}
+            onChange={(e) =>
+              onChange({ ...filters, max_price: e.target.value ? +e.target.value : undefined, page: 1 })
             }
             className="w-full border border-gray-300 rounded px-3 py-1.5 text-sm"
           />

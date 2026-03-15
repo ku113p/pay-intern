@@ -12,7 +12,16 @@ export function ListingCard({ listing }: { listing: Listing }) {
           <h3 className="text-lg font-semibold text-gray-900">{listing.title}</h3>
           <p className="text-sm text-gray-500 mt-1">
             {listing.duration_weeks} weeks &middot; {listing.format}
-            {listing.price_usd != null && ` · $${listing.price_usd}`}
+            {listing.price_usd != null && (
+              <>
+                {` · $${listing.price_usd.toLocaleString()} total`}
+                {listing.duration_weeks > 0 && (
+                  <span className="text-gray-400">
+                    {` ($${Math.round(listing.price_usd / listing.duration_weeks).toLocaleString()}/wk)`}
+                  </span>
+                )}
+              </>
+            )}
           </p>
         </div>
         <span
