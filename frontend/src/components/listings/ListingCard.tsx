@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { format } from 'timeago.js';
 import type { Listing } from '../../api/listings';
 
-export function ListingCard({ listing }: { listing: Listing }) {
+export function ListingCard({ listing, currentUserId }: { listing: Listing; currentUserId?: string }) {
   return (
     <Link
       to={`/listings/${listing.id}`}
@@ -39,6 +39,11 @@ export function ListingCard({ listing }: { listing: Listing }) {
           </p>
         </div>
         <div className="flex gap-1">
+          {currentUserId && listing.author_id === currentUserId && (
+            <span className="text-xs font-medium px-2 py-1 rounded bg-indigo-100 text-indigo-700">
+              Yours
+            </span>
+          )}
           {listing.experience_level !== 'any' && (
             <span className="text-xs font-medium px-2 py-1 rounded bg-purple-100 text-purple-700">
               {listing.experience_level}

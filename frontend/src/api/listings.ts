@@ -75,4 +75,7 @@ export const listingsApi = {
 
   deleteListing: (id: string) =>
     api.delete(`/listings/${id}`),
+
+  getMyListings: () =>
+    api.get<Listing[]>('/listings/mine'),
 };
