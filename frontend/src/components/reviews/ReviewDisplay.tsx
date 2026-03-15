@@ -20,7 +20,7 @@ export function ReviewDisplay({ review }: { review: OutcomeReview }) {
 
   return (
     <div className="bg-white border border-gray-200 rounded-lg p-5 space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center sm:justify-between gap-2">
         <h3 className="font-semibold text-gray-900">Outcome Review</h3>
         <span className={`text-sm font-medium px-3 py-1 rounded ${rec.color}`}>
           {rec.label}

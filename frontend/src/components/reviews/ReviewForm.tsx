@@ -48,7 +48,7 @@ export function ReviewForm({ applicationId, criteria, onCreated }: Props) {
       <div className="space-y-3">
         <h4 className="font-medium text-gray-700">Criteria Results</h4>
         {results.map((cr, i) => (
-          <div key={i} className="flex items-center justify-between bg-gray-50 rounded p-3">
+          <div key={i} className="flex flex-col sm:flex-row items-start sm:items-center sm:justify-between gap-2 bg-gray-50 rounded p-3">
             <span className="text-sm text-gray-700">{cr.criterion}</span>
             <select
               value={cr.result}

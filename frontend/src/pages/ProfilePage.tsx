@@ -38,7 +38,7 @@ export function ProfilePage() {
           )}
         </div>
         {editingName ? (
-          <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row gap-2">
             <input
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}

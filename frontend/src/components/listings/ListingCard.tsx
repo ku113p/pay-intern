@@ -8,7 +8,7 @@ export function ListingCard({ listing }: { listing: Listing }) {
       to={`/listings/${listing.id}`}
       className="block bg-white rounded-lg border border-gray-200 p-5 hover:shadow-md transition-shadow"
     >
-      <div className="flex items-start justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:justify-between gap-2">
         <div>
           <h3 className="text-lg font-semibold text-gray-900">{listing.title}</h3>
           {(listing.company_name || listing.author_display_name) && (

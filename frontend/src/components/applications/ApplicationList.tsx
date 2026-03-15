@@ -38,7 +38,7 @@ export function ApplicationList() {
           <div className="space-y-3">
             {myApps.data.map((app) => (
               <div key={app.id} className="bg-white border border-gray-200 rounded-lg p-4">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center sm:justify-between gap-1">
                   <p className="text-sm text-gray-600">Listing: {app.listing_id.slice(0, 8)}...</p>
                   <StatusBadge status={app.status} />
                 </div>
@@ -63,7 +63,7 @@ export function ApplicationList() {
           <div className="space-y-3">
             {received.data.map((app) => (
               <div key={app.id} className="bg-white border border-gray-200 rounded-lg p-4">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center sm:justify-between gap-1">
                   <p className="text-sm text-gray-600">
                     From: {app.applicant_id.slice(0, 8)}... &middot; Listing: {app.listing_id.slice(0, 8)}...
                   </p>
