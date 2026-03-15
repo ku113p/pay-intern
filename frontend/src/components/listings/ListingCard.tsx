@@ -19,21 +19,29 @@ export function ListingCard({ listing, currentUserId }: { listing: Listing; curr
               {listing.developer_level && listing.listing_type === 'developer' && (
                 <span> · {listing.developer_level}</span>
               )}
+              {listing.author_email_domain && (
+                <span className="text-gray-400"> · @{listing.author_email_domain}</span>
+              )}
             </p>
           )}
           <p className="text-sm text-gray-500 mt-1">
             {listing.duration_weeks} weeks &middot; {listing.format}
             {listing.price_usd != null && listing.price_usd > 0 ? (
-              <>
-                {` · $${listing.price_usd.toLocaleString()} total`}
+              <span className={listing.payment_direction === 'company_pays_developer'
+                ? 'text-green-600 font-medium'
+                : 'text-amber-600 font-medium'}>
+                {' · '}
+                {listing.payment_direction === 'company_pays_developer'
+                  ? `Company → Dev $${listing.price_usd.toLocaleString()}`
+                  : `Dev → Company $${listing.price_usd.toLocaleString()}`}
                 {listing.duration_weeks > 0 && (
-                  <span className="text-gray-400">
+                  <span className="font-normal opacity-70">
                     {` ($${Math.round(listing.price_usd / listing.duration_weeks).toLocaleString()}/wk)`}
                   </span>
                 )}
-              </>
+              </span>
             ) : (
-              <span className="text-green-600 font-medium"> · Free</span>
+              <span className="text-green-600 font-medium"> · Free / Unpaid</span>
             )}
             <span className="text-gray-400"> · {format(listing.created_at + 'Z')}</span>
           </p>

@@ -34,18 +34,51 @@ export function ListingDetail({ listing }: { listing: Listing }) {
           <h1 className="text-2xl font-bold text-gray-900">{listing.title}</h1>
           <p className="text-gray-500 mt-1">
             {listing.duration_weeks} weeks &middot; {listing.format}
-            {listing.price_usd != null && ` · $${listing.price_usd}`}
           </p>
         </div>
-        <span
-          className={`text-sm font-medium px-3 py-1 rounded ${
-            listing.listing_type === 'company'
-              ? 'bg-blue-100 text-blue-700'
-              : 'bg-green-100 text-green-700'
-          }`}
-        >
-          {listing.listing_type}
-        </span>
+        <div className="flex gap-2 items-center">
+          {listing.author_email_domain && (
+            <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
+              @{listing.author_email_domain}
+            </span>
+          )}
+          <span
+            className={`text-sm font-medium px-3 py-1 rounded ${
+              listing.listing_type === 'company'
+                ? 'bg-blue-100 text-blue-700'
+                : 'bg-green-100 text-green-700'
+            }`}
+          >
+            {listing.listing_type}
+          </span>
+        </div>
+      </div>
+
+      <div className={`rounded-lg p-4 ${
+        !listing.price_usd || listing.price_usd === 0
+          ? 'bg-gray-50 border border-gray-200'
+          : listing.payment_direction === 'company_pays_developer'
+            ? 'bg-green-50 border border-green-200'
+            : 'bg-amber-50 border border-amber-200'
+      }`}>
+        {listing.price_usd != null && listing.price_usd > 0 ? (
+          <p className={`font-semibold ${
+            listing.payment_direction === 'company_pays_developer'
+              ? 'text-green-800'
+              : 'text-amber-800'
+          }`}>
+            {listing.payment_direction === 'company_pays_developer'
+              ? `Company pays developer — $${listing.price_usd.toLocaleString()}`
+              : `Developer pays company — $${listing.price_usd.toLocaleString()}`}
+            {listing.duration_weeks > 0 && (
+              <span className="font-normal text-sm ml-2">
+                (${Math.round(listing.price_usd / listing.duration_weeks).toLocaleString()}/wk)
+              </span>
+            )}
+          </p>
+        ) : (
+          <p className="font-semibold text-gray-600">Free / Unpaid engagement</p>
+        )}
       </div>
 
       <div className="flex flex-wrap gap-2">

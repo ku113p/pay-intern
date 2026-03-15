@@ -1,83 +1,166 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 
-/* ─── Section 1: Hero ──────────────────────────────────────────────── */
+type Perspective = 'company' | 'developer';
 
-function Hero() {
+/* ─── Floating Toggle ─────────────────────────────────────────────── */
+
+function FloatingToggle({
+  perspective,
+  onChange,
+}: {
+  perspective: Perspective;
+  onChange: (p: Perspective) => void;
+}) {
   return (
-    <section className="relative bg-gradient-to-br from-indigo-900 to-indigo-700 text-white">
+    <div className="sticky top-0 z-40 flex justify-center py-3 bg-white/80 backdrop-blur-md border-b border-gray-100">
+      <div className="inline-flex bg-gray-100 rounded-full p-1">
+        <button
+          onClick={() => onChange('company')}
+          className={`px-5 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
+            perspective === 'company'
+              ? 'bg-blue-600 text-white shadow-md'
+              : 'text-gray-600 hover:text-gray-900'
+          }`}
+        >
+          For Companies
+        </button>
+        <button
+          onClick={() => onChange('developer')}
+          className={`px-5 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
+            perspective === 'developer'
+              ? 'bg-green-600 text-white shadow-md'
+              : 'text-gray-600 hover:text-gray-900'
+          }`}
+        >
+          For Developers
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Hero ────────────────────────────────────────────────────────── */
+
+const heroContent = {
+  company: {
+    badge: 'The try-before-you-hire marketplace',
+    headline: <>Stop Guessing.<br />Start Evaluating.</>,
+    sub: 'Post real work. Set measurable criteria. See how candidates actually perform — before you make a single hire.',
+    cta: 'Post Your First Listing',
+    gradient: 'from-blue-900 via-blue-800 to-indigo-900',
+    badgeColor: 'text-blue-300',
+    subColor: 'text-blue-200',
+    btnClass: 'bg-blue-500 hover:bg-blue-400',
+  },
+  developer: {
+    badge: 'The prove-your-skills marketplace',
+    headline: <>Prove Your Skills<br />With Real Work</>,
+    sub: 'Skip the resume black hole. Work on real projects with real companies and get verified proof of your abilities.',
+    cta: 'Find a Project',
+    gradient: 'from-green-900 via-green-800 to-emerald-900',
+    badgeColor: 'text-green-300',
+    subColor: 'text-green-200',
+    btnClass: 'bg-green-500 hover:bg-green-400',
+  },
+};
+
+function Hero({ perspective }: { perspective: Perspective }) {
+  const c = heroContent[perspective];
+  return (
+    <section className={`relative bg-gradient-to-br ${c.gradient} text-white transition-all duration-500`}>
       <nav className="absolute top-0 left-0 right-0 z-10 px-6 py-4 flex items-center justify-between">
         <Link to="/" className="text-white font-bold text-xl">
           DevStage
         </Link>
-        <Link to="/login" className="text-indigo-200 hover:text-white text-sm">
+        <Link
+          to="/login"
+          className="text-white/70 hover:text-white text-sm border border-white/20 rounded-lg px-4 py-1.5 hover:border-white/40 transition"
+        >
           Sign in
         </Link>
       </nav>
 
       <div className="max-w-5xl mx-auto px-4 sm:px-6 pt-28 pb-16 sm:pt-32 sm:pb-20 lg:pt-36 lg:pb-24 text-center">
-        <p className="text-indigo-300 text-sm font-medium tracking-widest uppercase mb-4">
-          The try-before-you-hire marketplace
+        <p className={`${c.badgeColor} text-sm font-medium tracking-widest uppercase mb-4`}>
+          {c.badge}
         </p>
         <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight">
-          Work Speaks Louder<br />Than Resumes
+          {c.headline}
         </h1>
-        <p className="mt-6 text-lg sm:text-xl text-indigo-200 max-w-2xl mx-auto">
-          The marketplace where companies and developers connect through real work
-          &mdash; not interviews, not resumes, not coding puzzles.
+        <p className={`mt-6 text-lg sm:text-xl ${c.subColor} max-w-2xl mx-auto`}>
+          {c.sub}
         </p>
-        <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4 mt-10">
+        <div className="mt-10">
           <Link
-            to="/developers"
-            className="bg-green-500 hover:bg-green-600 text-white px-8 py-3.5 rounded-lg text-base font-semibold transition text-center"
+            to="/login"
+            className={`inline-block ${c.btnClass} text-white px-10 py-4 rounded-xl text-lg font-semibold transition shadow-lg hover:shadow-xl`}
           >
-            I'm a Developer
-          </Link>
-          <Link
-            to="/register"
-            className="bg-blue-500 hover:bg-blue-600 text-white px-8 py-3.5 rounded-lg text-base font-semibold transition text-center"
-          >
-            I'm a Company
+            {c.cta}
           </Link>
         </div>
       </div>
+
+      {/* Decorative gradient fade */}
+      <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-white to-transparent" />
     </section>
   );
 }
 
-/* ─── Section 2: Pain — Companies ──────────────────────────────────── */
+/* ─── Pain Points ─────────────────────────────────────────────────── */
 
-function PainCompanies() {
-  const stats = [
-    { value: '$36,000', label: 'Average cost of hiring one developer through an agency' },
-    { value: '55%', label: 'IT employees who admit to lying on their resume' },
-    { value: '57%', label: 'Accuracy of traditional job interviews — barely better than a coin flip' },
-  ];
+const painContent = {
+  company: {
+    title: 'Hiring Is Broken',
+    stats: [
+      { value: '$36,000', label: 'Average cost of one bad hire through an agency' },
+      { value: '55%', label: 'IT employees who admit to lying on their resume' },
+      { value: '57%', label: 'Interview accuracy — barely better than a coin flip' },
+    ],
+    body: 'You spend thousands on recruiting agencies, run weeks of interviews, and still end up with bad hires. 74% of employers have been there.',
+    cta: 'Try a Different Approach',
+    accent: 'text-blue-600',
+    btnClass: 'border-blue-600 text-blue-600 hover:bg-blue-50',
+  },
+  developer: {
+    title: 'The Vicious Circle',
+    stats: [
+      { value: '73%', label: 'Decline in entry-level tech hiring since 2023' },
+      { value: '35%', label: '"Entry-level" jobs that require 3+ years of experience' },
+      { value: '6 months', label: 'Average junior job search — 200+ applications' },
+    ],
+    body: "You can't get a job without experience, and you can't get experience without a job. Sound familiar?",
+    cta: 'Break the Loop',
+    accent: 'text-green-600',
+    btnClass: 'border-green-600 text-green-600 hover:bg-green-50',
+  },
+};
 
+function PainPoints({ perspective }: { perspective: Perspective }) {
+  const c = painContent[perspective];
   return (
     <section className="bg-white py-16 sm:py-20 lg:py-24">
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
         <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 text-center">
-          Hiring Is Broken
+          {c.title}
         </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-10">
-          {stats.map((s) => (
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mt-10">
+          {c.stats.map((s) => (
             <div key={s.value} className="bg-gray-50 rounded-xl p-6 sm:p-8 text-center">
-              <p className="text-4xl sm:text-5xl font-bold text-indigo-600">{s.value}</p>
+              <p className={`text-4xl sm:text-5xl font-bold ${c.accent}`}>{s.value}</p>
               <p className="mt-3 text-sm text-gray-600">{s.label}</p>
             </div>
           ))}
         </div>
         <p className="mt-8 text-center text-gray-600 max-w-2xl mx-auto">
-          You spend thousands on recruiting agencies, run weeks of interviews,
-          and still end up with bad hires. 74% of employers have been there.
+          {c.body}
         </p>
         <div className="text-center mt-8">
           <Link
-            to="/register"
-            className="inline-block border-2 border-blue-600 text-blue-600 hover:bg-blue-50 px-8 py-3 rounded-lg font-semibold transition"
+            to="/login"
+            className={`inline-block border-2 ${c.btnClass} px-8 py-3 rounded-lg font-semibold transition`}
           >
-            Try a Different Approach
+            {c.cta}
           </Link>
         </div>
       </div>
@@ -85,83 +168,29 @@ function PainCompanies() {
   );
 }
 
-/* ─── Section 3: Pain — Developers ─────────────────────────────────── */
-
-function PainDevelopers() {
-  return (
-    <section className="bg-gray-50 py-16 sm:py-20 lg:py-24">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 text-center">
-        <h2 className="text-3xl sm:text-4xl font-bold text-gray-900">
-          The Vicious Circle
-        </h2>
-
-        {/* Circular paradox visual */}
-        <div className="mt-10 flex items-center justify-center">
-          <div className="relative w-64 h-64 sm:w-80 sm:h-80">
-            <div className="absolute inset-0 rounded-full border-4 border-dashed border-gray-300" />
-            <div className="absolute top-2 left-1/2 -translate-x-1/2 bg-white px-3 py-1.5 rounded-full shadow text-sm font-medium text-gray-800">
-              Need experience
-            </div>
-            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 bg-white px-3 py-1.5 rounded-full shadow text-sm font-medium text-gray-800">
-              Need a job
-            </div>
-            <div className="absolute top-1/2 right-0 -translate-y-1/2 translate-x-2 text-gray-400 text-2xl">
-              &rarr;
-            </div>
-            <div className="absolute top-1/2 left-0 -translate-y-1/2 -translate-x-2 text-gray-400 text-2xl">
-              &larr;
-            </div>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-10 max-w-3xl mx-auto">
-          <div className="bg-white rounded-lg p-4 shadow-sm">
-            <p className="text-2xl font-bold text-red-600">73%</p>
-            <p className="text-xs text-gray-600 mt-1">Decline in entry-level tech hiring since 2023</p>
-          </div>
-          <div className="bg-white rounded-lg p-4 shadow-sm">
-            <p className="text-2xl font-bold text-red-600">35%</p>
-            <p className="text-xs text-gray-600 mt-1">"Entry-level" jobs that require 3+ years of experience</p>
-          </div>
-          <div className="bg-white rounded-lg p-4 shadow-sm">
-            <p className="text-2xl font-bold text-red-600">6 months</p>
-            <p className="text-xs text-gray-600 mt-1">Average junior developer job search, 200+ applications</p>
-          </div>
-        </div>
-
-        <div className="mt-8">
-          <Link
-            to="/register"
-            className="inline-block border-2 border-green-600 text-green-600 hover:bg-green-50 px-8 py-3 rounded-lg font-semibold transition"
-          >
-            Break the Loop
-          </Link>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-/* ─── Section 4: Solution ──────────────────────────────────────────── */
+/* ─── Solution ────────────────────────────────────────────────────── */
 
 function Solution() {
   const pillars = [
     {
+      icon: '\u{1F4BB}',
       title: 'Real Projects',
       desc: 'Work on actual codebases with real companies. Not simulations, not puzzles — production code.',
     },
     {
+      icon: '\u{1F3AF}',
       title: 'Measurable Criteria',
       desc: 'Every listing has clear outcome criteria. You know exactly what success looks like before you start.',
     },
     {
+      icon: '\u2705',
       title: 'Verified Results',
       desc: 'Structured outcome reviews — pass, partial, or fail per criterion. Real proof you can show anyone.',
     },
   ];
 
   return (
-    <section className="bg-indigo-50 py-16 sm:py-20 lg:py-24">
+    <section className="bg-gradient-to-b from-gray-50 to-white py-16 sm:py-20 lg:py-24">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 text-center">
         <h2 className="text-3xl sm:text-4xl font-bold text-gray-900">
           Not a Job Board. Not a Bootcamp.
@@ -171,57 +200,65 @@ function Solution() {
         </p>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-10">
           {pillars.map((p) => (
-            <div key={p.title} className="bg-white rounded-xl p-6 shadow-sm text-left">
-              <h3 className="text-lg font-semibold text-indigo-700">{p.title}</h3>
+            <div key={p.title} className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 text-left hover:shadow-md transition-shadow">
+              <span className="text-3xl">{p.icon}</span>
+              <h3 className="mt-3 text-lg font-semibold text-gray-900">{p.title}</h3>
               <p className="mt-2 text-sm text-gray-600">{p.desc}</p>
             </div>
           ))}
         </div>
-        <div className="mt-10">
-          <Link
-            to="/developers"
-            className="inline-block bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-3 rounded-lg font-semibold transition"
-          >
-            Browse Listings
-          </Link>
-        </div>
       </div>
     </section>
   );
 }
 
-/* ─── Section 5: How It Works — Companies ──────────────────────────── */
+/* ─── How It Works ────────────────────────────────────────────────── */
 
-function HowItWorksCompanies() {
-  const steps = [
-    {
-      num: '1',
-      title: 'Post a Listing',
-      desc: 'Define what you need. Set measurable outcome criteria (at least 3). Choose duration, tech stack, and format.',
-    },
-    {
-      num: '2',
-      title: 'Review Applications',
-      desc: 'Motivated developers apply with a message. Accept the ones who fit.',
-    },
-    {
-      num: '3',
-      title: 'Evaluate Real Work',
-      desc: 'Review their actual output against your criteria. Rate each one: pass, partial, or fail. Hire with confidence.',
-    },
-  ];
+const howContent = {
+  company: {
+    title: 'Three Steps to Better Hiring',
+    label: 'For Companies',
+    labelColor: 'text-blue-600',
+    steps: [
+      { num: '1', title: 'Post a Listing', desc: 'Define what you need. Set measurable outcome criteria (at least 3). Choose duration, tech stack, and format.' },
+      { num: '2', title: 'Review Applications', desc: 'Motivated developers apply with a message. Accept the ones who fit.' },
+      { num: '3', title: 'Evaluate Real Work', desc: 'Review their actual output against your criteria. Rate each one: pass, partial, or fail. Hire with confidence.' },
+    ],
+    borderColor: 'border-blue-100',
+    numBg: 'bg-blue-100 text-blue-700',
+    cta: 'Post a Listing',
+    btnClass: 'bg-blue-600 hover:bg-blue-700',
+  },
+  developer: {
+    title: 'Three Steps to Real Experience',
+    label: 'For Developers',
+    labelColor: 'text-green-600',
+    steps: [
+      { num: '1', title: 'Find a Project', desc: 'Browse company listings. Filter by tech stack, format, duration, and experience level.' },
+      { num: '2', title: 'Work with a Real Team', desc: 'Get accepted and start working. Real codebase, real deadlines, real mentorship.' },
+      { num: '3', title: 'Get Verified Proof', desc: 'Receive a structured outcome review. Pass criteria become verified proof of your skills.' },
+    ],
+    borderColor: 'border-green-100',
+    numBg: 'bg-green-100 text-green-700',
+    cta: 'Find a Project',
+    btnClass: 'bg-green-600 hover:bg-green-700',
+  },
+};
 
+function HowItWorks({ perspective }: { perspective: Perspective }) {
+  const c = howContent[perspective];
   return (
     <section className="bg-white py-16 sm:py-20 lg:py-24">
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
         <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 text-center">
-          Three Steps to Better Hiring
+          {c.title}
         </h2>
-        <p className="text-center text-blue-600 text-sm font-medium mt-2">For Companies</p>
+        <p className={`text-center ${c.labelColor} text-sm font-medium mt-2`}>{c.label}</p>
+
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-10">
-          {steps.map((s) => (
-            <div key={s.num} className="border border-blue-100 rounded-xl p-6">
-              <span className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-blue-100 text-blue-700 font-bold text-lg">
+          {c.steps.map((s) => (
+            <div key={s.num} className={`border ${c.borderColor} rounded-xl p-6 hover:shadow-sm transition-shadow`}>
+              <span className={`inline-flex items-center justify-center w-10 h-10 rounded-full ${c.numBg} font-bold text-lg`}>
                 {s.num}
               </span>
               <h3 className="mt-4 text-lg font-semibold text-gray-900">{s.title}</h3>
@@ -229,12 +266,13 @@ function HowItWorksCompanies() {
             </div>
           ))}
         </div>
+
         <div className="text-center mt-10">
           <Link
-            to="/register"
-            className="inline-block bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-semibold transition"
+            to="/login"
+            className={`inline-block ${c.btnClass} text-white px-8 py-3 rounded-lg font-semibold transition`}
           >
-            Post a Listing
+            {c.cta}
           </Link>
         </div>
       </div>
@@ -242,59 +280,7 @@ function HowItWorksCompanies() {
   );
 }
 
-/* ─── Section 6: How It Works — Developers ─────────────────────────── */
-
-function HowItWorksDevelopers() {
-  const steps = [
-    {
-      num: '1',
-      title: 'Find a Project',
-      desc: 'Browse company listings. Filter by tech stack, format, duration, and experience level.',
-    },
-    {
-      num: '2',
-      title: 'Work with a Real Team',
-      desc: 'Get accepted and start working. Real codebase, real deadlines, real mentorship.',
-    },
-    {
-      num: '3',
-      title: 'Get Verified Proof',
-      desc: 'Receive a structured outcome review. Pass criteria become verified proof of your skills.',
-    },
-  ];
-
-  return (
-    <section className="bg-gray-50 py-16 sm:py-20 lg:py-24">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6">
-        <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 text-center">
-          Three Steps to Real Experience
-        </h2>
-        <p className="text-center text-green-600 text-sm font-medium mt-2">For Developers</p>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-10">
-          {steps.map((s) => (
-            <div key={s.num} className="border border-green-100 rounded-xl p-6">
-              <span className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-green-100 text-green-700 font-bold text-lg">
-                {s.num}
-              </span>
-              <h3 className="mt-4 text-lg font-semibold text-gray-900">{s.title}</h3>
-              <p className="mt-2 text-sm text-gray-600">{s.desc}</p>
-            </div>
-          ))}
-        </div>
-        <div className="text-center mt-10">
-          <Link
-            to="/developers"
-            className="inline-block bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-lg font-semibold transition"
-          >
-            Find a Project
-          </Link>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-/* ─── Section 7: Outcome Criteria Showcase ─────────────────────────── */
+/* ─── Outcome Criteria Showcase ───────────────────────────────────── */
 
 function OutcomeShowcase() {
   const criteria = [
@@ -311,14 +297,13 @@ function OutcomeShowcase() {
   };
 
   return (
-    <section className="bg-white py-16 sm:py-20 lg:py-24">
+    <section className="bg-gradient-to-b from-white to-gray-50 py-16 sm:py-20 lg:py-24">
       <div className="max-w-4xl mx-auto px-4 sm:px-6">
         <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 text-center">
           Not Stars. Not Reviews.<br />Structured Proof.
         </h2>
 
-        {/* Mock outcome review card */}
-        <div className="mt-10 bg-gray-50 border border-gray-200 rounded-xl p-6 sm:p-8 max-w-lg mx-auto">
+        <div className="mt-10 bg-white border border-gray-200 rounded-2xl p-6 sm:p-8 max-w-lg mx-auto shadow-sm">
           <p className="text-xs text-gray-500 uppercase tracking-wide">Outcome Review</p>
           <p className="text-lg font-semibold text-gray-900 mt-1">Acme Corp</p>
 
@@ -349,52 +334,12 @@ function OutcomeShowcase() {
           After the engagement, each criterion is rated pass, partial, or fail.
           This is real, structured evidence — not a 5-star rating.
         </p>
-
-        <div className="text-center mt-8">
-          <Link
-            to="/developers"
-            className="inline-block border-2 border-indigo-600 text-indigo-600 hover:bg-indigo-50 px-8 py-3 rounded-lg font-semibold transition"
-          >
-            See How It Works
-          </Link>
-        </div>
       </div>
     </section>
   );
 }
 
-/* ─── Section 8: Challenge Seekers ─────────────────────────────────── */
-
-function ChallengeSeekers() {
-  return (
-    <section className="bg-indigo-50 py-16 sm:py-20 lg:py-24">
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 text-center">
-        <h2 className="text-3xl sm:text-4xl font-bold text-gray-900">
-          Bored? Prove You Can.
-        </h2>
-        <p className="mt-6 text-lg text-gray-600">
-          52% of developers code after work for fun. But LeetCode problems don't ship
-          to production. Hackathon projects die after the weekend.
-        </p>
-        <p className="mt-4 text-lg text-gray-700 font-medium">
-          DevStage is different: real production challenges from real companies.
-          Solve actual problems. Get verified results. Build a track record
-          that means something.
-        </p>
-        <div className="mt-8">
-          <Link
-            to="/developers"
-            className="inline-block bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-3 rounded-lg font-semibold transition"
-          >
-            Take the Challenge
-          </Link>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-/* ─── Section 9: Numbers ───────────────────────────────────────────── */
+/* ─── Numbers ─────────────────────────────────────────────────────── */
 
 function Numbers() {
   const stats = [
@@ -407,7 +352,7 @@ function Numbers() {
   ];
 
   return (
-    <section className="bg-indigo-900 py-16 sm:py-20 lg:py-24">
+    <section className="bg-gradient-to-br from-indigo-900 to-indigo-950 py-16 sm:py-20 lg:py-24">
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
         <div className="grid grid-cols-2 lg:grid-cols-3 gap-8 sm:gap-10">
           {stats.map((s) => (
@@ -422,7 +367,7 @@ function Numbers() {
   );
 }
 
-/* ─── Section 10: Comparison Table ─────────────────────────────────── */
+/* ─── Comparison Table ────────────────────────────────────────────── */
 
 function Comparison() {
   const rows = [
@@ -464,50 +409,43 @@ function Comparison() {
             </tbody>
           </table>
         </div>
-        <div className="text-center mt-10">
-          <Link
-            to="/register"
-            className="inline-block bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-3 rounded-lg font-semibold transition"
-          >
-            Get Started
-          </Link>
-        </div>
       </div>
     </section>
   );
 }
 
-/* ─── Section 11: FAQ ──────────────────────────────────────────────── */
+/* ─── FAQ ─────────────────────────────────────────────────────────── */
 
-function FAQ() {
+function FAQ({ perspective }: { perspective: Perspective }) {
   const [open, setOpen] = useState<number | null>(null);
 
-  const faqs = [
+  const sharedFaqs = [
     {
       q: 'Is DevStage free?',
-      a: 'Browsing listings and creating an account is free. Pricing for posting listings varies by engagement type.',
+      a: 'Browsing listings and signing in is free. Pricing for posting listings varies by engagement type.',
     },
     {
       q: 'Who pays whom?',
-      a: "It depends on the listing. Companies may pay developers for their work, or developers may pay for the learning opportunity. Each listing specifies its own terms.",
-    },
-    {
-      q: 'What kind of projects are available?',
-      a: 'Real software projects across all major tech stacks. From web apps to APIs to infrastructure.',
+      a: 'Each listing specifies its payment direction. Companies can pay developers for their work, or developers can pay for a learning opportunity. The direction and amount are always clearly displayed.',
     },
     {
       q: 'How are results verified?',
       a: 'Company teams evaluate your work against pre-defined outcome criteria. Each criterion is rated pass, partial, or fail.',
     },
-    {
-      q: 'Can I use DevStage alongside my current job?',
-      a: 'Yes. Many listings offer flexible schedules and remote formats. Duration ranges from 1 to 52 weeks.',
-    },
-    {
-      q: "I'm a company. How do I get started?",
-      a: 'Create an account, set up your company profile, and post your first listing with at least 3 outcome criteria.',
-    },
   ];
+
+  const perspectiveFaqs = {
+    company: [
+      { q: 'How do I get started as a company?', a: 'Sign in, set up your company profile, and post your first listing with at least 3 outcome criteria.' },
+      { q: 'What kind of projects work best?', a: 'Well-scoped tasks with clear deliverables — feature builds, bug fixes, infrastructure tasks, API development, etc.' },
+    ],
+    developer: [
+      { q: 'Can I use DevStage alongside my current job?', a: 'Yes. Many listings offer flexible schedules and remote formats. Duration ranges from 1 to 52 weeks.' },
+      { q: 'What kind of projects are available?', a: 'Real software projects across all major tech stacks — from web apps to APIs to infrastructure.' },
+    ],
+  };
+
+  const faqs = [...sharedFaqs, ...perspectiveFaqs[perspective]];
 
   return (
     <section className="bg-gray-50 py-16 sm:py-20 lg:py-24">
@@ -517,21 +455,21 @@ function FAQ() {
         </h2>
         <div className="mt-10 space-y-3">
           {faqs.map((faq, i) => (
-            <div key={i} className="bg-white rounded-lg border border-gray-200">
+            <div key={i} className="bg-white rounded-lg border border-gray-200 overflow-hidden">
               <button
                 onClick={() => setOpen(open === i ? null : i)}
                 className="w-full text-left px-5 py-4 flex items-center justify-between gap-4"
               >
                 <span className="font-medium text-gray-900">{faq.q}</span>
-                <span className="text-gray-400 text-xl shrink-0">
-                  {open === i ? '\u2212' : '+'}
+                <span className={`text-gray-400 text-xl shrink-0 transition-transform duration-200 ${open === i ? 'rotate-45' : ''}`}>
+                  +
                 </span>
               </button>
-              {open === i && (
-                <div className="px-5 pb-4">
+              <div className={`overflow-hidden transition-all duration-200 ${open === i ? 'max-h-40 pb-4' : 'max-h-0'}`}>
+                <div className="px-5">
                   <p className="text-sm text-gray-600">{faq.a}</p>
                 </div>
-              )}
+              </div>
             </div>
           ))}
         </div>
@@ -540,52 +478,43 @@ function FAQ() {
   );
 }
 
-/* ─── Section 12: Final CTA ────────────────────────────────────────── */
+/* ─── Final CTA ───────────────────────────────────────────────────── */
 
-function FinalCTA() {
+const ctaContent = {
+  company: {
+    title: 'Ready to Hire Smarter?',
+    sub: 'Post your first listing and see real work from real candidates.',
+    cta: 'Get Started',
+    btnClass: 'bg-blue-500 hover:bg-blue-400',
+  },
+  developer: {
+    title: 'Ready to Prove Yourself?',
+    sub: 'Find a real project and build verified proof of your skills.',
+    cta: 'Get Started',
+    btnClass: 'bg-green-500 hover:bg-green-400',
+  },
+};
+
+function FinalCTA({ perspective }: { perspective: Perspective }) {
+  const c = ctaContent[perspective];
   return (
     <section className="bg-gradient-to-br from-indigo-700 to-indigo-900 py-16 sm:py-20 lg:py-24">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 text-center">
         <h2 className="text-3xl sm:text-4xl font-bold text-white">
-          Ready to Start?
+          {c.title}
         </h2>
         <p className="mt-4 text-lg text-indigo-200">
-          Whether you're hiring or building your career, real work is the answer.
+          {c.sub}
         </p>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-10 max-w-3xl mx-auto">
-          {/* Company card */}
-          <div className="bg-white/10 backdrop-blur rounded-xl p-6 sm:p-8 border border-blue-400/30 text-left">
-            <h3 className="text-xl font-bold text-white">I'm Looking for Developers</h3>
-            <p className="mt-3 text-sm text-indigo-200">
-              Post listings with measurable criteria. Evaluate real work.
-              Hire with confidence.
-            </p>
-            <Link
-              to="/register"
-              className="inline-block mt-6 bg-blue-500 hover:bg-blue-600 text-white px-6 py-2.5 rounded-lg font-semibold transition"
-            >
-              Get Started
-            </Link>
-          </div>
-
-          {/* Developer card */}
-          <div className="bg-white/10 backdrop-blur rounded-xl p-6 sm:p-8 border border-green-400/30 text-left">
-            <h3 className="text-xl font-bold text-white">I Want Real Experience</h3>
-            <p className="mt-3 text-sm text-indigo-200">
-              Find real projects. Work with real teams.
-              Get verified proof of your skills.
-            </p>
-            <Link
-              to="/developers"
-              className="inline-block mt-6 bg-green-500 hover:bg-green-600 text-white px-6 py-2.5 rounded-lg font-semibold transition"
-            >
-              Browse Listings
-            </Link>
-          </div>
+        <div className="mt-10">
+          <Link
+            to="/login"
+            className={`inline-block ${c.btnClass} text-white px-10 py-4 rounded-xl text-lg font-semibold transition shadow-lg hover:shadow-xl`}
+          >
+            {c.cta}
+          </Link>
         </div>
 
-        {/* Footer */}
         <div className="mt-16 pt-8 border-t border-indigo-600/50">
           <Link to="/" className="text-indigo-300 hover:text-white text-sm">
             &larr; Back to Home
@@ -596,45 +525,57 @@ function FinalCTA() {
   );
 }
 
-/* ─── Sticky Mobile CTA ────────────────────────────────────────────── */
+/* ─── Sticky Mobile CTA ──────────────────────────────────────────── */
 
-function StickyMobileCTA() {
+const mobileCta = {
+  company: {
+    label: 'Post a Listing',
+    btnClass: 'bg-blue-600 hover:bg-blue-700',
+  },
+  developer: {
+    label: 'Browse Listings',
+    btnClass: 'bg-green-600 hover:bg-green-700',
+  },
+};
+
+function StickyMobileCTA({ perspective }: { perspective: Perspective }) {
+  const c = mobileCta[perspective];
   return (
     <div className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-white border-t border-gray-200 px-4 py-3 flex gap-3">
       <Link
-        to="/developers"
-        className="flex-1 bg-green-600 hover:bg-green-700 text-white text-center py-2.5 rounded-lg text-sm font-semibold transition"
+        to="/login"
+        className={`flex-1 ${c.btnClass} text-white text-center py-2.5 rounded-lg text-sm font-semibold transition`}
       >
-        Browse Listings
+        {c.label}
       </Link>
       <Link
-        to="/register"
+        to="/login"
         className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white text-center py-2.5 rounded-lg text-sm font-semibold transition"
       >
-        Get Started
+        Sign In
       </Link>
     </div>
   );
 }
 
-/* ─── Main Page ────────────────────────────────────────────────────── */
+/* ─── Main Page ───────────────────────────────────────────────────── */
 
 export function PromoPage() {
+  const [perspective, setPerspective] = useState<Perspective>('company');
+
   return (
     <div className="min-h-screen">
-      <Hero />
-      <PainCompanies />
-      <PainDevelopers />
+      <Hero perspective={perspective} />
+      <FloatingToggle perspective={perspective} onChange={setPerspective} />
+      <PainPoints perspective={perspective} />
       <Solution />
-      <HowItWorksCompanies />
-      <HowItWorksDevelopers />
+      <HowItWorks perspective={perspective} />
       <OutcomeShowcase />
-      <ChallengeSeekers />
       <Numbers />
       <Comparison />
-      <FAQ />
-      <FinalCTA />
-      <StickyMobileCTA />
+      <FAQ perspective={perspective} />
+      <FinalCTA perspective={perspective} />
+      <StickyMobileCTA perspective={perspective} />
     </div>
   );
 }

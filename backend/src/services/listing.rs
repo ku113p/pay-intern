@@ -38,6 +38,11 @@ pub async fn create_listing(
         }
     }
 
+    let payment_direction = req.payment_direction.as_deref().unwrap_or("company_pays_developer");
+    if !["company_pays_developer", "developer_pays_company"].contains(&payment_direction) {
+        return Err(AppError::BadRequest("Invalid payment_direction".into()));
+    }
+
     let id = Uuid::new_v4().to_string();
     let tech_stack = serde_json::to_string(&req.tech_stack).unwrap_or_default();
     let outcome_criteria = req
@@ -56,7 +61,7 @@ pub async fn create_listing(
     }
 
     sqlx::query(
-        "INSERT INTO listings (id, author_id, type, title, description, tech_stack, duration_weeks, price_usd, format, outcome_criteria, visibility, experience_level, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active')"
+        "INSERT INTO listings (id, author_id, type, title, description, tech_stack, duration_weeks, price_usd, payment_direction, format, outcome_criteria, visibility, experience_level, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active')"
     )
     .bind(&id)
     .bind(author_id.to_string())
@@ -66,6 +71,7 @@ pub async fn create_listing(
     .bind(&tech_stack)
     .bind(req.duration_weeks)
     .bind(req.price_usd)
+    .bind(payment_direction)
     .bind(&req.format)
     .bind(&outcome_criteria)
     .bind(visibility)
@@ -84,11 +90,25 @@ pub async fn get_listing(
     id: &str,
     viewer_id: Option<&Uuid>,
     read_db: &SqlitePool,
-) -> Result<Listing, AppError> {
-    let listing = sqlx::query_as::<_, Listing>("SELECT * FROM listings WHERE id = ?")
-        .bind(id)
-        .fetch_one(read_db)
-        .await?;
+) -> Result<ListingWithAuthor, AppError> {
+    let listing = sqlx::query_as::<_, ListingWithAuthor>(
+        "SELECT l.id, l.author_id, l.type, l.title, l.description, l.tech_stack, \
+         l.duration_weeks, l.price_usd, l.payment_direction, l.format, l.outcome_criteria, \
+         l.visibility, l.status, l.experience_level, l.created_at, l.updated_at, \
+         u.display_name AS author_display_name, \
+         cp.company_name AS company_name, \
+         cp.website AS company_website, \
+         dp.level AS developer_level, \
+         SUBSTR(u.email, INSTR(u.email, '@') + 1) AS author_email_domain \
+         FROM listings l \
+         JOIN users u ON u.id = l.author_id \
+         LEFT JOIN company_profiles cp ON cp.user_id = l.author_id \
+         LEFT JOIN developer_profiles dp ON dp.user_id = l.author_id \
+         WHERE l.id = ?"
+    )
+    .bind(id)
+    .fetch_one(read_db)
+    .await?;
 
     // Visibility check
     match listing.visibility.as_str() {
@@ -139,6 +159,10 @@ pub async fn update_listing(
         .unwrap_or(listing.tech_stack);
     let duration_weeks = req.duration_weeks.unwrap_or(listing.duration_weeks);
     let price_usd = req.price_usd.or(listing.price_usd);
+    let payment_direction = req.payment_direction.as_deref().unwrap_or(&listing.payment_direction);
+    if !["company_pays_developer", "developer_pays_company"].contains(&payment_direction) {
+        return Err(AppError::BadRequest("Invalid payment_direction".into()));
+    }
     let format = req.format.as_deref().unwrap_or(&listing.format);
     let outcome_criteria = req
         .outcome_criteria
@@ -150,13 +174,14 @@ pub async fn update_listing(
     let experience_level = req.experience_level.as_deref().unwrap_or(&listing.experience_level);
 
     sqlx::query(
-        "UPDATE listings SET title = ?, description = ?, tech_stack = ?, duration_weeks = ?, price_usd = ?, format = ?, outcome_criteria = ?, visibility = ?, status = ?, experience_level = ?, updated_at = datetime('now') WHERE id = ?"
+        "UPDATE listings SET title = ?, description = ?, tech_stack = ?, duration_weeks = ?, price_usd = ?, payment_direction = ?, format = ?, outcome_criteria = ?, visibility = ?, status = ?, experience_level = ?, updated_at = datetime('now') WHERE id = ?"
     )
     .bind(title)
     .bind(description)
     .bind(&tech_stack)
     .bind(duration_weeks)
     .bind(price_usd)
+    .bind(payment_direction)
     .bind(format)
     .bind(&outcome_criteria)
     .bind(visibility)
@@ -300,12 +325,13 @@ pub async fn get_feed(
     // Fetch page with author info via JOINs
     let select_sql = format!(
         "SELECT l.id, l.author_id, l.type, l.title, l.description, l.tech_stack, \
-         l.duration_weeks, l.price_usd, l.format, l.outcome_criteria, \
+         l.duration_weeks, l.price_usd, l.payment_direction, l.format, l.outcome_criteria, \
          l.visibility, l.status, l.experience_level, l.created_at, l.updated_at, \
          u.display_name AS author_display_name, \
          cp.company_name AS company_name, \
          cp.website AS company_website, \
-         dp.level AS developer_level \
+         dp.level AS developer_level, \
+         SUBSTR(u.email, INSTR(u.email, '@') + 1) AS author_email_domain \
          FROM listings l \
          JOIN users u ON u.id = l.author_id \
          LEFT JOIN company_profiles cp ON cp.user_id = l.author_id \
@@ -350,12 +376,13 @@ pub async fn get_user_listings(
 
     let listings = sqlx::query_as::<_, ListingWithAuthor>(
         "SELECT l.id, l.author_id, l.type, l.title, l.description, l.tech_stack, \
-         l.duration_weeks, l.price_usd, l.format, l.outcome_criteria, \
+         l.duration_weeks, l.price_usd, l.payment_direction, l.format, l.outcome_criteria, \
          l.visibility, l.status, l.experience_level, l.created_at, l.updated_at, \
          u.display_name AS author_display_name, \
          cp.company_name AS company_name, \
          cp.website AS company_website, \
-         dp.level AS developer_level \
+         dp.level AS developer_level, \
+         SUBSTR(u.email, INSTR(u.email, '@') + 1) AS author_email_domain \
          FROM listings l \
          JOIN users u ON u.id = l.author_id \
          LEFT JOIN company_profiles cp ON cp.user_id = l.author_id \

@@ -12,6 +12,7 @@ pub struct Listing {
     pub tech_stack: String,
     pub duration_weeks: i32,
     pub price_usd: Option<f64>,
+    pub payment_direction: String,
     pub format: String,
     pub outcome_criteria: Option<String>,
     pub visibility: String,
@@ -32,6 +33,7 @@ pub struct ListingWithAuthor {
     pub tech_stack: String,
     pub duration_weeks: i32,
     pub price_usd: Option<f64>,
+    pub payment_direction: String,
     pub format: String,
     pub outcome_criteria: Option<String>,
     pub visibility: String,
@@ -43,6 +45,7 @@ pub struct ListingWithAuthor {
     pub company_name: Option<String>,
     pub company_website: Option<String>,
     pub developer_level: Option<String>,
+    pub author_email_domain: Option<String>,
 }
 
 #[derive(Debug, Deserialize, Validate)]
@@ -55,6 +58,7 @@ pub struct CreateListingRequest {
     #[validate(range(min = 1, max = 52))]
     pub duration_weeks: i32,
     pub price_usd: Option<f64>,
+    pub payment_direction: Option<String>,
     pub format: String,
     pub outcome_criteria: Option<Vec<String>>,
     pub visibility: Option<String>,
@@ -71,6 +75,7 @@ pub struct UpdateListingRequest {
     #[validate(range(min = 1, max = 52))]
     pub duration_weeks: Option<i32>,
     pub price_usd: Option<f64>,
+    pub payment_direction: Option<String>,
     pub format: Option<String>,
     pub outcome_criteria: Option<Vec<String>>,
     pub visibility: Option<String>,
@@ -116,6 +121,7 @@ pub struct ListingResponse {
     pub tech_stack: Vec<String>,
     pub duration_weeks: i32,
     pub price_usd: Option<f64>,
+    pub payment_direction: String,
     pub format: String,
     pub outcome_criteria: Option<Vec<String>>,
     pub visibility: String,
@@ -127,6 +133,7 @@ pub struct ListingResponse {
     pub company_name: Option<String>,
     pub company_website: Option<String>,
     pub developer_level: Option<String>,
+    pub author_email_domain: Option<String>,
 }
 
 impl From<Listing> for ListingResponse {
@@ -146,6 +153,7 @@ impl From<Listing> for ListingResponse {
             tech_stack,
             duration_weeks: l.duration_weeks,
             price_usd: l.price_usd,
+            payment_direction: l.payment_direction,
             format: l.format,
             outcome_criteria,
             visibility: l.visibility,
@@ -157,6 +165,7 @@ impl From<Listing> for ListingResponse {
             company_name: None,
             company_website: None,
             developer_level: None,
+            author_email_domain: None,
         }
     }
 }
@@ -178,6 +187,7 @@ impl From<ListingWithAuthor> for ListingResponse {
             tech_stack,
             duration_weeks: l.duration_weeks,
             price_usd: l.price_usd,
+            payment_direction: l.payment_direction,
             format: l.format,
             outcome_criteria,
             visibility: l.visibility,
@@ -189,6 +199,7 @@ impl From<ListingWithAuthor> for ListingResponse {
             company_name: l.company_name,
             company_website: l.company_website,
             developer_level: l.developer_level,
+            author_email_domain: l.author_email_domain,
         }
     }
 }

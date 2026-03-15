@@ -19,6 +19,7 @@ export function ListingForm({ initialData, onSuccess }: ListingFormProps) {
     tech_stack: initialData?.tech_stack ?? [],
     duration_weeks: initialData?.duration_weeks ?? 4,
     price_usd: initialData?.price_usd ?? undefined,
+    payment_direction: initialData?.payment_direction ?? 'company_pays_developer',
     format: initialData?.format ?? 'remote',
     experience_level: initialData?.experience_level ?? 'any',
     visibility: initialData?.visibility ?? 'public',
@@ -161,6 +162,18 @@ export function ListingForm({ initialData, onSuccess }: ListingFormProps) {
             placeholder="Optional"
           />
         </div>
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700">Who pays?</label>
+        <select
+          value={form.payment_direction || 'company_pays_developer'}
+          onChange={(e) => setForm({ ...form, payment_direction: e.target.value })}
+          className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2"
+        >
+          <option value="company_pays_developer">Company pays developer</option>
+          <option value="developer_pays_company">Developer pays company</option>
+        </select>
       </div>
 
       <div>

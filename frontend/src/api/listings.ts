@@ -9,6 +9,7 @@ export interface Listing {
   tech_stack: string[];
   duration_weeks: number;
   price_usd: number | null;
+  payment_direction: string;
   format: string;
   outcome_criteria: string[] | null;
   visibility: string;
@@ -20,6 +21,7 @@ export interface Listing {
   company_name: string | null;
   company_website: string | null;
   developer_level: string | null;
+  author_email_domain: string | null;
 }
 
 export interface PaginatedResponse<T> {
@@ -51,6 +53,7 @@ export interface CreateListingRequest {
   tech_stack: string[];
   duration_weeks: number;
   price_usd?: number;
+  payment_direction?: string;
   format: string;
   outcome_criteria?: string[];
   visibility?: string;
