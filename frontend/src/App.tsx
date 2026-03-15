@@ -12,6 +12,7 @@ import { CreateListingPage } from './pages/CreateListingPage';
 import { MyApplicationsPage } from './pages/MyApplicationsPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { PublicProfilePage } from './pages/PublicProfilePage';
+import { PromoPage } from './pages/PromoPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -24,6 +25,9 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <Routes>
+          {/* Standalone page — own layout, no shared header */}
+          <Route path="/promo" element={<PromoPage />} />
+
           <Route element={<Layout />}>
             <Route path="/" element={<HomePage />} />
             <Route path="/login" element={<LoginPage />} />
