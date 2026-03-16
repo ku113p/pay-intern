@@ -19,6 +19,10 @@ import { PromoPage } from './pages/PromoPage';
 import { MyListingsPage } from './pages/MyListingsPage';
 import { EditListingPage } from './pages/EditListingPage';
 import { ReviewPage } from './pages/ReviewPage';
+import { NotificationsPage } from './pages/NotificationsPage';
+import { SavedListingsPage } from './pages/SavedListingsPage';
+import { MatchesPage } from './pages/MatchesPage';
+import { MessagesPage } from './pages/MessagesPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -50,6 +54,11 @@ function App() {
             <Route path="/listings/new" element={<ProtectedRoute><CreateListingPage /></ProtectedRoute>} />
             <Route path="/applications/:applicationId/review" element={<ProtectedRoute><ReviewPage /></ProtectedRoute>} />
             <Route path="/applications" element={<ProtectedRoute><MyApplicationsPage /></ProtectedRoute>} />
+            <Route path="/saved" element={<ProtectedRoute><SavedListingsPage /></ProtectedRoute>} />
+            <Route path="/matches" element={<ProtectedRoute><MatchesPage /></ProtectedRoute>} />
+            <Route path="/messages/:applicationId" element={<ProtectedRoute><MessagesPage /></ProtectedRoute>} />
+            <Route path="/messages" element={<ProtectedRoute><MessagesPage /></ProtectedRoute>} />
+            <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
           </Route>
         </Routes>

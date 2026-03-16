@@ -98,6 +98,17 @@ impl From<Application> for ApplicationResponse {
     }
 }
 
+#[derive(Debug, Serialize)]
+pub struct ContactInfoResponse {
+    pub user_id: String,
+    pub display_name: String,
+    pub email: String,
+    pub role: String,
+    pub github_url: Option<String>,
+    pub linkedin_url: Option<String>,
+    pub website: Option<String>,
+}
+
 impl From<ApplicationWithDetails> for ApplicationResponse {
     fn from(a: ApplicationWithDetails) -> Self {
         Self {

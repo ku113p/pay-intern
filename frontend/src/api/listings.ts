@@ -82,4 +82,7 @@ export const listingsApi = {
 
   getMyListings: (params?: { page?: number; per_page?: number }) =>
     api.get<PaginatedResponse<Listing>>('/listings/mine', { params }),
+
+  getSimilar: (id: string) =>
+    api.get<Listing[]>(`/listings/${id}/similar`),
 };

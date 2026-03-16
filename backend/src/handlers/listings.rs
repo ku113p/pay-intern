@@ -83,3 +83,12 @@ pub async fn my_listings(
     let listings = listing_service::get_user_listings(&auth.user_id, &query, &state.read_db).await?;
     Ok(Json(listings))
 }
+
+pub async fn similar_listings(
+    State(state): State<AppState>,
+    _auth: OptionalAuthUser,
+    Path(id): Path<String>,
+) -> Result<Json<Vec<ListingResponse>>, AppError> {
+    let listings = listing_service::get_similar_listings(&id, &state.read_db).await?;
+    Ok(Json(listings))
+}

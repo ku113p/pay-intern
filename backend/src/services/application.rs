@@ -7,7 +7,9 @@ use crate::config::Config;
 use crate::error::AppError;
 use crate::models::application::*;
 use crate::models::listing::{Listing, PaginatedResponse, PaginationMeta};
+use crate::models::user::User;
 use crate::services::email as email_service;
+use crate::services::notification as notif_service;
 
 pub async fn create_application(
     applicant_id: &Uuid,
@@ -57,6 +59,25 @@ pub async fn create_application(
         .fetch_one(write_db)
         .await?;
 
+    // Notify listing owner
+    let applicant_name = sqlx::query_scalar::<_, String>(
+        "SELECT display_name FROM users WHERE id = ?",
+    )
+    .bind(applicant_id.to_string())
+    .fetch_optional(write_db)
+    .await?
+    .unwrap_or_else(|| "Someone".into());
+
+    let _ = notif_service::create_notification(
+        &listing.author_id,
+        "application_received",
+        &format!("New application from {applicant_name}"),
+        &format!("Applied to \"{}\"", listing.title),
+        "/applications",
+        write_db,
+    )
+    .await;
+
     // Fire-and-forget email to listing owner
     let owner_email = sqlx::query_scalar::<_, String>(
         "SELECT u.email FROM users u WHERE u.id = ?",
@@ -67,17 +88,11 @@ pub async fn create_application(
 
     if let Some(email) = owner_email {
         let title = listing.title.clone();
-        let applicant_name = sqlx::query_scalar::<_, String>(
-            "SELECT display_name FROM users WHERE id = ?",
-        )
-        .bind(applicant_id.to_string())
-        .fetch_optional(write_db)
-        .await?
-        .unwrap_or_else(|| "Someone".into());
+        let applicant_name_for_email = applicant_name;
         let config = Arc::clone(config);
         tokio::spawn(async move {
             if let Err(e) =
-                email_service::send_new_application_email(&email, &title, &applicant_name, &config)
+                email_service::send_new_application_email(&email, &title, &applicant_name_for_email, &config)
                     .await
             {
                 tracing::warn!("Failed to send new application email: {e}");
@@ -211,6 +226,36 @@ pub async fn update_application_status(
         .fetch_one(write_db)
         .await?;
 
+    // Notify applicant on accept/reject
+    if new_status == "accepted" || new_status == "rejected" {
+        if let Some(ref title) = listing_title_for_email {
+            let kind = if new_status == "accepted" {
+                "application_accepted"
+            } else {
+                "application_rejected"
+            };
+            let notif_title = if new_status == "accepted" {
+                format!("Application accepted: {title}")
+            } else {
+                format!("Application update: {title}")
+            };
+            let body = if new_status == "accepted" {
+                format!("Your application to \"{title}\" was accepted!")
+            } else {
+                format!("Your application to \"{title}\" was not selected")
+            };
+            let _ = notif_service::create_notification(
+                &app.applicant_id,
+                kind,
+                &notif_title,
+                &body,
+                "/applications",
+                write_db,
+            )
+            .await;
+        }
+    }
+
     // Fire-and-forget email to applicant on accept/reject
     if let Some(title) = listing_title_for_email {
         let applicant_email = sqlx::query_scalar::<_, String>(
@@ -235,4 +280,88 @@ pub async fn update_application_status(
     }
 
     Ok(updated)
+}
+
+pub async fn get_contact_info(
+    application_id: &str,
+    caller_id: &Uuid,
+    read_db: &SqlitePool,
+) -> Result<ContactInfoResponse, AppError> {
+    let app = sqlx::query_as::<_, Application>("SELECT * FROM applications WHERE id = ?")
+        .bind(application_id)
+        .fetch_optional(read_db)
+        .await?
+        .ok_or_else(|| AppError::NotFound("Application not found".into()))?;
+
+    if app.status != "accepted" {
+        return Err(AppError::BadRequest(
+            "Contact info is only available for accepted applications".into(),
+        ));
+    }
+
+    let listing = sqlx::query_as::<_, Listing>("SELECT * FROM listings WHERE id = ?")
+        .bind(&app.listing_id)
+        .fetch_one(read_db)
+        .await?;
+
+    let caller_str = caller_id.to_string();
+    let is_applicant = app.applicant_id == caller_str;
+    let is_owner = listing.author_id == caller_str;
+
+    if !is_applicant && !is_owner {
+        return Err(AppError::Forbidden(
+            "Only the applicant or listing owner can view contact info".into(),
+        ));
+    }
+
+    // Determine the other party
+    let other_user_id = if is_applicant {
+        &listing.author_id
+    } else {
+        &app.applicant_id
+    };
+
+    let other_user = sqlx::query_as::<_, User>("SELECT * FROM users WHERE id = ?")
+        .bind(other_user_id)
+        .fetch_one(read_db)
+        .await?;
+
+    // Try to get contact_email override and profile links
+    let (contact_email, github_url, linkedin_url, website) = if other_user.role == "developer" {
+        let row = sqlx::query_as::<_, (Option<String>, Option<String>, Option<String>)>(
+            "SELECT contact_email, github_url, linkedin_url FROM developer_profiles WHERE user_id = ?",
+        )
+        .bind(other_user_id)
+        .fetch_optional(read_db)
+        .await?;
+
+        match row {
+            Some((ce, gh, li)) => (ce, gh, li, None),
+            None => (None, None, None, None),
+        }
+    } else {
+        let row = sqlx::query_as::<_, (Option<String>, Option<String>)>(
+            "SELECT contact_email, website FROM company_profiles WHERE user_id = ?",
+        )
+        .bind(other_user_id)
+        .fetch_optional(read_db)
+        .await?;
+
+        match row {
+            Some((ce, ws)) => (ce, None, None, ws),
+            None => (None, None, None, None),
+        }
+    };
+
+    let email = contact_email.unwrap_or(other_user.email);
+
+    Ok(ContactInfoResponse {
+        user_id: other_user.id,
+        display_name: other_user.display_name,
+        email,
+        role: other_user.role,
+        github_url,
+        linkedin_url,
+        website,
+    })
 }

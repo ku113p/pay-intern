@@ -15,6 +15,7 @@ export interface DeveloperProfile {
   github_url: string | null;
   linkedin_url: string | null;
   level: string;
+  contact_email?: string | null;
 }
 
 export interface CompanyProfile {
@@ -24,6 +25,17 @@ export interface CompanyProfile {
   website: string | null;
   size: string;
   tech_stack: string[];
+  contact_email?: string | null;
+}
+
+export interface ProfilePreview {
+  user_id: string;
+  display_name: string;
+  role: string;
+  bio_excerpt: string;
+  tech_stack: string[];
+  level_or_size: string;
+  active_listing_count: number;
 }
 
 export const profilesApi = {
@@ -40,4 +52,5 @@ export const profilesApi = {
 
   getPublicDeveloperProfile: (id: string) => api.get<DeveloperProfile>(`/profiles/developer/${id}`),
   getPublicCompanyProfile: (id: string) => api.get<CompanyProfile>(`/profiles/company/${id}`),
+  getProfilePreview: (id: string) => api.get<ProfilePreview>(`/profiles/preview/${id}`),
 };

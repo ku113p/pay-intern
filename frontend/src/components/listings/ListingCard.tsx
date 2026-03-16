@@ -1,8 +1,12 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { format } from 'timeago.js';
 import type { Listing } from '../../api/listings';
+import { SaveButton } from './SaveButton';
+import { InterestButton } from './InterestButton';
+import { ProfileAvatar } from '../common/ProfileAvatar';
 
-export function ListingCard({ listing, currentUserId }: { listing: Listing; currentUserId?: string }) {
+export function ListingCard({ listing, currentUserId, currentUserRole }: { listing: Listing; currentUserId?: string; currentUserRole?: string }) {
+  const navigate = useNavigate();
   return (
     <Link
       to={`/listings/${listing.id}`}
@@ -12,10 +16,20 @@ export function ListingCard({ listing, currentUserId }: { listing: Listing; curr
         <div>
           <h3 className="text-lg font-semibold text-gray-900">{listing.title}</h3>
           {(listing.company_name || listing.author_display_name) && (
-            <p className="text-xs text-gray-400 mt-0.5">
-              {listing.listing_type === 'company'
-                ? listing.company_name || listing.author_display_name
-                : listing.author_display_name}
+            <p className="text-xs text-gray-400 mt-0.5 flex items-center gap-1.5">
+              <ProfileAvatar
+                name={listing.author_display_name || listing.company_name || ''}
+                userId={listing.author_id}
+                size="sm"
+              />
+              <button
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); navigate(`/profiles/${listing.listing_type}/${listing.author_id}`); }}
+                className="text-indigo-600 hover:underline cursor-pointer"
+              >
+                {listing.listing_type === 'company'
+                  ? listing.company_name || listing.author_display_name
+                  : listing.author_display_name}
+              </button>
               {listing.developer_level && listing.listing_type === 'developer' && (
                 <span> · {listing.developer_level}</span>
               )}
@@ -46,7 +60,19 @@ export function ListingCard({ listing, currentUserId }: { listing: Listing; curr
             <span className="text-gray-400"> · {format(listing.created_at + 'Z')}</span>
           </p>
         </div>
-        <div className="flex gap-1">
+        <div className="flex items-center gap-1">
+          {currentUserId && (
+            <>
+              <InterestButton
+                listingId={listing.id}
+                listingType={listing.listing_type}
+                listingAuthorId={listing.author_id}
+                userRole={currentUserRole}
+                userId={currentUserId}
+              />
+              <SaveButton listingId={listing.id} />
+            </>
+          )}
           {currentUserId && listing.author_id === currentUserId && (
             <span className="text-xs font-medium px-2 py-1 rounded bg-indigo-100 text-indigo-700">
               Yours

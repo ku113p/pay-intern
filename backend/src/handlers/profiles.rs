@@ -79,3 +79,12 @@ pub async fn get_public_company_profile(
     let profile = user_service::get_company_profile(&user_id, &state.read_db).await?;
     Ok(Json(profile.into()))
 }
+
+pub async fn get_profile_preview(
+    State(state): State<AppState>,
+    _auth: OptionalAuthUser,
+    Path(user_id): Path<String>,
+) -> Result<Json<ProfilePreviewResponse>, AppError> {
+    let preview = user_service::get_profile_preview(&user_id, &state.read_db).await?;
+    Ok(Json(preview.into()))
+}

@@ -1,8 +1,14 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import type { Listing } from '../../api/listings';
+import { listingsApi } from '../../api/listings';
 import { applicationsApi } from '../../api/applications';
 import { useAuthStore } from '../../stores/auth';
+import { SaveButton } from './SaveButton';
+import { InterestButton } from './InterestButton';
+import { ProfileAvatar } from '../common/ProfileAvatar';
 
 export function ListingDetail({ listing }: { listing: Listing }) {
   const user = useAuthStore((s) => s.user);
@@ -12,6 +18,11 @@ export function ListingDetail({ listing }: { listing: Listing }) {
   const [message, setMessage] = useState('');
   const [applying, setApplying] = useState(false);
   const [applied, setApplied] = useState(false);
+
+  const { data: similarListings } = useQuery({
+    queryKey: ['similar-listings', listing.id],
+    queryFn: () => listingsApi.getSimilar(listing.id).then((r) => r.data),
+  });
 
   const handleApply = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,6 +64,20 @@ export function ListingDetail({ listing }: { listing: Listing }) {
           </span>
         </div>
       </div>
+
+      {user && (
+        <div className="flex gap-2">
+          <SaveButton listingId={listing.id} variant="full" />
+          <InterestButton
+            listingId={listing.id}
+            listingType={listing.listing_type}
+            listingAuthorId={listing.author_id}
+            userRole={user.role}
+            userId={user.id}
+            variant="full"
+          />
+        </div>
+      )}
 
       <div className={`rounded-lg p-4 ${
         !listing.price_usd || listing.price_usd === 0
@@ -133,9 +158,66 @@ export function ListingDetail({ listing }: { listing: Listing }) {
         <p className="text-sm text-green-700">Application sent! Check your applications page for status updates.</p>
       )}
 
+      {/* Author section */}
+      <div className="bg-gray-50 rounded-lg p-4 flex items-center gap-3">
+        <ProfileAvatar
+          name={listing.author_display_name || listing.company_name || 'User'}
+          userId={listing.author_id}
+          size="md"
+        />
+        <div>
+          <Link
+            to={`/profiles/${listing.listing_type}/${listing.author_id}`}
+            className="text-sm font-medium text-indigo-600 hover:underline"
+          >
+            {listing.listing_type === 'company'
+              ? listing.company_name || listing.author_display_name
+              : listing.author_display_name}
+          </Link>
+          <p className="text-xs text-gray-500">
+            {listing.listing_type === 'company' && listing.company_name && listing.author_display_name
+              ? listing.author_display_name
+              : listing.listing_type}
+            {listing.developer_level && ` · ${listing.developer_level}`}
+          </p>
+        </div>
+      </div>
+
       <p className="text-xs text-gray-400">
         Posted {new Date(listing.created_at).toLocaleDateString()}
       </p>
+
+      {/* Similar listings */}
+      {similarListings && similarListings.length > 0 && (
+        <div className="mt-2">
+          <h3 className="text-lg font-semibold text-gray-900 mb-3">Similar Listings</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {similarListings.map((sim) => (
+              <Link
+                key={sim.id}
+                to={`/listings/${sim.id}`}
+                className="block border border-gray-200 rounded-lg p-3 hover:shadow-md transition-shadow"
+              >
+                <h4 className="text-sm font-medium text-gray-900 truncate">{sim.title}</h4>
+                <p className="text-xs text-gray-500 mt-1">
+                  {sim.duration_weeks}w · {sim.format}
+                  {sim.price_usd != null && sim.price_usd > 0
+                    ? ` · $${sim.price_usd.toLocaleString()}`
+                    : ' · Free'}
+                </p>
+                <div className="flex flex-wrap gap-1 mt-2">
+                  {sim.tech_stack.slice(0, 4).map((t) => (
+                    <span key={t} className="text-xs bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded">{t}</span>
+                  ))}
+                  {sim.tech_stack.length > 4 && (
+                    <span className="text-xs text-gray-400">+{sim.tech_stack.length - 4}</span>
+                  )}
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

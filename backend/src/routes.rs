@@ -55,14 +55,27 @@ pub fn build_router(state: AppState) -> Router {
         .route(
             "/company/{id}",
             get(handlers::profiles::get_public_company_profile),
+        )
+        .route(
+            "/preview/{id}",
+            get(handlers::profiles::get_profile_preview),
         );
 
     let listing_routes = Router::new()
         .route("/", post(handlers::listings::create_listing))
         .route("/mine", get(handlers::listings::my_listings))
+        .route("/saved", get(handlers::interests::get_saved_listings))
         .route("/{id}", get(handlers::listings::get_listing))
         .route("/{id}", put(handlers::listings::update_listing))
         .route("/{id}", delete(handlers::listings::delete_listing))
+        .route("/{id}/similar", get(handlers::listings::similar_listings))
+        .route("/{id}/save", post(handlers::interests::save_listing))
+        .route("/{id}/save", delete(handlers::interests::unsave_listing))
+        .route("/{id}/interest", post(handlers::interests::add_interest))
+        .route(
+            "/{id}/interest",
+            delete(handlers::interests::remove_interest),
+        )
         .route(
             "/feed/developers",
             get(handlers::listings::developer_feed),
@@ -78,6 +91,10 @@ pub fn build_router(state: AppState) -> Router {
         .route(
             "/{id}/status",
             put(handlers::applications::update_application_status),
+        )
+        .route(
+            "/{id}/contact",
+            get(handlers::applications::get_contact_info),
         );
 
     let review_routes = Router::new()
@@ -88,6 +105,34 @@ pub fn build_router(state: AppState) -> Router {
             put(handlers::outcome_reviews::consent_review),
         );
 
+    let interest_routes = Router::new()
+        .route("/received", get(handlers::interests::get_received_interests))
+        .route("/matches", get(handlers::interests::get_matches));
+
+    let notification_routes = Router::new()
+        .route("/", get(handlers::notifications::get_notifications))
+        .route("/unread-count", get(handlers::notifications::get_unread_count))
+        .route("/{id}/read", put(handlers::notifications::mark_read))
+        .route("/read-all", put(handlers::notifications::mark_all_read))
+        .route("/preferences", get(handlers::notifications::get_preferences))
+        .route(
+            "/preferences",
+            put(handlers::notifications::update_preferences),
+        );
+
+    let message_routes = Router::new()
+        .route("/conversations", get(handlers::messages::get_conversations))
+        .route(
+            "/conversations/unread-count",
+            get(handlers::messages::get_conversations_unread_count),
+        )
+        .route("/{application_id}", get(handlers::messages::get_messages))
+        .route("/{application_id}", post(handlers::messages::send_message))
+        .route(
+            "/{application_id}/read",
+            put(handlers::messages::mark_read),
+        );
+
     Router::new()
         .route("/health", get(health))
         .nest("/auth", auth_routes)
@@ -96,6 +141,9 @@ pub fn build_router(state: AppState) -> Router {
         .nest("/listings", listing_routes)
         .nest("/applications", application_routes)
         .nest("/outcome-reviews", review_routes)
+        .nest("/notifications", notification_routes)
+        .nest("/interests", interest_routes)
+        .nest("/messages", message_routes)
         .layer(RequestBodyLimitLayer::new(1024 * 1024)) // 1MB
         .layer(cors)
         .layer(TraceLayer::new_for_http())

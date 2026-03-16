@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import { applicationsApi } from '../../api/applications';
 import { useAuthStore } from '../../stores/auth';
 import { StatusBadge } from '../common/StatusBadge';
+import { ContactInfoCard } from './ContactInfoCard';
 
 export function ApplicationList() {
   const user = useAuthStore((s) => s.user);
@@ -61,12 +62,23 @@ export function ApplicationList() {
                         Withdraw
                       </button>
                     )}
+                    {app.status === 'accepted' && (
+                      <Link
+                        to={`/messages/${app.id}`}
+                        className="text-xs text-indigo-600 hover:text-indigo-800 border border-indigo-200 px-2 py-0.5 rounded"
+                      >
+                        Message
+                      </Link>
+                    )}
                   </div>
                 </div>
                 <p className="text-sm text-gray-700 mt-2">{app.message}</p>
                 <p className="text-xs text-gray-400 mt-2">
                   {new Date(app.created_at).toLocaleDateString()}
                 </p>
+                {app.status === 'accepted' && (
+                  <ContactInfoCard applicationId={app.id} />
+                )}
               </div>
             ))}
           </div>
@@ -119,16 +131,27 @@ export function ApplicationList() {
                     </>
                   )}
                   {app.status === 'accepted' && (
-                    <button
-                      onClick={() => navigate(`/applications/${app.id}/review`, {
-                        state: { listingId: app.listing_id, listingTitle: app.listing_title, applicantName: app.applicant_name }
-                      })}
-                      className="bg-indigo-600 text-white px-3 py-1 rounded text-sm hover:bg-indigo-700"
-                    >
-                      Write Review
-                    </button>
+                    <>
+                      <button
+                        onClick={() => navigate(`/applications/${app.id}/review`, {
+                          state: { listingId: app.listing_id, listingTitle: app.listing_title, applicantName: app.applicant_name }
+                        })}
+                        className="bg-indigo-600 text-white px-3 py-1 rounded text-sm hover:bg-indigo-700"
+                      >
+                        Write Review
+                      </button>
+                      <Link
+                        to={`/messages/${app.id}`}
+                        className="bg-white text-indigo-600 border border-indigo-200 px-3 py-1 rounded text-sm hover:bg-indigo-50"
+                      >
+                        Message
+                      </Link>
+                    </>
                   )}
                 </div>
+                {app.status === 'accepted' && (
+                  <ContactInfoCard applicationId={app.id} />
+                )}
               </div>
             ))}
           </div>

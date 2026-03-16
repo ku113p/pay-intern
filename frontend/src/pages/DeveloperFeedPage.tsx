@@ -39,7 +39,7 @@ export function DeveloperFeedPage() {
           {error && <p className="text-red-600">Failed to load listings</p>}
           {data?.data.length === 0 && <p className="text-gray-500">No listings found.</p>}
           {data?.data.map((listing) => (
-            <ListingCard key={listing.id} listing={listing} currentUserId={user?.id} />
+            <ListingCard key={listing.id} listing={listing} currentUserId={user?.id} currentUserRole={user?.role} />
           ))}
           {data && (
             <Pagination

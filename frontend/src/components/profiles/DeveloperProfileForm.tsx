@@ -35,6 +35,7 @@ export function DeveloperProfileForm() {
         github_url: profile.github_url || undefined,
         linkedin_url: profile.linkedin_url || undefined,
         level: profile.level,
+        contact_email: profile.contact_email || undefined,
       });
       setProfile(res.data);
       toast.success('Profile saved!');
@@ -110,6 +111,18 @@ export function DeveloperProfileForm() {
           className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2"
           placeholder="https://linkedin.com/in/username"
         />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700">Contact Email</label>
+        <input
+          type="email"
+          value={profile.contact_email || ''}
+          onChange={(e) => setProfile({ ...profile, contact_email: e.target.value || null })}
+          className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2"
+          placeholder="work@example.com"
+        />
+        <p className="text-xs text-gray-500 mt-1">Shared when an application is accepted. Leave blank to use your account email.</p>
       </div>
 
       <button type="submit" disabled={saving} className="bg-indigo-600 text-white px-6 py-2 rounded-md hover:bg-indigo-700 disabled:opacity-50">

@@ -9,6 +9,15 @@ use crate::models::listing::PaginatedResponse;
 use crate::services::application as app_service;
 use crate::AppState;
 
+pub async fn get_contact_info(
+    State(state): State<AppState>,
+    auth: AuthUser,
+    Path(id): Path<String>,
+) -> Result<Json<ContactInfoResponse>, AppError> {
+    let contact = app_service::get_contact_info(&id, &auth.user_id, &state.read_db).await?;
+    Ok(Json(contact))
+}
+
 pub async fn create_application(
     State(state): State<AppState>,
     auth: AuthUser,

@@ -20,6 +20,7 @@ pub struct DeveloperProfile {
     pub github_url: Option<String>,
     pub linkedin_url: Option<String>,
     pub level: String,
+    pub contact_email: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
@@ -30,6 +31,7 @@ pub struct CompanyProfile {
     pub website: Option<String>,
     pub size: String,
     pub tech_stack: String, // JSON array stored as TEXT
+    pub contact_email: Option<String>,
 }
 
 // DTOs
@@ -48,6 +50,7 @@ pub struct UpdateDeveloperProfileRequest {
     pub github_url: Option<String>,
     pub linkedin_url: Option<String>,
     pub level: Option<String>,
+    pub contact_email: Option<String>,
 }
 
 #[derive(Debug, Deserialize, Validate)]
@@ -59,6 +62,7 @@ pub struct UpdateCompanyProfileRequest {
     pub website: Option<String>,
     pub size: Option<String>,
     pub tech_stack: Option<Vec<String>>,
+    pub contact_email: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
@@ -90,6 +94,8 @@ pub struct DeveloperProfileResponse {
     pub github_url: Option<String>,
     pub linkedin_url: Option<String>,
     pub level: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub contact_email: Option<String>,
 }
 
 impl From<DeveloperProfile> for DeveloperProfileResponse {
@@ -103,6 +109,7 @@ impl From<DeveloperProfile> for DeveloperProfileResponse {
             github_url: p.github_url,
             linkedin_url: p.linkedin_url,
             level: p.level,
+            contact_email: p.contact_email,
         }
     }
 }
@@ -115,6 +122,8 @@ pub struct CompanyProfileResponse {
     pub website: Option<String>,
     pub size: String,
     pub tech_stack: Vec<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub contact_email: Option<String>,
 }
 
 impl From<CompanyProfile> for CompanyProfileResponse {
@@ -128,6 +137,45 @@ impl From<CompanyProfile> for CompanyProfileResponse {
             website: p.website,
             size: p.size,
             tech_stack,
+            contact_email: p.contact_email,
+        }
+    }
+}
+
+#[derive(Debug, Serialize, sqlx::FromRow)]
+pub struct ProfilePreview {
+    pub user_id: String,
+    pub display_name: String,
+    pub role: String,
+    pub bio_excerpt: String,
+    pub tech_stack: String,
+    pub level_or_size: String,
+    pub active_listing_count: i64,
+}
+
+#[derive(Debug, Serialize)]
+pub struct ProfilePreviewResponse {
+    pub user_id: String,
+    pub display_name: String,
+    pub role: String,
+    pub bio_excerpt: String,
+    pub tech_stack: Vec<String>,
+    pub level_or_size: String,
+    pub active_listing_count: i64,
+}
+
+impl From<ProfilePreview> for ProfilePreviewResponse {
+    fn from(p: ProfilePreview) -> Self {
+        let tech_stack: Vec<String> =
+            serde_json::from_str(&p.tech_stack).unwrap_or_default();
+        Self {
+            user_id: p.user_id,
+            display_name: p.display_name,
+            role: p.role,
+            bio_excerpt: p.bio_excerpt,
+            tech_stack,
+            level_or_size: p.level_or_size,
+            active_listing_count: p.active_listing_count,
         }
     }
 }

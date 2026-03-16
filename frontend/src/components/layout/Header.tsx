@@ -1,11 +1,21 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../../hooks/useAuth';
+import { NotificationBell } from '../notifications/NotificationBell';
+import { messagesApi } from '../../api/messages';
 
 export function Header() {
   const { isAuthenticated, user, logout } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
   const { pathname } = useLocation();
+
+  const { data: msgUnread } = useQuery({
+    queryKey: ['messages-unread'],
+    queryFn: () => messagesApi.getUnreadCount().then((r) => r.data),
+    enabled: isAuthenticated,
+    refetchInterval: 15_000,
+  });
 
   useEffect(() => {
     setMenuOpen(false);
@@ -65,9 +75,24 @@ export function Header() {
               <Link to="/listings/mine" className="text-gray-600 hover:text-gray-900">
                 My Listings
               </Link>
+              <Link to="/saved" className="text-gray-600 hover:text-gray-900">
+                Saved
+              </Link>
+              <Link to="/matches" className="text-gray-600 hover:text-gray-900">
+                Matches
+              </Link>
               <Link to="/applications" className="text-gray-600 hover:text-gray-900">
                 Applications
               </Link>
+              <Link to="/messages" className="text-gray-600 hover:text-gray-900 relative">
+                Messages
+                {msgUnread && msgUnread.count > 0 && (
+                  <span className="absolute -top-1.5 -right-3 bg-indigo-600 text-white text-xs rounded-full px-1 min-w-[16px] text-center leading-4">
+                    {msgUnread.count}
+                  </span>
+                )}
+              </Link>
+              <NotificationBell />
               <Link to="/profile" className="text-gray-600 hover:text-gray-900">
                 {user?.display_name || 'Profile'}
               </Link>

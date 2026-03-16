@@ -15,6 +15,16 @@ export interface Application {
   applicant_role?: string;
 }
 
+export interface ContactInfo {
+  user_id: string;
+  display_name: string;
+  email: string;
+  role: string;
+  github_url: string | null;
+  linkedin_url: string | null;
+  website: string | null;
+}
+
 export const applicationsApi = {
   create: (listingId: string, message: string) =>
     api.post<Application>('/applications', { listing_id: listingId, message }),
@@ -24,4 +34,7 @@ export const applicationsApi = {
 
   updateStatus: (id: string, status: 'accepted' | 'rejected' | 'withdrawn') =>
     api.put<Application>(`/applications/${id}/status`, { status }),
+
+  getContact: (id: string) =>
+    api.get<ContactInfo>(`/applications/${id}/contact`),
 };

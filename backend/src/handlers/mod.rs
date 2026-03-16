@@ -1,6 +1,9 @@
 pub mod applications;
 pub mod auth;
+pub mod interests;
+pub mod messages;
 pub mod listings;
+pub mod notifications;
 pub mod outcome_reviews;
 pub mod profiles;
 pub mod users;

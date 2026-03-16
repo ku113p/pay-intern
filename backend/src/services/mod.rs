@@ -1,6 +1,9 @@
 pub mod application;
 pub mod auth;
 pub mod email;
+pub mod interest;
+pub mod message;
 pub mod listing;
+pub mod notification;
 pub mod outcome_review;
 pub mod user;

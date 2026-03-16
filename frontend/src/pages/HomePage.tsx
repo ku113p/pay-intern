@@ -112,7 +112,7 @@ function Dashboard({ user }: { user: UserResponse }) {
                 {listing.status !== 'active' && (
                   <div className="absolute inset-0 bg-gray-50/60 rounded-lg z-10 pointer-events-none" />
                 )}
-                <ListingCard listing={listing} currentUserId={user.id} />
+                <ListingCard listing={listing} currentUserId={user.id} currentUserRole={user.role} />
               </div>
             ))}
             {myListings.pagination.total > 3 && (
@@ -144,7 +144,7 @@ function Dashboard({ user }: { user: UserResponse }) {
           </h2>
           <div className="space-y-3">
             {feed.data.map((listing) => (
-              <ListingCard key={listing.id} listing={listing} currentUserId={user.id} />
+              <ListingCard key={listing.id} listing={listing} currentUserId={user.id} currentUserRole={user.role} />
             ))}
           </div>
           <div className="text-center mt-4">

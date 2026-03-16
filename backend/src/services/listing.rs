@@ -423,3 +423,46 @@ pub async fn get_user_listings(
         },
     })
 }
+
+pub async fn get_similar_listings(
+    listing_id: &str,
+    read_db: &SqlitePool,
+) -> Result<Vec<ListingResponse>, AppError> {
+    let listing = sqlx::query_as::<_, Listing>("SELECT * FROM listings WHERE id = ?")
+        .bind(listing_id)
+        .fetch_one(read_db)
+        .await?;
+
+    // Find similar listings: same type, active, not same author, not same listing
+    // Rank by tech_stack overlap using json_each
+    let results = sqlx::query_as::<_, ListingWithAuthor>(
+        "SELECT l.id, l.author_id, l.type, l.title, l.description, l.tech_stack, \
+         l.duration_weeks, l.price_usd, l.payment_direction, l.format, l.outcome_criteria, \
+         l.visibility, l.status, l.experience_level, l.created_at, l.updated_at, \
+         u.display_name AS author_display_name, \
+         cp.company_name AS company_name, \
+         cp.website AS company_website, \
+         dp.level AS developer_level, \
+         SUBSTR(u.email, INSTR(u.email, '@') + 1) AS author_email_domain \
+         FROM listings l \
+         JOIN users u ON u.id = l.author_id \
+         LEFT JOIN company_profiles cp ON cp.user_id = l.author_id \
+         LEFT JOIN developer_profiles dp ON dp.user_id = l.author_id \
+         WHERE l.id != ? AND l.type = ? AND l.status = 'active' AND l.visibility = 'public' \
+           AND l.author_id != ? \
+         ORDER BY \
+           (SELECT COUNT(*) FROM json_each(l.tech_stack) je \
+            WHERE je.value IN (SELECT value FROM json_each(?))) DESC, \
+           ABS(l.duration_weeks - ?) ASC \
+         LIMIT 4",
+    )
+    .bind(listing_id)
+    .bind(&listing.listing_type)
+    .bind(&listing.author_id)
+    .bind(&listing.tech_stack)
+    .bind(listing.duration_weeks)
+    .fetch_all(read_db)
+    .await?;
+
+    Ok(results.into_iter().map(Into::into).collect())
+}
