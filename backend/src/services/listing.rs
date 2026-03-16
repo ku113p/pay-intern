@@ -383,7 +383,7 @@ pub async fn get_user_listings(
     let total = sqlx::query_scalar::<_, i64>(
         "SELECT COUNT(*) FROM listings WHERE author_id = ?"
     )
-    .bind(user_id)
+    .bind(user_id.to_string())
     .fetch_one(read_db)
     .await? as u32;
 
@@ -404,7 +404,7 @@ pub async fn get_user_listings(
          ORDER BY l.created_at DESC \
          LIMIT ? OFFSET ?",
     )
-    .bind(user_id)
+    .bind(user_id.to_string())
     .bind(query.per_page() as i64)
     .bind(query.offset() as i64)
     .fetch_all(read_db)

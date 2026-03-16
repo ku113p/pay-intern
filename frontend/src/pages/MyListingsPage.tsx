@@ -9,7 +9,7 @@ import { Pagination } from '../components/common/Pagination';
 
 export function MyListingsPage() {
   const [page, setPage] = useState(1);
-  const { data, isLoading, error } = useMyListings({ page });
+  const { data, isPending, error } = useMyListings({ page });
   const queryClient = useQueryClient();
   const navigate = useNavigate();
 
@@ -41,7 +41,7 @@ export function MyListingsPage() {
         </Link>
       </div>
 
-      {isLoading && <p className="text-gray-500">Loading...</p>}
+      {isPending && <p className="text-gray-500">Loading...</p>}
       {error && <p className="text-red-600">Failed to load listings</p>}
 
       {data?.data.length === 0 && (
