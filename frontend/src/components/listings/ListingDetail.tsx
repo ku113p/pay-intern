@@ -9,6 +9,7 @@ import { useAuthStore } from '../../stores/auth';
 import { SaveButton } from './SaveButton';
 import { InterestButton } from './InterestButton';
 import { ProfileAvatar } from '../common/ProfileAvatar';
+import { trackEvent } from '../../lib/analytics';
 
 export function ListingDetail({ listing }: { listing: Listing }) {
   const user = useAuthStore((s) => s.user);
@@ -31,6 +32,7 @@ export function ListingDetail({ listing }: { listing: Listing }) {
       await applicationsApi.create(listing.id, message);
       setApplied(true);
       toast.success('Application sent!');
+      trackEvent('application_sent', { listing_id: listing.id });
     } catch (err: any) {
       toast.error(err.response?.data?.error || 'Failed to apply');
     } finally {

@@ -41,7 +41,8 @@ pub fn build_router(state: AppState) -> Router {
 
     let user_routes = Router::new()
         .route("/me", get(handlers::users::get_me))
-        .route("/me", put(handlers::users::update_me));
+        .route("/me", put(handlers::users::update_me))
+        .route("/me", delete(handlers::users::delete_me));
 
     let profile_routes = Router::new()
         .route("/developer", get(handlers::profiles::get_my_developer_profile))

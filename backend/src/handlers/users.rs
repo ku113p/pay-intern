@@ -1,4 +1,5 @@
 use axum::extract::State;
+use axum::http::StatusCode;
 use axum::Json;
 use validator::Validate;
 
@@ -24,4 +25,12 @@ pub async fn update_me(
     req.validate()?;
     let user = user_service::update_user(&auth.user_id, &req, &state.write_db).await?;
     Ok(Json(user.into()))
+}
+
+pub async fn delete_me(
+    State(state): State<AppState>,
+    auth: AuthUser,
+) -> Result<StatusCode, AppError> {
+    user_service::delete_account(&auth.user_id, &state.write_db).await?;
+    Ok(StatusCode::NO_CONTENT)
 }

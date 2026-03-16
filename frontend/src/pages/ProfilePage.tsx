@@ -1,13 +1,17 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 import { useAuthStore } from '../stores/auth';
 import { profilesApi } from '../api/profiles';
 import { DeveloperProfileForm } from '../components/profiles/DeveloperProfileForm';
 import { CompanyProfileForm } from '../components/profiles/CompanyProfileForm';
 
 export function ProfilePage() {
-  const { user, setUser } = useAuthStore();
+  const { user, setUser, logout } = useAuthStore();
+  const navigate = useNavigate();
   const [editingName, setEditingName] = useState(false);
   const [displayName, setDisplayName] = useState(user?.display_name || '');
+  const [deleting, setDeleting] = useState(false);
 
   const saveName = async () => {
     try {
@@ -16,6 +20,22 @@ export function ProfilePage() {
       setEditingName(false);
     } catch {
       // ignore
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    if (!window.confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
+      return;
+    }
+    setDeleting(true);
+    try {
+      await profilesApi.deleteAccount();
+      logout();
+      navigate('/');
+      toast.success('Account deleted');
+    } catch {
+      toast.error('Failed to delete account');
+      setDeleting(false);
     }
   };
 
@@ -57,6 +77,20 @@ export function ProfilePage() {
           {user.role === 'developer' ? 'Developer' : 'Company'} Profile
         </h2>
         {user.role === 'developer' ? <DeveloperProfileForm /> : <CompanyProfileForm />}
+      </div>
+
+      <div className="border border-red-200 rounded-lg p-5">
+        <h2 className="font-semibold text-red-700 mb-2">Danger Zone</h2>
+        <p className="text-sm text-gray-600 mb-4">
+          Permanently delete your account and anonymize all associated data. This action cannot be undone.
+        </p>
+        <button
+          onClick={handleDeleteAccount}
+          disabled={deleting}
+          className="bg-red-600 text-white px-4 py-2 rounded-md text-sm hover:bg-red-700 disabled:opacity-50"
+        >
+          {deleting ? 'Deleting...' : 'Delete My Account'}
+        </button>
       </div>
     </div>
   );

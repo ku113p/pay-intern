@@ -21,7 +21,7 @@ RUN --mount=type=bind,source=src,target=src \
 # Stage 2: Runtime
 FROM alpine:3.21 AS final
 
-RUN apk add --no-cache sqlite-libs libgcc ca-certificates wget
+RUN apk add --no-cache sqlite-libs sqlite libgcc ca-certificates wget
 
 ARG UID=10001
 RUN adduser \

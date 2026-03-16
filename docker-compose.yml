@@ -1,9 +1,25 @@
 services:
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy-data:/data
+      - caddy-config:/config
+    environment:
+      - DOMAIN=${DOMAIN:-localhost}
+    depends_on:
+      - frontend
+
   backend:
     image: ghcr.io/ku113p/pay-intern/backend:latest
     restart: unless-stopped
-    ports:
-      - "3000:3000"
+    expose:
+      - "3000"
     volumes:
       - backend-data:/app/data
     env_file:
@@ -17,11 +33,13 @@ services:
   frontend:
     image: ghcr.io/ku113p/pay-intern/frontend:latest
     restart: unless-stopped
-    ports:
-      - "80:80"
+    expose:
+      - "80"
     depends_on:
       backend:
         condition: service_healthy
 
 volumes:
   backend-data:
+  caddy-data:
+  caddy-config:

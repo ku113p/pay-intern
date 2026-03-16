@@ -41,6 +41,7 @@ export interface ProfilePreview {
 export const profilesApi = {
   getMe: () => api.get<UserResponse>('/users/me'),
   updateMe: (displayName: string) => api.put<UserResponse>('/users/me', { display_name: displayName }),
+  deleteAccount: () => api.delete('/users/me'),
 
   getMyDeveloperProfile: () => api.get<DeveloperProfile>('/profiles/developer'),
   updateDeveloperProfile: (data: Partial<Omit<DeveloperProfile, 'user_id'>>) =>
