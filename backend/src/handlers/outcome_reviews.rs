@@ -14,7 +14,7 @@ pub async fn create_review(
     Json(req): Json<CreateOutcomeReviewRequest>,
 ) -> Result<Json<OutcomeReviewResponse>, AppError> {
     req.validate()?;
-    let review = review_service::create_review(&auth.user_id, &req, &state.write_db).await?;
+    let review = review_service::create_review(&auth.user_id, &req, &state.write_db, &state.config).await?;
     Ok(Json(review.into()))
 }
 

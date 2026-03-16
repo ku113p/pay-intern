@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import { useMyListings } from '../hooks/useListings';
 import { listingsApi } from '../api/listings';
 import { StatusBadge } from '../components/common/StatusBadge';
@@ -15,7 +16,11 @@ export function MyListingsPage() {
   const closeMutation = useMutation({
     mutationFn: (id: string) => listingsApi.deleteListing(id),
     onSuccess: () => {
+      toast.success('Listing closed');
       queryClient.invalidateQueries({ queryKey: ['listings', 'mine'] });
+    },
+    onError: () => {
+      toast.error('Failed to close listing');
     },
   });
 
@@ -38,11 +43,6 @@ export function MyListingsPage() {
 
       {isLoading && <p className="text-gray-500">Loading...</p>}
       {error && <p className="text-red-600">Failed to load listings</p>}
-      {closeMutation.isError && (
-        <div className="bg-red-50 border border-red-200 rounded-md p-3 mb-4">
-          <p className="text-red-800 text-sm">Failed to close listing. Please try again.</p>
-        </div>
-      )}
 
       {data?.data.length === 0 && (
         <p className="text-gray-500">

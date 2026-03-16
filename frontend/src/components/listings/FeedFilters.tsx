@@ -12,12 +12,14 @@ export function FeedFilters({ filters, onChange, feedType }: Props) {
   const labels = feedType === 'developer'
     ? { tech: 'Skills', level: 'Developer Level', minPrice: 'Min rate', maxPrice: 'Max rate', sortPriceAsc: 'Rate: Low to High', sortPriceDesc: 'Rate: High to Low' }
     : { tech: 'Required Tech', level: 'Required Level', minPrice: 'Min budget', maxPrice: 'Max budget', sortPriceAsc: 'Budget: Low to High', sortPriceDesc: 'Budget: High to Low' };
+  const [search, setSearch] = useState(filters.search || '');
   const [tech, setTech] = useState(filters.tech || '');
   const [minWeeks, setMinWeeks] = useState(filters.min_weeks?.toString() || '');
   const [maxWeeks, setMaxWeeks] = useState(filters.max_weeks?.toString() || '');
   const [minPrice, setMinPrice] = useState(filters.min_price?.toString() || '');
   const [maxPrice, setMaxPrice] = useState(filters.max_price?.toString() || '');
 
+  const debouncedSearch = useDebounce(search, 400);
   const debouncedTech = useDebounce(tech, 400);
   const debouncedMinWeeks = useDebounce(minWeeks, 400);
   const debouncedMaxWeeks = useDebounce(maxWeeks, 400);
@@ -35,6 +37,7 @@ export function FeedFilters({ filters, onChange, feedType }: Props) {
     }
     onChange({
       ...filtersRef.current,
+      search: debouncedSearch || undefined,
       tech: debouncedTech || undefined,
       min_weeks: debouncedMinWeeks ? +debouncedMinWeeks : undefined,
       max_weeks: debouncedMaxWeeks ? +debouncedMaxWeeks : undefined,
@@ -43,19 +46,20 @@ export function FeedFilters({ filters, onChange, feedType }: Props) {
       page: 1,
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedTech, debouncedMinWeeks, debouncedMaxWeeks, debouncedMinPrice, debouncedMaxPrice]);
+  }, [debouncedSearch, debouncedTech, debouncedMinWeeks, debouncedMaxWeeks, debouncedMinPrice, debouncedMaxPrice]);
 
   // Sync local state when filters change externally (e.g. "Clear filters")
   useEffect(() => {
+    setSearch(filters.search || '');
     setTech(filters.tech || '');
     setMinWeeks(filters.min_weeks?.toString() || '');
     setMaxWeeks(filters.max_weeks?.toString() || '');
     setMinPrice(filters.min_price?.toString() || '');
     setMaxPrice(filters.max_price?.toString() || '');
-  }, [filters.tech, filters.min_weeks, filters.max_weeks, filters.min_price, filters.max_price]);
+  }, [filters.search, filters.tech, filters.min_weeks, filters.max_weeks, filters.min_price, filters.max_price]);
 
   const hasFilters = !!(
-    tech || filters.format || filters.experience_level ||
+    search || tech || filters.format || filters.experience_level ||
     minWeeks || maxWeeks ||
     minPrice || maxPrice ||
     (filters.sort && filters.sort !== 'newest')
@@ -64,6 +68,16 @@ export function FeedFilters({ filters, onChange, feedType }: Props) {
   return (
     <div className="bg-white rounded-lg border border-gray-200 p-4 space-y-4">
       <h3 className="font-medium text-gray-900">Filters</h3>
+
+      <div>
+        <input
+          type="text"
+          placeholder="Search listings..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="w-full border border-gray-300 rounded px-3 py-1.5 text-sm"
+        />
+      </div>
 
       <div>
         <label className="block text-sm text-gray-600 mb-1">{labels.tech}</label>

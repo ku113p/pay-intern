@@ -45,6 +45,7 @@ export interface ListingFeedParams {
   max_price?: number;
   sort?: string;
   experience_level?: string;
+  search?: string;
 }
 
 export interface CreateListingRequest {

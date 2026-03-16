@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 import { applicationsApi } from '../../api/applications';
 import { useAuthStore } from '../../stores/auth';
 import { StatusBadge } from '../common/StatusBadge';
@@ -7,6 +8,7 @@ import { StatusBadge } from '../common/StatusBadge';
 export function ApplicationList() {
   const user = useAuthStore((s) => s.user);
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
   const { data: myApps, isLoading: loadingMine } = useQuery({
     queryKey: ['applications', 'mine'],
@@ -19,10 +21,14 @@ export function ApplicationList() {
   });
 
   const statusMutation = useMutation({
-    mutationFn: ({ id, status }: { id: string; status: 'accepted' | 'rejected' }) =>
+    mutationFn: ({ id, status }: { id: string; status: 'accepted' | 'rejected' | 'withdrawn' }) =>
       applicationsApi.updateStatus(id, status),
-    onSuccess: () => {
+    onSuccess: (_data, { status }) => {
+      toast.success(`Application ${status}`);
       queryClient.invalidateQueries({ queryKey: ['applications'] });
+    },
+    onError: () => {
+      toast.error('Failed to update application status');
     },
   });
 
@@ -44,7 +50,18 @@ export function ApplicationList() {
                   <Link to={`/listings/${app.listing_id}`} className="text-sm text-indigo-600 hover:text-indigo-500">
                     {app.listing_title || app.listing_id.slice(0, 8) + '...'}
                   </Link>
-                  <StatusBadge status={app.status} />
+                  <div className="flex items-center gap-2">
+                    <StatusBadge status={app.status} />
+                    {app.status === 'pending' && (
+                      <button
+                        onClick={() => statusMutation.mutate({ id: app.id, status: 'withdrawn' })}
+                        disabled={statusMutation.isPending}
+                        className="text-xs text-gray-600 hover:text-gray-800 border border-gray-300 px-2 py-0.5 rounded"
+                      >
+                        Withdraw
+                      </button>
+                    )}
+                  </div>
                 </div>
                 <p className="text-sm text-gray-700 mt-2">{app.message}</p>
                 <p className="text-xs text-gray-400 mt-2">
@@ -84,22 +101,34 @@ export function ApplicationList() {
                   <StatusBadge status={app.status} />
                 </div>
                 <p className="text-sm text-gray-700 mt-2">{app.message}</p>
-                {app.status === 'pending' && (
-                  <div className="flex gap-2 mt-3">
+                <div className="flex gap-2 mt-3">
+                  {app.status === 'pending' && (
+                    <>
+                      <button
+                        onClick={() => statusMutation.mutate({ id: app.id, status: 'accepted' })}
+                        className="bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700"
+                      >
+                        Accept
+                      </button>
+                      <button
+                        onClick={() => statusMutation.mutate({ id: app.id, status: 'rejected' })}
+                        className="bg-red-600 text-white px-3 py-1 rounded text-sm hover:bg-red-700"
+                      >
+                        Reject
+                      </button>
+                    </>
+                  )}
+                  {app.status === 'accepted' && (
                     <button
-                      onClick={() => statusMutation.mutate({ id: app.id, status: 'accepted' })}
-                      className="bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700"
+                      onClick={() => navigate(`/applications/${app.id}/review`, {
+                        state: { listingId: app.listing_id, listingTitle: app.listing_title, applicantName: app.applicant_name }
+                      })}
+                      className="bg-indigo-600 text-white px-3 py-1 rounded text-sm hover:bg-indigo-700"
                     >
-                      Accept
+                      Write Review
                     </button>
-                    <button
-                      onClick={() => statusMutation.mutate({ id: app.id, status: 'rejected' })}
-                      className="bg-red-600 text-white px-3 py-1 rounded text-sm hover:bg-red-700"
-                    >
-                      Reject
-                    </button>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             ))}
           </div>

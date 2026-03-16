@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 import { listingsApi, type CreateListingRequest, type Listing } from '../../api/listings';
 import { useAuthStore } from '../../stores/auth';
 
@@ -28,7 +29,6 @@ export function ListingForm({ initialData, onSuccess }: ListingFormProps) {
       : (isCompany ? ['', '', ''] : undefined),
   });
   const [techInput, setTechInput] = useState('');
-  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
   const addTech = () => {
@@ -60,7 +60,6 @@ export function ListingForm({ initialData, onSuccess }: ListingFormProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
     setLoading(true);
     try {
       const payload = {
@@ -70,13 +69,14 @@ export function ListingForm({ initialData, onSuccess }: ListingFormProps) {
       const res = initialData
         ? await listingsApi.updateListing(initialData.id, payload)
         : await listingsApi.createListing(payload);
+      toast.success(initialData ? 'Changes saved!' : 'Listing created!');
       if (onSuccess) {
         onSuccess();
       } else {
         navigate(`/listings/${res.data.id}`);
       }
     } catch (err: any) {
-      setError(err.response?.data?.error || `Failed to ${initialData ? 'update' : 'create'} listing`);
+      toast.error(err.response?.data?.error || `Failed to ${initialData ? 'update' : 'create'} listing`);
     } finally {
       setLoading(false);
     }
@@ -84,12 +84,6 @@ export function ListingForm({ initialData, onSuccess }: ListingFormProps) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
-      {error && (
-        <div className="bg-red-50 border border-red-200 rounded-md p-3">
-          <p className="text-red-800 text-sm">{error}</p>
-        </div>
-      )}
-
       <div>
         <label className="block text-sm font-medium text-gray-700">Title</label>
         <input

@@ -1,12 +1,11 @@
 import { useState, useEffect } from 'react';
+import { toast } from 'sonner';
 import { profilesApi, type DeveloperProfile } from '../../api/profiles';
 
 export function DeveloperProfileForm() {
   const [profile, setProfile] = useState<DeveloperProfile | null>(null);
   const [techInput, setTechInput] = useState('');
   const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
-  const [error, setError] = useState('');
 
   useEffect(() => {
     profilesApi.getMyDeveloperProfile().then((r) => setProfile(r.data)).catch(() => {});
@@ -28,9 +27,7 @@ export function DeveloperProfileForm() {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
     setSaving(true);
-    setSaved(false);
     try {
       const res = await profilesApi.updateDeveloperProfile({
         bio: profile.bio,
@@ -40,9 +37,9 @@ export function DeveloperProfileForm() {
         level: profile.level,
       });
       setProfile(res.data);
-      setSaved(true);
+      toast.success('Profile saved!');
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to save');
+      toast.error(err.response?.data?.error || 'Failed to save profile');
     } finally {
       setSaving(false);
     }
@@ -50,9 +47,6 @@ export function DeveloperProfileForm() {
 
   return (
     <form onSubmit={handleSave} className="space-y-5">
-      {error && <p className="text-red-600 text-sm">{error}</p>}
-      {saved && <p className="text-green-600 text-sm">Profile saved!</p>}
-
       <div>
         <label className="block text-sm font-medium text-gray-700">Bio</label>
         <textarea

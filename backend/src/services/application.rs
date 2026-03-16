@@ -1,15 +1,20 @@
+use std::sync::Arc;
+
 use sqlx::SqlitePool;
 use uuid::Uuid;
 
+use crate::config::Config;
 use crate::error::AppError;
 use crate::models::application::*;
 use crate::models::listing::{Listing, PaginatedResponse, PaginationMeta};
+use crate::services::email as email_service;
 
 pub async fn create_application(
     applicant_id: &Uuid,
     applicant_role: &str,
     req: &CreateApplicationRequest,
     write_db: &SqlitePool,
+    config: &Arc<Config>,
 ) -> Result<Application, AppError> {
     // Check listing exists and is active
     let listing = sqlx::query_as::<_, Listing>("SELECT * FROM listings WHERE id = ? AND status = 'active'")
@@ -47,11 +52,40 @@ pub async fn create_application(
     .execute(write_db)
     .await?;
 
-    sqlx::query_as::<_, Application>("SELECT * FROM applications WHERE id = ?")
+    let application = sqlx::query_as::<_, Application>("SELECT * FROM applications WHERE id = ?")
         .bind(&id)
         .fetch_one(write_db)
-        .await
-        .map_err(Into::into)
+        .await?;
+
+    // Fire-and-forget email to listing owner
+    let owner_email = sqlx::query_scalar::<_, String>(
+        "SELECT u.email FROM users u WHERE u.id = ?",
+    )
+    .bind(&listing.author_id)
+    .fetch_optional(write_db)
+    .await?;
+
+    if let Some(email) = owner_email {
+        let title = listing.title.clone();
+        let applicant_name = sqlx::query_scalar::<_, String>(
+            "SELECT display_name FROM users WHERE id = ?",
+        )
+        .bind(applicant_id.to_string())
+        .fetch_optional(write_db)
+        .await?
+        .unwrap_or_else(|| "Someone".into());
+        let config = Arc::clone(config);
+        tokio::spawn(async move {
+            if let Err(e) =
+                email_service::send_new_application_email(&email, &title, &applicant_name, &config)
+                    .await
+            {
+                tracing::warn!("Failed to send new application email: {e}");
+            }
+        });
+    }
+
+    Ok(application)
 }
 
 pub async fn get_applications(
@@ -123,27 +157,47 @@ pub async fn get_applications(
 
 pub async fn update_application_status(
     application_id: &str,
-    owner_id: &Uuid,
+    caller_id: &Uuid,
     new_status: &str,
     write_db: &SqlitePool,
+    config: &Arc<Config>,
 ) -> Result<Application, AppError> {
-    if !["accepted", "rejected"].contains(&new_status) {
-        return Err(AppError::BadRequest("Status must be 'accepted' or 'rejected'".into()));
-    }
-
     let app = sqlx::query_as::<_, Application>("SELECT * FROM applications WHERE id = ?")
         .bind(application_id)
         .fetch_one(write_db)
         .await?;
 
-    // Verify the caller owns the listing
-    let listing = sqlx::query_as::<_, Listing>("SELECT * FROM listings WHERE id = ?")
-        .bind(&app.listing_id)
-        .fetch_one(write_db)
-        .await?;
+    let mut listing_title_for_email: Option<String> = None;
 
-    if listing.author_id != owner_id.to_string() {
-        return Err(AppError::Forbidden("Not the listing owner".into()));
+    if new_status == "withdrawn" {
+        // Applicant withdraws their own pending application
+        if app.applicant_id != caller_id.to_string() {
+            return Err(AppError::Forbidden("Not the applicant".into()));
+        }
+        if app.status != "pending" {
+            return Err(AppError::BadRequest(
+                "Can only withdraw pending applications".into(),
+            ));
+        }
+    } else if new_status == "accepted" || new_status == "rejected" {
+        // Listing owner accepts/rejects
+        if app.status != "pending" {
+            return Err(AppError::BadRequest(
+                "Can only accept/reject pending applications".into(),
+            ));
+        }
+        let listing = sqlx::query_as::<_, Listing>("SELECT * FROM listings WHERE id = ?")
+            .bind(&app.listing_id)
+            .fetch_one(write_db)
+            .await?;
+        if listing.author_id != caller_id.to_string() {
+            return Err(AppError::Forbidden("Not the listing owner".into()));
+        }
+        listing_title_for_email = Some(listing.title);
+    } else {
+        return Err(AppError::BadRequest(
+            "Status must be 'accepted', 'rejected', or 'withdrawn'".into(),
+        ));
     }
 
     sqlx::query("UPDATE applications SET status = ?, updated_at = datetime('now') WHERE id = ?")
@@ -152,9 +206,33 @@ pub async fn update_application_status(
         .execute(write_db)
         .await?;
 
-    sqlx::query_as::<_, Application>("SELECT * FROM applications WHERE id = ?")
+    let updated = sqlx::query_as::<_, Application>("SELECT * FROM applications WHERE id = ?")
         .bind(application_id)
         .fetch_one(write_db)
-        .await
-        .map_err(Into::into)
+        .await?;
+
+    // Fire-and-forget email to applicant on accept/reject
+    if let Some(title) = listing_title_for_email {
+        let applicant_email = sqlx::query_scalar::<_, String>(
+            "SELECT email FROM users WHERE id = ?",
+        )
+        .bind(&app.applicant_id)
+        .fetch_optional(write_db)
+        .await?;
+
+        if let Some(email) = applicant_email {
+            let status = new_status.to_string();
+            let config = Arc::clone(config);
+            tokio::spawn(async move {
+                if let Err(e) =
+                    email_service::send_application_status_email(&email, &title, &status, &config)
+                        .await
+                {
+                    tracing::warn!("Failed to send application status email: {e}");
+                }
+            });
+        }
+    }
+
+    Ok(updated)
 }

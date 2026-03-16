@@ -1,15 +1,20 @@
+use std::sync::Arc;
+
 use sqlx::SqlitePool;
 use uuid::Uuid;
 
+use crate::config::Config;
 use crate::error::AppError;
 use crate::models::application::Application;
 use crate::models::listing::Listing;
 use crate::models::outcome_review::*;
+use crate::services::email as email_service;
 
 pub async fn create_review(
     reviewer_id: &Uuid,
     req: &CreateOutcomeReviewRequest,
     write_db: &SqlitePool,
+    config: &Arc<Config>,
 ) -> Result<OutcomeReview, AppError> {
     // Validate recommendation
     if !["ready_to_hire", "needs_practice", "not_recommended"]
@@ -62,11 +67,32 @@ pub async fn create_review(
     .execute(write_db)
     .await?;
 
-    sqlx::query_as::<_, OutcomeReview>("SELECT * FROM outcome_reviews WHERE id = ?")
+    let review = sqlx::query_as::<_, OutcomeReview>("SELECT * FROM outcome_reviews WHERE id = ?")
         .bind(&id)
         .fetch_one(write_db)
-        .await
-        .map_err(Into::into)
+        .await?;
+
+    // Fire-and-forget email to the reviewed developer
+    let developer_email = sqlx::query_scalar::<_, String>(
+        "SELECT email FROM users WHERE id = ?",
+    )
+    .bind(&app.applicant_id)
+    .fetch_optional(write_db)
+    .await?;
+
+    if let Some(email) = developer_email {
+        let title = listing.title.clone();
+        let config = Arc::clone(config);
+        tokio::spawn(async move {
+            if let Err(e) =
+                email_service::send_new_review_email(&email, &title, &config).await
+            {
+                tracing::warn!("Failed to send new review email: {e}");
+            }
+        });
+    }
+
+    Ok(review)
 }
 
 pub async fn get_review(

@@ -1,20 +1,19 @@
 import { useState } from 'react';
+import { toast } from 'sonner';
 import { authApi } from '../../api/auth';
 
 export function LoginForm() {
   const [email, setEmail] = useState('');
   const [role, setRole] = useState<'developer' | 'company'>('developer');
   const [magicLinkSent, setMagicLinkSent] = useState(false);
-  const [error, setError] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
     try {
       await authApi.requestMagicLink(email, role);
       setMagicLinkSent(true);
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to send magic link');
+      toast.error(err.response?.data?.error || 'Failed to send magic link');
     }
   };
 
@@ -31,11 +30,6 @@ export function LoginForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      {error && (
-        <div className="bg-red-50 border border-red-200 rounded-md p-3">
-          <p className="text-red-800 text-sm">{error}</p>
-        </div>
-      )}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">I am a...</label>
         <div className="flex gap-3">

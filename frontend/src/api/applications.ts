@@ -22,6 +22,6 @@ export const applicationsApi = {
   getMine: (params?: { as?: string; status?: string; page?: number; per_page?: number }) =>
     api.get<PaginatedResponse<Application>>('/applications', { params }),
 
-  updateStatus: (id: string, status: 'accepted' | 'rejected') =>
+  updateStatus: (id: string, status: 'accepted' | 'rejected' | 'withdrawn') =>
     api.put<Application>(`/applications/${id}/status`, { status }),
 };

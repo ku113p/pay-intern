@@ -16,7 +16,7 @@ pub async fn create_application(
 ) -> Result<Json<ApplicationResponse>, AppError> {
     req.validate()?;
     let application =
-        app_service::create_application(&auth.user_id, &auth.role, &req, &state.write_db).await?;
+        app_service::create_application(&auth.user_id, &auth.role, &req, &state.write_db, &state.config).await?;
     Ok(Json(application.into()))
 }
 
@@ -36,7 +36,7 @@ pub async fn update_application_status(
     Json(req): Json<UpdateApplicationStatusRequest>,
 ) -> Result<Json<ApplicationResponse>, AppError> {
     let application =
-        app_service::update_application_status(&id, &auth.user_id, &req.status, &state.write_db)
+        app_service::update_application_status(&id, &auth.user_id, &req.status, &state.write_db, &state.config)
             .await?;
     Ok(Json(application.into()))
 }

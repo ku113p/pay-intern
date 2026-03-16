@@ -95,6 +95,7 @@ pub struct ListingFeedQuery {
     pub max_price: Option<f64>,
     pub sort: Option<String>,
     pub experience_level: Option<String>,
+    pub search: Option<String>,
 }
 
 impl ListingFeedQuery {

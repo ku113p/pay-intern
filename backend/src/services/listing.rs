@@ -306,6 +306,19 @@ pub async fn get_feed(
         }
     }
 
+    if let Some(search) = &query.search {
+        let term = search.trim();
+        if !term.is_empty() {
+            let escaped = term.replace('%', "\\%").replace('_', "\\_");
+            where_clauses.push(
+                "(l.title LIKE ? ESCAPE '\\' OR l.description LIKE ? ESCAPE '\\')".to_string(),
+            );
+            let pattern = format!("%{}%", escaped);
+            bind_values.push(pattern.clone());
+            bind_values.push(pattern);
+        }
+    }
+
     let where_sql = where_clauses.join(" AND ");
 
     let order_by = match query.sort.as_deref() {

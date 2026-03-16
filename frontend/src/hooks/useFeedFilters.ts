@@ -16,6 +16,7 @@ export function useFeedFilters() {
     max_price: searchParams.get('max_price') ? Number(searchParams.get('max_price')) : undefined,
     sort: searchParams.get('sort') || 'newest',
     experience_level: searchParams.get('experience_level') || undefined,
+    search: searchParams.get('search') || undefined,
   }), [searchParams]);
 
   const setFilters = useCallback((next: ListingFeedParams) => {

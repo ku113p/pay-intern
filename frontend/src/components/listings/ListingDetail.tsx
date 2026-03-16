@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { toast } from 'sonner';
 import type { Listing } from '../../api/listings';
 import { applicationsApi } from '../../api/applications';
 import { useAuthStore } from '../../stores/auth';
@@ -11,17 +12,16 @@ export function ListingDetail({ listing }: { listing: Listing }) {
   const [message, setMessage] = useState('');
   const [applying, setApplying] = useState(false);
   const [applied, setApplied] = useState(false);
-  const [error, setError] = useState('');
 
   const handleApply = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
     setApplying(true);
     try {
       await applicationsApi.create(listing.id, message);
       setApplied(true);
+      toast.success('Application sent!');
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to apply');
+      toast.error(err.response?.data?.error || 'Failed to apply');
     } finally {
       setApplying(false);
     }
@@ -110,7 +110,6 @@ export function ListingDetail({ listing }: { listing: Listing }) {
       {canApply && !applied && (
         <form onSubmit={handleApply} className="bg-white border border-gray-200 rounded-lg p-5 space-y-3">
           <h3 className="font-semibold text-gray-900">Apply to this listing</h3>
-          {error && <p className="text-red-600 text-sm">{error}</p>}
           <textarea
             required
             minLength={10}
@@ -131,9 +130,7 @@ export function ListingDetail({ listing }: { listing: Listing }) {
       )}
 
       {applied && (
-        <div className="bg-green-50 border border-green-200 rounded-md p-4">
-          <p className="text-green-800">Application sent successfully!</p>
-        </div>
+        <p className="text-sm text-green-700">Application sent! Check your applications page for status updates.</p>
       )}
 
       <p className="text-xs text-gray-400">

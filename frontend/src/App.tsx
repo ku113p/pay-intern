@@ -1,5 +1,8 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ErrorBoundary } from 'react-error-boundary';
+import { Toaster } from 'sonner';
+import { ErrorFallback } from './components/common/ErrorFallback';
 import { Layout } from './components/layout/Layout';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { HomePage } from './pages/HomePage';
@@ -15,6 +18,7 @@ import { PublicProfilePage } from './pages/PublicProfilePage';
 import { PromoPage } from './pages/PromoPage';
 import { MyListingsPage } from './pages/MyListingsPage';
 import { EditListingPage } from './pages/EditListingPage';
+import { ReviewPage } from './pages/ReviewPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -25,6 +29,7 @@ const queryClient = new QueryClient({
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
+      <ErrorBoundary FallbackComponent={ErrorFallback} onError={console.error}>
       <BrowserRouter>
         <Routes>
           {/* Standalone page — own layout, no shared header */}
@@ -43,11 +48,14 @@ function App() {
             {/* Protected routes */}
             <Route path="/companies" element={<ProtectedRoute><CompanyFeedPage /></ProtectedRoute>} />
             <Route path="/listings/new" element={<ProtectedRoute><CreateListingPage /></ProtectedRoute>} />
+            <Route path="/applications/:applicationId/review" element={<ProtectedRoute><ReviewPage /></ProtectedRoute>} />
             <Route path="/applications" element={<ProtectedRoute><MyApplicationsPage /></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
           </Route>
         </Routes>
       </BrowserRouter>
+      <Toaster position="top-right" richColors />
+      </ErrorBoundary>
     </QueryClientProvider>
   );
 }
