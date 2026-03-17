@@ -1,14 +1,7 @@
--- Migration: Dual profiles + platform generalization
--- Removes immutable role from users, renames developer/company to individual/organization,
--- extracts URLs into profile_links table, generalizes listings with categories and flexible payment.
---
--- IMPORTANT: Back up the database before running this migration.
+-- Migration 017: Create new tables for dual profiles + platform generalization.
+-- Part 1 of 4: Create new table structures alongside old ones.
 
-PRAGMA foreign_keys = OFF;
-
--- ============================================================
--- 1. Recreate users table (remove role column)
--- ============================================================
+-- New users table (no role column)
 CREATE TABLE users_new (
     id TEXT PRIMARY KEY NOT NULL,
     email TEXT NOT NULL UNIQUE,
@@ -26,9 +19,7 @@ SELECT id, email, display_name, auth_provider, auth_provider_id,
     deleted_at, created_at
 FROM users;
 
--- ============================================================
--- 2. Recreate profile tables (rename + generalize, remove URLs)
--- ============================================================
+-- Individual profiles (was developer_profiles)
 CREATE TABLE individual_profiles (
     user_id TEXT PRIMARY KEY NOT NULL REFERENCES users_new(id) ON DELETE CASCADE,
     bio TEXT NOT NULL DEFAULT '',
@@ -49,6 +40,7 @@ SELECT user_id, bio, tech_stack,
     contact_email
 FROM developer_profiles;
 
+-- Organization profiles (was company_profiles)
 CREATE TABLE organization_profiles (
     user_id TEXT PRIMARY KEY NOT NULL REFERENCES users_new(id) ON DELETE CASCADE,
     organization_name TEXT NOT NULL,
@@ -68,9 +60,7 @@ INSERT INTO organization_profiles (user_id, organization_name, description,
 SELECT user_id, company_name, description, size, tech_stack, contact_email
 FROM company_profiles;
 
--- ============================================================
--- 3. Create profile_links table and migrate existing URLs
--- ============================================================
+-- Profile links (new table for flexible URL storage)
 CREATE TABLE profile_links (
     id TEXT PRIMARY KEY NOT NULL,
     user_id TEXT NOT NULL REFERENCES users_new(id) ON DELETE CASCADE,
@@ -86,24 +76,20 @@ CREATE TABLE profile_links (
 
 CREATE INDEX idx_profile_links_user ON profile_links(user_id, profile_type);
 
--- Migrate developer github_url
+-- Migrate existing URLs to profile_links
 INSERT INTO profile_links (id, user_id, profile_type, link_type, label, url, display_order)
 SELECT hex(randomblob(16)), user_id, 'individual', 'github', 'GitHub', github_url, 0
 FROM developer_profiles WHERE github_url IS NOT NULL AND github_url != '';
 
--- Migrate developer linkedin_url
 INSERT INTO profile_links (id, user_id, profile_type, link_type, label, url, display_order)
 SELECT hex(randomblob(16)), user_id, 'individual', 'linkedin', 'LinkedIn', linkedin_url, 1
 FROM developer_profiles WHERE linkedin_url IS NOT NULL AND linkedin_url != '';
 
--- Migrate company website
 INSERT INTO profile_links (id, user_id, profile_type, link_type, label, url, display_order)
 SELECT hex(randomblob(16)), user_id, 'organization', 'website', 'Website', website, 0
 FROM company_profiles WHERE website IS NOT NULL AND website != '';
 
--- ============================================================
--- 4. Recreate listings table (generalize types and payment)
--- ============================================================
+-- New listings table
 CREATE TABLE listings_new (
     id TEXT PRIMARY KEY NOT NULL,
     author_id TEXT NOT NULL REFERENCES users_new(id) ON DELETE CASCADE,
@@ -146,9 +132,7 @@ SELECT id, author_id,
     format, outcome_criteria, visibility, status, experience_level, created_at, updated_at
 FROM listings;
 
--- ============================================================
--- 5. Recreate magic_link_tokens (remove role column)
--- ============================================================
+-- New magic_link_tokens table (remove role column)
 CREATE TABLE magic_link_tokens_new (
     id TEXT PRIMARY KEY NOT NULL,
     email TEXT NOT NULL,
@@ -161,33 +145,3 @@ CREATE TABLE magic_link_tokens_new (
 INSERT INTO magic_link_tokens_new (id, email, token_hash, expires_at, used, created_at)
 SELECT id, email, token_hash, expires_at, used, created_at
 FROM magic_link_tokens;
-
--- ============================================================
--- 6. Drop old tables and rename new ones
--- ============================================================
-DROP TABLE IF EXISTS magic_link_tokens;
-DROP TABLE IF EXISTS developer_profiles;
-DROP TABLE IF EXISTS company_profiles;
-DROP TABLE IF EXISTS listings;
-DROP TABLE IF EXISTS users;
-
-ALTER TABLE users_new RENAME TO users;
-ALTER TABLE listings_new RENAME TO listings;
-ALTER TABLE magic_link_tokens_new RENAME TO magic_link_tokens;
-
--- ============================================================
--- 7. Recreate indexes
--- ============================================================
-CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email ON users(email);
-CREATE INDEX IF NOT EXISTS idx_listings_author ON listings(author_id);
-CREATE INDEX IF NOT EXISTS idx_listings_status ON listings(status);
-CREATE INDEX IF NOT EXISTS idx_listings_category ON listings(category);
-CREATE INDEX IF NOT EXISTS idx_listings_created_at ON listings(created_at);
-CREATE INDEX IF NOT EXISTS idx_magic_link_tokens_email ON magic_link_tokens(email);
-
--- ============================================================
--- 8. Verify foreign key integrity
--- ============================================================
-PRAGMA foreign_key_check;
-
-PRAGMA foreign_keys = ON;

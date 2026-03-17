@@ -486,17 +486,31 @@ mod tests {
     use sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions};
 
     async fn setup_test_db() -> SqlitePool {
-        let pool = SqlitePoolOptions::new()
+        let db_path = format!("/tmp/test_delete_{}.db", Uuid::new_v4());
+
+        // Run migrations without FK enforcement (PRAGMA foreign_keys is
+        // a no-op in transactions, and sqlx wraps migrations in transactions).
+        let migrate_pool = SqlitePoolOptions::new()
             .connect_with(
                 SqliteConnectOptions::new()
-                    .filename(format!("/tmp/test_delete_{}.db", Uuid::new_v4()))
+                    .filename(&db_path)
                     .create_if_missing(true)
-                    .foreign_keys(true),
+                    .foreign_keys(false),
             )
             .await
             .unwrap();
-        sqlx::migrate!().run(&pool).await.unwrap();
-        pool
+        sqlx::migrate!().run(&migrate_pool).await.unwrap();
+        migrate_pool.close().await;
+
+        // Return pool with FK enforcement for actual test operations.
+        SqlitePoolOptions::new()
+            .connect_with(
+                SqliteConnectOptions::new()
+                    .filename(&db_path)
+                    .foreign_keys(true),
+            )
+            .await
+            .unwrap()
     }
 
     #[tokio::test]

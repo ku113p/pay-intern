@@ -17,6 +17,25 @@ impl DbPools {
             }
         }
 
+        // Run migrations on a connection without foreign keys enabled.
+        // PRAGMA foreign_keys is a no-op inside transactions, and sqlx wraps
+        // each migration in a transaction, so table-recreation migrations
+        // (which need FK off to avoid cascading DELETEs) must run on a
+        // connection that never enabled FK in the first place.
+        let migrate_opts = SqliteConnectOptions::from_str(database_url)?
+            .journal_mode(SqliteJournalMode::Wal)
+            .foreign_keys(false)
+            .busy_timeout(Duration::from_secs(5))
+            .create_if_missing(true);
+
+        let migrate_pool = SqlitePoolOptions::new()
+            .max_connections(1)
+            .connect_with(migrate_opts)
+            .await?;
+
+        sqlx::migrate!().run(&migrate_pool).await?;
+        migrate_pool.close().await;
+
         let write_opts = SqliteConnectOptions::from_str(database_url)?
             .journal_mode(SqliteJournalMode::Wal)
             .foreign_keys(true)
@@ -27,8 +46,6 @@ impl DbPools {
             .max_connections(1)
             .connect_with(write_opts)
             .await?;
-
-        sqlx::migrate!().run(&write).await?;
 
         let read_opts = SqliteConnectOptions::from_str(database_url)?
             .journal_mode(SqliteJournalMode::Wal)
