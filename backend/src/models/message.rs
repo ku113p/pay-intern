@@ -56,7 +56,7 @@ impl MessageQuery {
         self.page.unwrap_or(1).max(1)
     }
     pub fn per_page(&self) -> u32 {
-        self.per_page.unwrap_or(50).min(100)
+        self.per_page.unwrap_or(50).min(100).max(1)
     }
     pub fn offset(&self) -> u32 {
         (self.page() - 1) * self.per_page()

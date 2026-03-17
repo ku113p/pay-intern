@@ -74,17 +74,31 @@ pub async fn create_application(
     .await?;
 
     if let Some(email) = owner_email {
-        let title = listing.title.clone();
-        let applicant_name_for_email = applicant_name;
-        let config = Arc::clone(config);
-        tokio::spawn(async move {
-            if let Err(e) =
-                email_service::send_new_application_email(&email, &title, &applicant_name_for_email, &config)
-                    .await
-            {
-                tracing::warn!("Failed to send new application email: {e}");
-            }
-        });
+        // Check notification preferences before sending email
+        let prefs = sqlx::query_as::<_, crate::models::notification::NotificationPreferences>(
+            "SELECT * FROM notification_preferences WHERE user_id = ?",
+        )
+        .bind(&listing.author_id)
+        .fetch_optional(write_db)
+        .await?;
+
+        let should_send = prefs
+            .map(|p| p.email_enabled && p.email_application_received)
+            .unwrap_or(true);
+
+        if should_send {
+            let title = listing.title.clone();
+            let applicant_name_for_email = applicant_name;
+            let config = Arc::clone(config);
+            tokio::spawn(async move {
+                if let Err(e) =
+                    email_service::send_new_application_email(&email, &title, &applicant_name_for_email, &config)
+                        .await
+                {
+                    tracing::warn!("Failed to send new application email: {e}");
+                }
+            });
+        }
     }
 
     Ok(application)
@@ -252,16 +266,36 @@ pub async fn update_application_status(
         .await?;
 
         if let Some(email) = applicant_email {
-            let status = new_status.to_string();
-            let config = Arc::clone(config);
-            tokio::spawn(async move {
-                if let Err(e) =
-                    email_service::send_application_status_email(&email, &title, &status, &config)
-                        .await
-                {
-                    tracing::warn!("Failed to send application status email: {e}");
-                }
-            });
+            // Check notification preferences before sending email
+            let prefs = sqlx::query_as::<_, crate::models::notification::NotificationPreferences>(
+                "SELECT * FROM notification_preferences WHERE user_id = ?",
+            )
+            .bind(&app.applicant_id)
+            .fetch_optional(write_db)
+            .await?;
+
+            let pref_field = if new_status == "accepted" {
+                prefs.as_ref().map(|p| p.email_application_accepted).unwrap_or(true)
+            } else {
+                prefs.as_ref().map(|p| p.email_application_rejected).unwrap_or(true)
+            };
+            let should_send = prefs
+                .as_ref()
+                .map(|p| p.email_enabled)
+                .unwrap_or(true) && pref_field;
+
+            if should_send {
+                let status = new_status.to_string();
+                let config = Arc::clone(config);
+                tokio::spawn(async move {
+                    if let Err(e) =
+                        email_service::send_application_status_email(&email, &title, &status, &config)
+                            .await
+                    {
+                        tracing::warn!("Failed to send application status email: {e}");
+                    }
+                });
+            }
         }
     }
 

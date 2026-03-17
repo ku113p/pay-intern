@@ -39,7 +39,7 @@ async fn main() {
         config: Arc::new(cfg),
     };
 
-    let app = routes::build_router(state);
+    let app = routes::build_router(state.clone());
     let addr = format!("0.0.0.0:{port}");
     let listener = TcpListener::bind(&addr).await.expect("Failed to bind");
 
@@ -49,6 +49,9 @@ async fn main() {
         .with_graceful_shutdown(shutdown_signal())
         .await
         .expect("Server error");
+
+    state.write_db.close().await;
+    state.read_db.close().await;
 }
 
 async fn shutdown_signal() {

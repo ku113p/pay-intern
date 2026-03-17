@@ -56,15 +56,21 @@ pub async fn request_magic_link_login(
     State(state): State<AppState>,
     Json(req): Json<MagicLinkLoginRequest>,
 ) -> Result<Json<serde_json::Value>, AppError> {
-    let _user: crate::models::user::User = sqlx::query_as(
+    let user: Option<crate::models::user::User> = sqlx::query_as(
         "SELECT * FROM users WHERE email = ?",
     )
     .bind(&req.email)
     .fetch_optional(&state.read_db)
-    .await?
-    .ok_or_else(|| AppError::NotFound("No account found. Please register first.".into()))?;
+    .await?;
 
-    create_and_send_magic_link(&req.email, &state).await
+    if user.is_some() {
+        // Only actually send the magic link if the account exists
+        let _ = create_and_send_magic_link(&req.email, &state).await;
+    }
+
+    Ok(Json(serde_json::json!({
+        "message": "If an account exists, a magic link has been sent"
+    })))
 }
 
 async fn create_and_send_magic_link(
@@ -76,7 +82,7 @@ async fn create_and_send_magic_link(
 
     let magic_link = format!(
         "{}?token={}&email={}",
-        state.config.magic_link_base_url, raw_token, email
+        state.config.magic_link_base_url, raw_token, urlencoding::encode(email)
     );
 
     email_service::send_magic_link_email(email, &magic_link, &state.config).await?;

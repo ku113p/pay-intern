@@ -8,5 +8,9 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
     return <Navigate to="/login" replace />;
   }
 
+  if (!isAuthenticated && refreshToken) {
+    return <div className="flex items-center justify-center min-h-[200px] text-gray-500">Loading...</div>;
+  }
+
   return <>{children}</>;
 }

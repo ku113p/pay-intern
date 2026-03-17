@@ -81,15 +81,29 @@ pub async fn create_review(
     .await?;
 
     if let Some(email) = developer_email {
-        let title = listing.title.clone();
-        let config = Arc::clone(config);
-        tokio::spawn(async move {
-            if let Err(e) =
-                email_service::send_new_review_email(&email, &title, &config).await
-            {
-                tracing::warn!("Failed to send new review email: {e}");
-            }
-        });
+        // Check notification preferences before sending email
+        let prefs = sqlx::query_as::<_, crate::models::notification::NotificationPreferences>(
+            "SELECT * FROM notification_preferences WHERE user_id = ?",
+        )
+        .bind(&app.applicant_id)
+        .fetch_optional(write_db)
+        .await?;
+
+        let should_send = prefs
+            .map(|p| p.email_enabled && p.email_review_created)
+            .unwrap_or(true);
+
+        if should_send {
+            let title = listing.title.clone();
+            let config = Arc::clone(config);
+            tokio::spawn(async move {
+                if let Err(e) =
+                    email_service::send_new_review_email(&email, &title, &config).await
+                {
+                    tracing::warn!("Failed to send new review email: {e}");
+                }
+            });
+        }
     }
 
     Ok(review)

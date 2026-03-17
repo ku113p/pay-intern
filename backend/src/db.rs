@@ -50,6 +50,7 @@ impl DbPools {
         let read_opts = SqliteConnectOptions::from_str(database_url)?
             .journal_mode(SqliteJournalMode::Wal)
             .foreign_keys(true)
+            .busy_timeout(Duration::from_secs(5))
             .read_only(true);
 
         let read = SqlitePoolOptions::new()

@@ -22,6 +22,19 @@ jobs:
         with:
           workspaces: backend
 
+      - name: Check formatting
+        working-directory: backend
+        run: cargo fmt --check
+
+      - name: Clippy lint
+        working-directory: backend
+        run: cargo clippy -- -D warnings
+        env:
+          DATABASE_URL: sqlite://data/test.db
+          JWT_ACCESS_SECRET: test-access-secret
+          JWT_REFRESH_SECRET: test-refresh-secret
+          SERVER_PORT: "3000"
+
       - name: Run tests
         working-directory: backend
         run: cargo test
@@ -47,6 +60,10 @@ jobs:
         run: |
           npm ci
           npm run build
+
+      - name: Lint
+        working-directory: frontend
+        run: npm run lint
 
   build-backend:
     needs: test-backend

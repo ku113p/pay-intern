@@ -1,4 +1,5 @@
 use axum::extract::{Path, Query, State};
+use axum::http::StatusCode;
 use axum::Json;
 use validator::Validate;
 
@@ -12,11 +13,11 @@ pub async fn create_listing(
     State(state): State<AppState>,
     auth: AuthUser,
     Json(req): Json<CreateListingRequest>,
-) -> Result<Json<ListingResponse>, AppError> {
+) -> Result<(StatusCode, Json<ListingResponse>), AppError> {
     req.validate()?;
     let listing =
         listing_service::create_listing(&auth.user_id, &auth.active_role, &req, &state.write_db).await?;
-    Ok(Json(listing.into()))
+    Ok((StatusCode::CREATED, Json(listing.into())))
 }
 
 pub async fn get_listing(

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { authApi } from '../api/auth';
 import { useAuthStore } from '../stores/auth';
@@ -8,8 +8,12 @@ export function MagicLinkVerifyPage() {
   const navigate = useNavigate();
   const setTokens = useAuthStore((s) => s.setTokens);
   const [error, setError] = useState('');
+  const verifyInitiated = useRef(false);
 
   useEffect(() => {
+    if (verifyInitiated.current) return;
+    verifyInitiated.current = true;
+
     const token = searchParams.get('token');
     const email = searchParams.get('email');
 

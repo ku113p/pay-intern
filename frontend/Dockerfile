@@ -17,7 +17,7 @@ COPY . .
 RUN npm run build
 
 # Stage 3: Runtime (serve static files with nginx)
-FROM nginx:alpine
+FROM nginx:1.27-alpine
 
 COPY --from=builder /app/dist /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/conf.d/default.conf

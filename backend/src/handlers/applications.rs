@@ -1,4 +1,5 @@
 use axum::extract::{Path, Query, State};
+use axum::http::StatusCode;
 use axum::Json;
 use validator::Validate;
 
@@ -22,11 +23,11 @@ pub async fn create_application(
     State(state): State<AppState>,
     auth: AuthUser,
     Json(req): Json<CreateApplicationRequest>,
-) -> Result<Json<ApplicationResponse>, AppError> {
+) -> Result<(StatusCode, Json<ApplicationResponse>), AppError> {
     req.validate()?;
     let application =
         app_service::create_application(&auth.user_id, &req, &state.write_db, &state.config).await?;
-    Ok(Json(application.into()))
+    Ok((StatusCode::CREATED, Json(application.into())))
 }
 
 pub async fn get_applications(

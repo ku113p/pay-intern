@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useAuthStore } from '../stores/auth';
@@ -18,6 +18,12 @@ export function ProfilePage() {
     activeRole === 'organization' ? 'organization' : 'individual'
   );
   const [switching, setSwitching] = useState(false);
+
+  useEffect(() => {
+    if (!editingName) {
+      setDisplayName(user?.display_name || '');
+    }
+  }, [user?.display_name, editingName]);
 
   const saveName = async () => {
     try {

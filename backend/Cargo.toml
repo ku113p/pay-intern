@@ -13,7 +13,7 @@ uuid = { version = "1", features = ["v4", "serde"] }
 chrono = { version = "0.4", features = ["serde"] }
 jsonwebtoken = "9"
 tower = { version = "0.5", features = ["util"] }
-tower-http = { version = "0.6", features = ["cors", "trace", "limit"] }
+tower-http = { version = "0.6", features = ["cors", "trace", "limit", "set-header"] }
 tower_governor = "0.8"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
@@ -27,6 +27,7 @@ lettre = { version = "0.11", features = ["tokio1-native-tls"] }
 rand = "0.8"
 thiserror = "2"
 validator = { version = "0.19", features = ["derive"] }
+urlencoding = "2"
 
 [dev-dependencies]
 axum-test = "16"

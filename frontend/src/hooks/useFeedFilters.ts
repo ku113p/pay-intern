@@ -8,7 +8,7 @@ export function useFeedFilters() {
   const filters: ListingFeedParams = useMemo(() => ({
     page: searchParams.get('page') ? Number(searchParams.get('page')) : undefined,
     per_page: searchParams.get('per_page') ? Number(searchParams.get('per_page')) : undefined,
-    tech: searchParams.get('tech') || undefined,
+    skills: searchParams.get('skills') || undefined,
     format: searchParams.get('format') || undefined,
     min_weeks: searchParams.get('min_weeks') ? Number(searchParams.get('min_weeks')) : undefined,
     max_weeks: searchParams.get('max_weeks') ? Number(searchParams.get('max_weeks')) : undefined,

@@ -1,5 +1,4 @@
 use chrono::Utc;
-use sha2::{Digest, Sha256};
 use sqlx::SqlitePool;
 use uuid::Uuid;
 
@@ -77,7 +76,7 @@ pub async fn switch_role(
 
     let access_token = jwt::encode_access_token(&user_uuid, target_role, config)?;
     let refresh_token = jwt::encode_refresh_token(&user_uuid, &family_id, config)?;
-    let refresh_hash = hash_sha256(&refresh_token);
+    let refresh_hash = jwt::hash_token(&refresh_token);
 
     let id = Uuid::new_v4().to_string();
     let family_str = family_id.to_string();
@@ -121,7 +120,7 @@ pub async fn issue_tokens(
 
     let access_token = jwt::encode_access_token(&user_id, &role_for_token, config)?;
     let refresh_token = jwt::encode_refresh_token(&user_id, &family_id, config)?;
-    let refresh_hash = hash_sha256(&refresh_token);
+    let refresh_hash = jwt::hash_token(&refresh_token);
 
     let id = Uuid::new_v4().to_string();
     let family_str = family_id.to_string();
@@ -155,15 +154,22 @@ pub async fn refresh_tokens(
     write_db: &SqlitePool,
     config: &Config,
 ) -> Result<TokenResponse, AppError> {
+    // Clean up expired refresh tokens
+    sqlx::query("DELETE FROM refresh_tokens WHERE expires_at < datetime('now')")
+        .execute(write_db)
+        .await?;
+
     let claims = jwt::decode_refresh_token(refresh_token, config)?;
-    let token_hash = hash_sha256(refresh_token);
+    let token_hash = jwt::hash_token(refresh_token);
+
+    let mut tx = write_db.begin().await?;
 
     // Look up the refresh token
     let row = sqlx::query_as::<_, (String, String, String)>(
         "SELECT id, user_id, family_id FROM refresh_tokens WHERE token_hash = ? AND expires_at > datetime('now')"
     )
     .bind(&token_hash)
-    .fetch_optional(write_db)
+    .fetch_optional(&mut *tx)
     .await?;
 
     match row {
@@ -171,12 +177,31 @@ pub async fn refresh_tokens(
             // Delete the used token
             sqlx::query("DELETE FROM refresh_tokens WHERE id = ?")
                 .bind(&token_id)
-                .execute(write_db)
+                .execute(&mut *tx)
                 .await?;
 
-            // Determine active role from profiles
-            let active_role = determine_active_role(&user_id, write_db).await?;
-            let role_for_token = active_role.unwrap_or_else(|| "individual".into());
+            // Determine active role from profiles (inline to use transaction)
+            let has_individual = sqlx::query_scalar::<_, bool>(
+                "SELECT EXISTS(SELECT 1 FROM individual_profiles WHERE user_id = ?)"
+            )
+            .bind(&user_id)
+            .fetch_one(&mut *tx)
+            .await?;
+
+            let has_organization = sqlx::query_scalar::<_, bool>(
+                "SELECT EXISTS(SELECT 1 FROM organization_profiles WHERE user_id = ?)"
+            )
+            .bind(&user_id)
+            .fetch_one(&mut *tx)
+            .await?;
+
+            let role_for_token = if has_individual {
+                "individual".to_string()
+            } else if has_organization {
+                "organization".to_string()
+            } else {
+                "individual".to_string()
+            };
 
             // Issue new tokens with same family
             let uid = Uuid::parse_str(&user_id)
@@ -186,7 +211,7 @@ pub async fn refresh_tokens(
 
             let new_access = jwt::encode_access_token(&uid, &role_for_token, config)?;
             let new_refresh = jwt::encode_refresh_token(&uid, &fid, config)?;
-            let new_hash = hash_sha256(&new_refresh);
+            let new_hash = jwt::hash_token(&new_refresh);
 
             let new_id = Uuid::new_v4().to_string();
             let expires_at = Utc::now()
@@ -202,8 +227,10 @@ pub async fn refresh_tokens(
             .bind(&new_hash)
             .bind(&family_id)
             .bind(&expires_at)
-            .execute(write_db)
+            .execute(&mut *tx)
             .await?;
+
+            tx.commit().await?;
 
             Ok(TokenResponse {
                 access_token: new_access,
@@ -217,8 +244,10 @@ pub async fn refresh_tokens(
             // Token not found — possible theft. Revoke all tokens in this family.
             sqlx::query("DELETE FROM refresh_tokens WHERE family_id = ?")
                 .bind(&claims.family_id)
-                .execute(write_db)
+                .execute(&mut *tx)
                 .await?;
+
+            tx.commit().await?;
 
             Err(AppError::Unauthorized(
                 "Refresh token invalid or reused — all sessions revoked".into(),
@@ -241,8 +270,13 @@ pub async fn create_magic_link_token(
     email: &str,
     write_db: &SqlitePool,
 ) -> Result<String, AppError> {
+    // Clean up expired magic link tokens
+    sqlx::query("DELETE FROM magic_link_tokens WHERE expires_at < datetime('now')")
+        .execute(write_db)
+        .await?;
+
     let raw_token = jwt::generate_raw_token();
-    let token_hash = hash_sha256(&raw_token);
+    let token_hash = jwt::hash_token(&raw_token);
     let id = Uuid::new_v4().to_string();
     let expires_at = Utc::now()
         .checked_add_signed(chrono::Duration::minutes(15))
@@ -267,14 +301,16 @@ pub async fn verify_magic_link_token(
     token: &str,
     write_db: &SqlitePool,
 ) -> Result<User, AppError> {
-    let token_hash = hash_sha256(token);
+    let token_hash = jwt::hash_token(token);
+
+    let mut tx = write_db.begin().await?;
 
     let row = sqlx::query_as::<_, (String,)>(
         "SELECT id FROM magic_link_tokens WHERE email = ? AND token_hash = ? AND used = 0 AND expires_at > datetime('now')"
     )
     .bind(email)
     .bind(&token_hash)
-    .fetch_optional(write_db)
+    .fetch_optional(&mut *tx)
     .await?;
 
     let (token_id,) = row.ok_or_else(|| {
@@ -284,20 +320,25 @@ pub async fn verify_magic_link_token(
     // Mark as used
     sqlx::query("UPDATE magic_link_tokens SET used = 1 WHERE id = ?")
         .bind(&token_id)
-        .execute(write_db)
+        .execute(&mut *tx)
         .await?;
 
     // Find or create user
-    find_or_create_email_user(email, write_db).await
+    let user = find_or_create_email_user_tx(email, &mut tx).await?;
+
+    tx.commit().await?;
+
+    Ok(user)
 }
 
-pub async fn find_or_create_email_user(
+
+async fn find_or_create_email_user_tx(
     email: &str,
-    write_db: &SqlitePool,
+    tx: &mut sqlx::Transaction<'_, sqlx::Sqlite>,
 ) -> Result<User, AppError> {
     if let Some(user) = sqlx::query_as::<_, User>("SELECT * FROM users WHERE email = ?")
         .bind(email)
-        .fetch_optional(write_db)
+        .fetch_optional(&mut **tx)
         .await?
     {
         return Ok(user);
@@ -312,12 +353,12 @@ pub async fn find_or_create_email_user(
     .bind(&id)
     .bind(email)
     .bind(&display_name)
-    .execute(write_db)
+    .execute(&mut **tx)
     .await?;
 
     sqlx::query_as::<_, User>("SELECT * FROM users WHERE id = ?")
         .bind(&id)
-        .fetch_one(write_db)
+        .fetch_one(&mut **tx)
         .await
         .map_err(Into::into)
 }
@@ -357,7 +398,8 @@ pub async fn exchange_google_code(
 
     if !res.status().is_success() {
         let body = res.text().await.unwrap_or_default();
-        return Err(AppError::BadRequest(format!("Google OAuth error: {body}")));
+        tracing::error!("Google OAuth error response: {body}");
+        return Err(AppError::BadRequest("Google OAuth authentication failed".into()));
     }
 
     let token_res: GoogleTokenResponse = res
@@ -432,8 +474,3 @@ pub async fn exchange_google_code(
         .map_err(Into::into)
 }
 
-fn hash_sha256(input: &str) -> String {
-    let mut hasher = Sha256::new();
-    hasher.update(input.as_bytes());
-    format!("{:x}", hasher.finalize())
-}

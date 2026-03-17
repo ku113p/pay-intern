@@ -1,4 +1,5 @@
 use axum::extract::{Path, Query, State};
+use axum::http::StatusCode;
 use axum::Json;
 use validator::Validate;
 
@@ -40,11 +41,11 @@ pub async fn send_message(
     Path(application_id): Path<String>,
     State(state): State<AppState>,
     Json(req): Json<SendMessageRequest>,
-) -> Result<Json<MessageResponse>, AppError> {
+) -> Result<(StatusCode, Json<MessageResponse>), AppError> {
     req.validate()?;
     let message =
         message_service::send_message(&application_id, &auth.user_id, &req, &state.read_db, &state.write_db).await?;
-    Ok(Json(message))
+    Ok((StatusCode::CREATED, Json(message)))
 }
 
 pub async fn mark_read(

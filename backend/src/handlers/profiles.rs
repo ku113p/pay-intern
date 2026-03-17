@@ -114,7 +114,9 @@ pub async fn get_public_individual_profile(
     let profile = user_service::get_individual_profile(&user_id, &state.read_db).await?;
     let links = user_service::get_profile_links(&user_id, "individual", &state.read_db).await?;
     let link_responses: Vec<ProfileLinkResponse> = links.into_iter().map(Into::into).collect();
-    Ok(Json(profile.to_response(link_responses)))
+    let mut response = profile.to_response(link_responses);
+    response.contact_email = None;
+    Ok(Json(response))
 }
 
 pub async fn get_public_organization_profile(
@@ -126,7 +128,9 @@ pub async fn get_public_organization_profile(
     let links =
         user_service::get_profile_links(&user_id, "organization", &state.read_db).await?;
     let link_responses: Vec<ProfileLinkResponse> = links.into_iter().map(Into::into).collect();
-    Ok(Json(profile.to_response(link_responses)))
+    let mut response = profile.to_response(link_responses);
+    response.contact_email = None;
+    Ok(Json(response))
 }
 
 pub async fn get_profile_preview(

@@ -277,20 +277,41 @@ pub async fn replace_profile_links(
     links: &[ProfileLinkInput],
     write_db: &SqlitePool,
 ) -> Result<Vec<ProfileLink>, AppError> {
-    // Delete existing links
-    sqlx::query("DELETE FROM profile_links WHERE user_id = ? AND profile_type = ?")
-        .bind(user_id)
-        .bind(profile_type)
-        .execute(write_db)
-        .await?;
+    if links.len() > 20 {
+        return Err(AppError::BadRequest("Maximum 20 profile links allowed".into()));
+    }
 
-    // Insert new links
-    for (i, link) in links.iter().enumerate() {
+    for link in links {
+        if link.url.len() > 2000 {
+            return Err(AppError::BadRequest("Link URL must be 2000 characters or fewer".into()));
+        }
+        if link.label.len() > 100 {
+            return Err(AppError::BadRequest("Link label must be 100 characters or fewer".into()));
+        }
+        if link.url.trim_start().to_lowercase().starts_with("javascript:") {
+            return Err(AppError::BadRequest("Invalid URL scheme".into()));
+        }
+    }
+
+    // Validate all link types before starting the transaction
+    for link in links.iter() {
         let valid_types = ["github", "linkedin", "portfolio", "website", "twitter", "dribbble", "behance", "stackoverflow", "other"];
         if !valid_types.contains(&link.link_type.as_str()) {
             return Err(AppError::BadRequest(format!("Invalid link_type: {}", link.link_type)));
         }
+    }
 
+    let mut tx = write_db.begin().await?;
+
+    // Delete existing links
+    sqlx::query("DELETE FROM profile_links WHERE user_id = ? AND profile_type = ?")
+        .bind(user_id)
+        .bind(profile_type)
+        .execute(&mut *tx)
+        .await?;
+
+    // Insert new links
+    for (i, link) in links.iter().enumerate() {
         let id = Uuid::new_v4().to_string();
         let order = link.display_order.unwrap_or(i as i32);
         sqlx::query(
@@ -303,9 +324,11 @@ pub async fn replace_profile_links(
         .bind(&link.label)
         .bind(&link.url)
         .bind(order)
-        .execute(write_db)
+        .execute(&mut *tx)
         .await?;
     }
+
+    tx.commit().await?;
 
     get_profile_links(user_id, profile_type, write_db).await
 }
@@ -337,17 +360,22 @@ pub async fn delete_profile(
     } else {
         "organization_profiles"
     };
+
+    let mut tx = write_db.begin().await?;
+
     sqlx::query(&format!("DELETE FROM {} WHERE user_id = ?", table))
         .bind(user_id)
-        .execute(write_db)
+        .execute(&mut *tx)
         .await?;
 
     // Delete associated links
     sqlx::query("DELETE FROM profile_links WHERE user_id = ? AND profile_type = ?")
         .bind(user_id)
         .bind(profile_type)
-        .execute(write_db)
+        .execute(&mut *tx)
         .await?;
+
+    tx.commit().await?;
 
     Ok(())
 }

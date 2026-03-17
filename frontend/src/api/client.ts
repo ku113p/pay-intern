@@ -42,22 +42,6 @@ export function refreshAccessToken(): Promise<string> {
   return activeRefreshPromise;
 }
 
-let failedQueue: Array<{
-  resolve: (token: string) => void;
-  reject: (error: unknown) => void;
-}> = [];
-
-function processQueue(error: unknown, token: string | null) {
-  failedQueue.forEach((p) => {
-    if (error || !token) {
-      p.reject(error);
-    } else {
-      p.resolve(token);
-    }
-  });
-  failedQueue = [];
-}
-
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
@@ -76,11 +60,9 @@ api.interceptors.response.use(
 
       try {
         const token = await refreshAccessToken();
-        processQueue(null, token);
         originalRequest.headers.Authorization = `Bearer ${token}`;
         return api(originalRequest);
       } catch (refreshError) {
-        processQueue(refreshError, null);
         window.location.href = '/login';
         return Promise.reject(refreshError);
       }

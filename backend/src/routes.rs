@@ -1,9 +1,11 @@
+use axum::extract::State;
 use axum::http::header::{AUTHORIZATION, CONTENT_TYPE};
-use axum::http::{HeaderValue, Method};
+use axum::http::{HeaderName, HeaderValue, Method, StatusCode};
 use axum::routing::{delete, get, post, put};
 use axum::Router;
 use tower_http::cors::CorsLayer;
 use tower_http::limit::RequestBodyLimitLayer;
+use tower_http::set_header::SetResponseHeaderLayer;
 use tower_http::trace::TraceLayer;
 
 use crate::handlers;
@@ -170,6 +172,18 @@ pub fn build_router(state: AppState) -> Router {
         .nest("/notifications", notification_routes)
         .nest("/interests", interest_routes)
         .nest("/messages", message_routes)
+        .layer(SetResponseHeaderLayer::overriding(
+            HeaderName::from_static("x-content-type-options"),
+            HeaderValue::from_static("nosniff"),
+        ))
+        .layer(SetResponseHeaderLayer::overriding(
+            HeaderName::from_static("x-frame-options"),
+            HeaderValue::from_static("DENY"),
+        ))
+        .layer(SetResponseHeaderLayer::overriding(
+            HeaderName::from_static("referrer-policy"),
+            HeaderValue::from_static("strict-origin-when-cross-origin"),
+        ))
         .layer(RequestBodyLimitLayer::new(1024 * 1024)) // 1MB
         .layer(cors)
         .layer(TraceLayer::new_for_http())
@@ -177,6 +191,14 @@ pub fn build_router(state: AppState) -> Router {
         .with_state(state)
 }
 
-async fn health() -> axum::Json<serde_json::Value> {
-    axum::Json(serde_json::json!({"status": "ok"}))
+async fn health(
+    State(state): State<AppState>,
+) -> Result<axum::Json<serde_json::Value>, (StatusCode, axum::Json<serde_json::Value>)> {
+    match sqlx::query("SELECT 1").execute(&state.read_db).await {
+        Ok(_) => Ok(axum::Json(serde_json::json!({"status": "ok"}))),
+        Err(e) => Err((
+            StatusCode::SERVICE_UNAVAILABLE,
+            axum::Json(serde_json::json!({"status": "unhealthy", "error": e.to_string()})),
+        )),
+    }
 }

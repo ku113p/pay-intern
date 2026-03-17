@@ -5,14 +5,18 @@ import { authApi } from '../../api/auth';
 export function LoginForm() {
   const [email, setEmail] = useState('');
   const [magicLinkSent, setMagicLinkSent] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoading(true);
     try {
       await authApi.requestMagicLink(email);
       setMagicLinkSent(true);
     } catch (err: any) {
       toast.error(err.response?.data?.error || 'Failed to send magic link');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -45,9 +49,10 @@ export function LoginForm() {
       </div>
       <button
         type="submit"
-        className="w-full bg-indigo-600 text-white py-2 rounded-md hover:bg-indigo-700"
+        disabled={loading}
+        className="w-full bg-indigo-600 text-white py-2 rounded-md hover:bg-indigo-700 disabled:opacity-50"
       >
-        Send magic link
+        {loading ? 'Sending...' : 'Send magic link'}
       </button>
       <p className="text-xs text-gray-500 text-center">
         Sign in or create an account. You can set up your profile after signing in.

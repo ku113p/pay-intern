@@ -99,14 +99,22 @@ pub async fn send_message(
         .await;
     }
 
+    let (msg_id, msg_app_id, msg_sender_id, msg_body, msg_created_at) =
+        sqlx::query_as::<_, (String, String, String, String, String)>(
+            "SELECT id, application_id, sender_id, body, created_at FROM messages WHERE id = ?",
+        )
+        .bind(&id)
+        .fetch_one(write_db)
+        .await?;
+
     Ok(MessageResponse {
-        id,
-        application_id: application_id.to_string(),
-        sender_id: sender_str,
+        id: msg_id,
+        application_id: msg_app_id,
+        sender_id: msg_sender_id,
         sender_name,
-        body: req.body.clone(),
+        body: msg_body,
         is_read: true, // sender always "read" their own message
-        created_at: chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string(),
+        created_at: msg_created_at,
     })
 }
 

@@ -1,4 +1,5 @@
 use axum::extract::{Path, State};
+use axum::http::StatusCode;
 use axum::Json;
 use validator::Validate;
 
@@ -12,10 +13,10 @@ pub async fn create_review(
     State(state): State<AppState>,
     auth: AuthUser,
     Json(req): Json<CreateOutcomeReviewRequest>,
-) -> Result<Json<OutcomeReviewResponse>, AppError> {
+) -> Result<(StatusCode, Json<OutcomeReviewResponse>), AppError> {
     req.validate()?;
     let review = review_service::create_review(&auth.user_id, &req, &state.write_db, &state.config).await?;
-    Ok(Json(review.into()))
+    Ok((StatusCode::CREATED, Json(review.into())))
 }
 
 pub async fn get_review(

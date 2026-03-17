@@ -34,6 +34,7 @@ export function SaveButton({ listingId, initialSaved = false, variant = 'icon' }
     return (
       <button
         onClick={handleClick}
+        disabled={toggleMutation.isPending}
         className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-sm border ${
           saved
             ? 'bg-indigo-50 border-indigo-200 text-indigo-700'
@@ -51,6 +52,7 @@ export function SaveButton({ listingId, initialSaved = false, variant = 'icon' }
   return (
     <button
       onClick={handleClick}
+      disabled={toggleMutation.isPending}
       className="text-gray-400 hover:text-indigo-600"
       title={saved ? 'Remove bookmark' : 'Save for later'}
     >

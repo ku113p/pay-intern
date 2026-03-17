@@ -53,6 +53,7 @@ export function InterestButton({
     return (
       <button
         onClick={handleClick}
+        disabled={toggleMutation.isPending}
         className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-sm border ${
           interested
             ? 'bg-rose-50 border-rose-200 text-rose-700'
@@ -70,6 +71,7 @@ export function InterestButton({
   return (
     <button
       onClick={handleClick}
+      disabled={toggleMutation.isPending}
       className={`${interested ? 'text-rose-500' : 'text-gray-400 hover:text-rose-500'}`}
       title={interested ? 'Remove interest' : "Signal interest"}
     >

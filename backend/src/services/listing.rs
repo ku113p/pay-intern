@@ -162,6 +162,14 @@ pub async fn update_listing(
         return Err(AppError::BadRequest("Invalid payment_direction".into()));
     }
     let format = req.format.as_deref().unwrap_or(&listing.format);
+    // If outcome_criteria provided in the update, validate at least 3 items
+    if let Some(criteria) = &req.outcome_criteria {
+        if criteria.len() < 3 {
+            return Err(AppError::BadRequest(
+                "Outcome criteria require at least 3 items".into(),
+            ));
+        }
+    }
     let outcome_criteria = req
         .outcome_criteria
         .as_ref()
@@ -169,6 +177,9 @@ pub async fn update_listing(
         .or(listing.outcome_criteria);
     let visibility = req.visibility.as_deref().unwrap_or(&listing.visibility);
     let status = req.status.as_deref().unwrap_or(&listing.status);
+    if !["active", "closed", "paused", "draft"].contains(&status) {
+        return Err(AppError::BadRequest("Invalid status".into()));
+    }
     let experience_level = req.experience_level.as_deref().unwrap_or(&listing.experience_level);
 
     sqlx::query(
