@@ -467,14 +467,17 @@ pub async fn get_similar_listings(
          WHERE l.id != ? AND l.author_role = ? AND l.status = 'active' AND l.visibility = 'public' \
            AND l.author_id != ? \
          ORDER BY \
-           (SELECT COUNT(*) FROM json_each(l.skills) je \
-            WHERE je.value IN (SELECT value FROM json_each(?))) DESC, \
+           CASE WHEN json_valid(l.skills) AND json_valid(?) THEN \
+             (SELECT COUNT(*) FROM json_each(l.skills) je \
+              WHERE je.value IN (SELECT value FROM json_each(?))) \
+           ELSE 0 END DESC, \
            ABS(l.duration_weeks - ?) ASC \
          LIMIT 4",
     )
     .bind(listing_id)
     .bind(&listing.author_role)
     .bind(&listing.author_id)
+    .bind(&listing.skills)
     .bind(&listing.skills)
     .bind(listing.duration_weeks)
     .fetch_all(read_db)
