@@ -15,7 +15,6 @@ import { CreateListingPage } from './pages/CreateListingPage';
 import { MyApplicationsPage } from './pages/MyApplicationsPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { PublicProfilePage } from './pages/PublicProfilePage';
-import { PromoPage } from './pages/PromoPage';
 import { MyListingsPage } from './pages/MyListingsPage';
 import { EditListingPage } from './pages/EditListingPage';
 import { ReviewPage } from './pages/ReviewPage';
@@ -36,11 +35,10 @@ function App() {
       <ErrorBoundary FallbackComponent={ErrorFallback} onError={console.error}>
       <BrowserRouter>
         <Routes>
-          {/* Standalone page — own layout, no shared header */}
-          <Route path="/promo" element={<PromoPage />} />
+          {/* Landing page for logged-out users is standalone (own nav) */}
+          <Route path="/" element={<HomePage />} />
 
           <Route element={<Layout />}>
-            <Route path="/" element={<HomePage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/auth/verify" element={<MagicLinkVerifyPage />} />
             <Route path="/developers" element={<DeveloperFeedPage />} />

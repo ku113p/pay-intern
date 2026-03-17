@@ -1,0 +1,29 @@
+{
+  "nav": {
+    "signIn": "Iniciar sesión",
+    "signUp": "Comenzar",
+    "dashboard": "Panel",
+    "browse": "Ver listados",
+    "postListing": "Publicar listado"
+  },
+  "roles": {
+    "professional": "Profesional",
+    "company": "Empresa"
+  },
+  "cta": {
+    "getStarted": "Comenzar gratis",
+    "learnMore": "Más información",
+    "browseListings": "Ver listados",
+    "postListing": "Publicar listado"
+  },
+  "footer": {
+    "rights": "Todos los derechos reservados.",
+    "privacy": "Privacidad",
+    "terms": "Términos"
+  },
+  "languages": {
+    "en": "English",
+    "ru": "Русский",
+    "es": "Español"
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "nav": {
+    "signIn": "Войти",
+    "signUp": "Начать",
+    "dashboard": "Панель",
+    "browse": "Смотреть листинги",
+    "postListing": "Разместить листинг"
+  },
+  "roles": {
+    "professional": "Специалист",
+    "company": "Компания"
+  },
+  "cta": {
+    "getStarted": "Начать бесплатно",
+    "learnMore": "Узнать больше",
+    "browseListings": "Смотреть листинги",
+    "postListing": "Разместить листинг"
+  },
+  "footer": {
+    "rights": "Все права защищены.",
+    "privacy": "Конфиденциальность",
+    "terms": "Условия"
+  },
+  "languages": {
+    "en": "English",
+    "ru": "Русский",
+    "es": "Español"
+  }
+}

@@ -1,0 +1,235 @@
+{
+  "sourceLabel": "Fuente",
+  "perspectiveToggle": {
+    "forCompanies": "Para Empresas",
+    "forProfessionals": "Para Profesionales"
+  },
+  "hero": {
+    "company": {
+      "badge": "El marketplace de prueba antes de contratar",
+      "headline1": "Mintieron en su currículum.",
+      "headline2": "Lo descubriste después de contratarlos.",
+      "sub": "El 55% de los profesionales admite exagerar su currículum. Las entrevistas tradicionales predicen el éxito laboral solo el 57% de las veces — apenas mejor que lanzar una moneda. HireProof te permite evaluar trabajo real antes de comprometerte.",
+      "cta": "Publica tu primer listado",
+      "ctaSecondary": "Explorar profesionales"
+    },
+    "professional": {
+      "badge": "El marketplace para demostrar tus habilidades",
+      "headline1": "La contratación está rota.",
+      "headline2": "Seguirás chocando contra el muro.",
+      "sub": "Deja de pagar a mentores que te enseñan a falsificar experiencia. Ve directamente a empleadores reales — trabaja en su producto real, construye pruebas reales y deja que los resultados verificados hablen más que cualquier currículum.",
+      "cta": "Encuentra un proyecto",
+      "ctaSecondary": "Publica tu perfil"
+    }
+  },
+  "painPoints": {
+    "company": {
+      "title": "El problema de contratación es peor de lo que piensas",
+      "stats": [
+        {
+          "value": "$36K",
+          "label": "Costo promedio de una mala contratación",
+          "source": "SHRM"
+        },
+        {
+          "value": "55%",
+          "label": "de profesionales IT admiten mentir en su currículum",
+          "source": "StaffCircle 2023"
+        },
+        {
+          "value": "57%",
+          "label": "precisión de entrevistas para predecir éxito laboral",
+          "source": "Schmidt & Hunter"
+        }
+      ]
+    },
+    "professional": {
+      "title": "El sistema está en tu contra",
+      "stats": [
+        {
+          "value": "73%",
+          "label": "reducción en empleos de nivel inicial desde 2020",
+          "source": "Korn Ferry"
+        },
+        {
+          "value": "35%",
+          "label": "de empleos \"iniciales\" requieren 3+ años de experiencia",
+          "source": "LinkedIn Data"
+        },
+        {
+          "value": "200+",
+          "label": "solicitudes por buscador de empleo en promedio",
+          "source": "Glassdoor"
+        }
+      ]
+    }
+  },
+  "solution": {
+    "title": "Cómo HireProof cambia las reglas del juego",
+    "pillars": [
+      {
+        "title": "Proyectos reales",
+        "desc": "Sin simulaciones. Sin problemas de juguete. Trabaja en productos reales con equipos reales y plazos reales."
+      },
+      {
+        "title": "Criterios medibles",
+        "desc": "Cada compromiso tiene objetivos claros definidos desde el inicio. Sin ambigüedad — ambas partes saben cómo se ve el éxito."
+      },
+      {
+        "title": "Resultados verificados",
+        "desc": "Evaluaciones estructuradas, contribuciones reales y resultados medibles que puedes demostrar a tu próximo empleador."
+      }
+    ]
+  },
+  "howItWorks": {
+    "company": {
+      "title": "Cómo funciona para empresas",
+      "steps": [
+        {
+          "title": "Publica",
+          "desc": "Define criterios de resultado, habilidades requeridas y alcance del proyecto. O busca perfiles profesionales directamente."
+        },
+        {
+          "title": "Mentoriza",
+          "desc": "5-10 horas por semana por profesional. Hitos estructurados, revisión de código y check-ins regulares."
+        },
+        {
+          "title": "Contrata o evalúa",
+          "desc": "Cada compromiso es una entrevista de trabajo real. Contrata a quienes cumplan — o deja una evaluación verificada."
+        }
+      ]
+    },
+    "professional": {
+      "title": "Cómo funciona para profesionales",
+      "steps": [
+        {
+          "title": "Busca",
+          "desc": "Encuentra listados de empresas con criterios claros, mentores dedicados y proyectos reales."
+        },
+        {
+          "title": "Trabaja",
+          "desc": "Pasa 4-12 semanas integrado en un equipo real, realizando trabajo real con guía estructurada."
+        },
+        {
+          "title": "Demuestra",
+          "desc": "Gradúate con resultados verificados, contribuciones reales y referencias que realmente significan algo."
+        }
+      ]
+    }
+  },
+  "outcome": {
+    "title": "Cómo se ve una prueba verificada",
+    "card": {
+      "role": "Desarrollador Frontend",
+      "company": "TechCorp Inc.",
+      "duration": "8 semanas",
+      "criteria": ["Implementó dashboard responsivo con 3 vistas", "Alcanzó 90%+ de cobertura de tests", "Pasó code review en todos los PRs"],
+      "rating": 4.8,
+      "review": "Entregó antes de lo previsto. Código limpio, excelente comunicación. Lo contrataríamos a tiempo completo."
+    }
+  },
+  "socialProof": {
+    "title": "Confianza de ambos lados",
+    "stats": [
+      { "value": "2,400+", "label": "Profesionales conectados" },
+      { "value": "340+", "label": "Empresas en la plataforma" },
+      { "value": "92%", "label": "Tasa de finalización" },
+      { "value": "67%", "label": "Conversión a tiempo completo" }
+    ],
+    "testimonials": [
+      {
+        "quote": "Solíamos gastar $15K por contratación en reclutadores. Ahora los candidatos se prueban antes de comprometernos.",
+        "name": "Sarah Chen",
+        "title": "VP de Ingeniería, DataFlow"
+      },
+      {
+        "quote": "Envié 300 solicitudes sin respuesta. Un compromiso en HireProof y tuve 3 ofertas en un mes.",
+        "name": "Marcus Rivera",
+        "title": "Desarrollador Full-Stack"
+      }
+    ]
+  },
+  "directAccess": {
+    "title": "Sin intermediarios. Sin márgenes. Solo resultados.",
+    "sub": "Todos son directamente accesibles. Sin reclutadores llevándose un porcentaje. Sin publicidad pagada. Un marketplace abierto donde el talento y la oportunidad se conectan sin fricción.",
+    "points": [
+      { "title": "Cero comisiones de reclutamiento", "desc": "Las empresas contactan profesionales directamente — sin sobrecargo de agencias." },
+      { "title": "Sin costos ocultos", "desc": "La plataforma es transparente. Lo que ves es lo que pagas." },
+      { "title": "Abierto para todos", "desc": "Cualquier profesional, cualquier empresa. Desarrolladores, diseñadores, vendedores, analistas — cualquiera que pueda demostrar sus habilidades." }
+    ]
+  },
+  "tech": {
+    "title": "Construido para velocidad y seguridad",
+    "sub": "HireProof está desarrollado con Rust — un lenguaje de sistemas con seguridad de memoria. Esto significa rendimiento ultrarrápido, cero tiempo de inactividad y datos en los que puedes confiar.",
+    "points": [
+      { "title": "Respuestas en menos de 50ms", "desc": "Cada interacción se siente instantánea." },
+      { "title": "Seguro por diseño", "desc": "Construido con Rust — sin desbordamientos de memoria, sin fugas de datos." },
+      { "title": "Siempre disponible", "desc": "Diseñado para fiabilidad. Tus datos están seguros y siempre accesibles." }
+    ]
+  },
+  "comparison": {
+    "title": "HireProof vs. las alternativas",
+    "headers": ["", "HireProof", "Contratación tradicional", "Plataformas freelance", "Pruebas técnicas"],
+    "rows": [
+      { "label": "Ver trabajo real", "values": ["yes", "no", "partial", "partial"] },
+      { "label": "Mentoría estructurada", "values": ["yes", "no", "no", "no"] },
+      { "label": "Resultados verificados", "values": ["yes", "no", "partial", "no"] },
+      { "label": "Evaluación sin riesgo", "values": ["yes", "no", "no", "partial"] },
+      { "label": "Acceso directo", "values": ["yes", "no", "yes", "no"] },
+      { "label": "Sin comisiones", "values": ["yes", "no", "yes", "yes"] }
+    ]
+  },
+  "faq": {
+    "title": "Preguntas frecuentes",
+    "shared": [
+      {
+        "q": "¿Qué es HireProof?",
+        "a": "HireProof es un marketplace bilateral donde profesionales invierten en compromisos de trabajo reales y mentorizados con empresas. Las empresas evalúan trabajo real antes de contratar. Los profesionales construyen pruebas verificadas de sus capacidades."
+      },
+      {
+        "q": "¿HireProof es solo para desarrolladores de software?",
+        "a": "No. Aunque empezamos con tecnología, HireProof es para cualquier profesional — diseñadores, vendedores, analistas, especialistas en marketing y más. Cualquiera que pueda demostrar habilidades a través de compromisos de trabajo estructurados."
+      },
+      {
+        "q": "¿Cómo funciona el pago?",
+        "a": "La dirección del pago es flexible. En la mayoría de compromisos, el profesional paga a la empresa por la oportunidad — piénsalo como una inversión directa en la fuente, no en un bootcamp intermediario. Algunas empresas también ofrecen posiciones remuneradas. Cada listado especifica los términos."
+      }
+    ],
+    "company": [
+      {
+        "q": "¿Cuánto tiempo requiere la mentoría?",
+        "a": "La mayoría de compromisos requieren 5-10 horas de mentoría por semana por profesional. Tú defines el alcance y el ritmo."
+      },
+      {
+        "q": "¿Qué pasa si el profesional no cumple?",
+        "a": "Defines criterios de resultado desde el inicio. Si no se cumplen, dejas una evaluación honesta. No hay obligación de contratar. Cada compromiso es una prueba."
+      }
+    ],
+    "professional": [
+      {
+        "q": "¿Por qué pagaría yo a una empresa en vez de que me paguen?",
+        "a": "Es una inversión en ti mismo — directamente. En lugar de pagar $15K a un bootcamp por proyectos de juguete, inviertes una fracción para trabajar en un producto real, con un mentor real, y te vas con pruebas verificadas y posibles ofertas laborales."
+      },
+      {
+        "q": "¿Y si ya tengo experiencia?",
+        "a": "HireProof también funciona como una plataforma de contratación regular. Las empresas pueden publicar posiciones remuneradas y tú puedes postularte directamente. Tu historial verificado te hace destacar."
+      }
+    ]
+  },
+  "finalCta": {
+    "company": {
+      "title": "Deja de apostar por currículums",
+      "sub": "Ve lo que los profesionales pueden hacer realmente antes de contratarlos.",
+      "cta": "Publica tu primer listado"
+    },
+    "professional": {
+      "title": "Deja de fingir. Empieza a demostrar.",
+      "sub": "Experiencia real con empresas reales. Resultados verificados que abren puertas.",
+      "cta": "Encuentra tu primer proyecto"
+    }
+  },
+  "stickyCta": {
+    "company": "Publicar listado",
+    "professional": "Encontrar proyecto"
+  }
+}

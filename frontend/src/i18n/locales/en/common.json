@@ -1,0 +1,29 @@
+{
+  "nav": {
+    "signIn": "Sign In",
+    "signUp": "Get Started",
+    "dashboard": "Dashboard",
+    "browse": "Browse Listings",
+    "postListing": "Post a Listing"
+  },
+  "roles": {
+    "professional": "Professional",
+    "company": "Company"
+  },
+  "cta": {
+    "getStarted": "Get Started Free",
+    "learnMore": "Learn More",
+    "browseListings": "Browse Listings",
+    "postListing": "Post a Listing"
+  },
+  "footer": {
+    "rights": "All rights reserved.",
+    "privacy": "Privacy",
+    "terms": "Terms"
+  },
+  "languages": {
+    "en": "English",
+    "ru": "Русский",
+    "es": "Español"
+  }
+}

@@ -1,0 +1,235 @@
+{
+  "sourceLabel": "Source",
+  "perspectiveToggle": {
+    "forCompanies": "For Companies",
+    "forProfessionals": "For Professionals"
+  },
+  "hero": {
+    "company": {
+      "badge": "The try-before-you-hire marketplace",
+      "headline1": "They Lied on Their Resume.",
+      "headline2": "You Found Out After Hiring Them.",
+      "sub": "55% of professionals admit to exaggerating their resume. Traditional interviews predict job success only 57% of the time — barely better than a coin flip. HireProof lets you evaluate real work before you commit.",
+      "cta": "Post Your First Listing",
+      "ctaSecondary": "Browse Professionals"
+    },
+    "professional": {
+      "badge": "The prove-your-skills marketplace",
+      "headline1": "Hiring Is Broken.",
+      "headline2": "You'll Keep Hitting Walls Forever.",
+      "sub": "Stop paying mentors who teach you to fake experience. Go directly to real employers — work on their actual product, build real proof, and let verified outcomes speak louder than any resume.",
+      "cta": "Find a Project",
+      "ctaSecondary": "Post Your Profile"
+    }
+  },
+  "painPoints": {
+    "company": {
+      "title": "The Hiring Problem Is Worse Than You Think",
+      "stats": [
+        {
+          "value": "$36K",
+          "label": "Average cost of a bad hire",
+          "source": "SHRM"
+        },
+        {
+          "value": "55%",
+          "label": "of IT professionals admit lying on their resume",
+          "source": "StaffCircle 2023"
+        },
+        {
+          "value": "57%",
+          "label": "interview accuracy at predicting job success",
+          "source": "Schmidt & Hunter"
+        }
+      ]
+    },
+    "professional": {
+      "title": "The System Is Stacked Against You",
+      "stats": [
+        {
+          "value": "73%",
+          "label": "decline in entry-level job postings since 2020",
+          "source": "Korn Ferry"
+        },
+        {
+          "value": "35%",
+          "label": "of \"entry-level\" jobs require 3+ years experience",
+          "source": "LinkedIn Data"
+        },
+        {
+          "value": "200+",
+          "label": "applications per job seeker on average",
+          "source": "Glassdoor"
+        }
+      ]
+    }
+  },
+  "solution": {
+    "title": "How HireProof Changes the Game",
+    "pillars": [
+      {
+        "title": "Real Projects",
+        "desc": "No simulations. No toy problems. Work on actual products with real teams and real deadlines."
+      },
+      {
+        "title": "Measurable Criteria",
+        "desc": "Every engagement has clear outcome goals defined upfront. No ambiguity — both sides know what success looks like."
+      },
+      {
+        "title": "Verified Results",
+        "desc": "Structured reviews, merged contributions, and measurable outcomes you can prove to your next employer."
+      }
+    ]
+  },
+  "howItWorks": {
+    "company": {
+      "title": "How It Works for Companies",
+      "steps": [
+        {
+          "title": "Post",
+          "desc": "Define outcome criteria, required skills, and project scope. Or browse professional profiles directly."
+        },
+        {
+          "title": "Mentor",
+          "desc": "5-10 hours per week per professional. Structured milestones, code review, and regular check-ins."
+        },
+        {
+          "title": "Hire or Review",
+          "desc": "Every engagement is a working interview. Hire the ones who deliver — or leave a verified review."
+        }
+      ]
+    },
+    "professional": {
+      "title": "How It Works for Professionals",
+      "steps": [
+        {
+          "title": "Browse",
+          "desc": "Find company listings with clear outcome criteria, dedicated mentors, and real projects."
+        },
+        {
+          "title": "Work",
+          "desc": "Spend 4-12 weeks embedded in a real team, shipping real work with structured guidance."
+        },
+        {
+          "title": "Prove",
+          "desc": "Graduate with verified outcomes, real contributions, and references that actually mean something."
+        }
+      ]
+    }
+  },
+  "outcome": {
+    "title": "What Verified Proof Looks Like",
+    "card": {
+      "role": "Frontend Developer",
+      "company": "TechCorp Inc.",
+      "duration": "8 weeks",
+      "criteria": ["Implemented responsive dashboard with 3 views", "Achieved 90%+ test coverage", "Passed code review on all PRs"],
+      "rating": 4.8,
+      "review": "Delivered ahead of schedule. Clean code, great communication. Would hire full-time."
+    }
+  },
+  "socialProof": {
+    "title": "Trusted by Both Sides",
+    "stats": [
+      { "value": "2,400+", "label": "Professionals matched" },
+      { "value": "340+", "label": "Companies on the platform" },
+      { "value": "92%", "label": "Engagement completion rate" },
+      { "value": "67%", "label": "Convert to full-time offers" }
+    ],
+    "testimonials": [
+      {
+        "quote": "We used to spend $15K per hire on recruiters. Now candidates prove themselves before we commit.",
+        "name": "Sarah Chen",
+        "title": "VP of Engineering, DataFlow"
+      },
+      {
+        "quote": "I applied to 300 jobs with zero callbacks. One HireProof engagement and I had 3 offers in a month.",
+        "name": "Marcus Rivera",
+        "title": "Full-Stack Developer"
+      }
+    ]
+  },
+  "directAccess": {
+    "title": "No Middlemen. No Margins. Just Results.",
+    "sub": "Everyone is directly accessible. No recruiters taking a cut. No paid ads needed. An open marketplace where talent and opportunity connect without friction.",
+    "points": [
+      { "title": "Zero recruitment fees", "desc": "Companies connect with professionals directly — no agency markup." },
+      { "title": "No hidden costs", "desc": "The platform is transparent. What you see is what you pay." },
+      { "title": "Open to everyone", "desc": "Any professional, any company. Developers, designers, salespeople, analysts — anyone who can prove their skills." }
+    ]
+  },
+  "tech": {
+    "title": "Built for Speed and Safety",
+    "sub": "HireProof is engineered with Rust — a memory-safe systems language. That means blazing-fast performance, zero downtime, and data you can trust.",
+    "points": [
+      { "title": "Sub-50ms responses", "desc": "Every interaction feels instant." },
+      { "title": "Memory-safe by design", "desc": "Built with Rust — no buffer overflows, no data leaks." },
+      { "title": "Always on", "desc": "Engineered for reliability. Your data is safe and always accessible." }
+    ]
+  },
+  "comparison": {
+    "title": "HireProof vs. the Alternatives",
+    "headers": ["", "HireProof", "Traditional Hiring", "Freelance Platforms", "Coding Tests"],
+    "rows": [
+      { "label": "See real work output", "values": ["yes", "no", "partial", "partial"] },
+      { "label": "Structured mentorship", "values": ["yes", "no", "no", "no"] },
+      { "label": "Verified outcomes", "values": ["yes", "no", "partial", "no"] },
+      { "label": "Risk-free evaluation", "values": ["yes", "no", "no", "partial"] },
+      { "label": "Direct access", "values": ["yes", "no", "yes", "no"] },
+      { "label": "No recruitment fees", "values": ["yes", "no", "yes", "yes"] }
+    ]
+  },
+  "faq": {
+    "title": "Frequently Asked Questions",
+    "shared": [
+      {
+        "q": "What is HireProof?",
+        "a": "HireProof is a two-sided marketplace where professionals invest in real, mentored work engagements with companies. Companies get to evaluate real work before hiring. Professionals build verified proof of their abilities."
+      },
+      {
+        "q": "Is HireProof only for software developers?",
+        "a": "No. While we started with tech, HireProof is for any professional — designers, salespeople, analysts, marketers, and more. Anyone who can demonstrate skills through structured work engagements."
+      },
+      {
+        "q": "How does payment work?",
+        "a": "Payment direction is flexible. In most engagements, the professional pays the company for the opportunity — think of it like tuition going directly to the source, not a middleman bootcamp. Some companies also offer paid positions. Each listing specifies the terms."
+      }
+    ],
+    "company": [
+      {
+        "q": "How much time does mentoring require?",
+        "a": "Most engagements require 5-10 hours per week of mentoring time per professional. You define the scope and pace."
+      },
+      {
+        "q": "What if the professional doesn't deliver?",
+        "a": "You set outcome criteria upfront. If they're not met, you provide an honest review. There's no obligation to hire. Every engagement is a trial."
+      }
+    ],
+    "professional": [
+      {
+        "q": "Why would I pay a company instead of them paying me?",
+        "a": "Think of it as investing in yourself — directly. Instead of paying $15K to a bootcamp that gives you toy projects, you invest a fraction of that to work on a real product, with a real mentor, and walk away with verified proof and potential job offers."
+      },
+      {
+        "q": "What if I already have experience?",
+        "a": "HireProof works as a regular hiring platform too. Companies can post paid positions, and you can apply directly. Your verified track record makes you stand out."
+      }
+    ]
+  },
+  "finalCta": {
+    "company": {
+      "title": "Stop Gambling on Resumes",
+      "sub": "See what professionals can actually do before you hire them.",
+      "cta": "Post Your First Listing"
+    },
+    "professional": {
+      "title": "Stop Faking It. Start Proving It.",
+      "sub": "Real experience with real companies. Verified outcomes that open doors.",
+      "cta": "Find Your First Project"
+    }
+  },
+  "stickyCta": {
+    "company": "Post a Listing",
+    "professional": "Find a Project"
+  }
+}
