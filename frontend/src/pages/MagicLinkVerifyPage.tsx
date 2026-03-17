@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { authApi } from '../api/auth';
 import { useAuthStore } from '../stores/auth';
+import { getApiErrorMessage } from '../lib/errors';
 
 export function MagicLinkVerifyPage() {
   const [searchParams] = useSearchParams();
@@ -10,17 +11,13 @@ export function MagicLinkVerifyPage() {
   const [error, setError] = useState('');
   const verifyInitiated = useRef(false);
 
+  const token = searchParams.get('token');
+  const email = searchParams.get('email');
+  const missingParams = !token || !email;
+
   useEffect(() => {
-    if (verifyInitiated.current) return;
+    if (missingParams || verifyInitiated.current) return;
     verifyInitiated.current = true;
-
-    const token = searchParams.get('token');
-    const email = searchParams.get('email');
-
-    if (!token || !email) {
-      setError('Invalid magic link');
-      return;
-    }
 
     authApi
       .verifyMagicLink(email, token)
@@ -28,10 +25,19 @@ export function MagicLinkVerifyPage() {
         setTokens(res.data.access_token, res.data.refresh_token);
         navigate('/');
       })
-      .catch((err) => {
-        setError(err.response?.data?.error || 'Verification failed');
+      .catch((err: unknown) => {
+        setError(getApiErrorMessage(err, 'Verification failed'));
       });
-  }, [searchParams, navigate, setTokens]);
+  }, [missingParams, email, token, navigate, setTokens]);
+
+  if (missingParams) {
+    return (
+      <div className="max-w-md mx-auto text-center">
+        <h1 className="text-2xl font-bold text-gray-900 mb-4">Verification Failed</h1>
+        <p className="text-red-600">Invalid magic link</p>
+      </div>
+    );
+  }
 
   if (error) {
     return (

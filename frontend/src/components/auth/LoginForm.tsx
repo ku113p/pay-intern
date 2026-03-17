@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { authApi } from '../../api/auth';
+import { getApiErrorMessage } from '../../lib/errors';
 
 export function LoginForm() {
   const [email, setEmail] = useState('');
@@ -13,8 +14,8 @@ export function LoginForm() {
     try {
       await authApi.requestMagicLink(email);
       setMagicLinkSent(true);
-    } catch (err: any) {
-      toast.error(err.response?.data?.error || 'Failed to send magic link');
+    } catch (err: unknown) {
+      toast.error(getApiErrorMessage(err, 'Failed to send magic link'));
     } finally {
       setLoading(false);
     }

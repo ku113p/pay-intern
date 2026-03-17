@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import { useAuthStore } from '../stores/auth';
 import { profilesApi } from '../api/profiles';
 import { authApi } from '../api/auth';
+import { getApiErrorMessage } from '../lib/errors';
 import { IndividualProfileForm } from '../components/profiles/DeveloperProfileForm';
 import { OrganizationProfileForm } from '../components/profiles/CompanyProfileForm';
 import type { ActiveRole } from '../stores/auth';
@@ -41,8 +42,8 @@ export function ProfilePage() {
       const res = await authApi.switchRole(role);
       setTokens(res.data.access_token, res.data.refresh_token);
       toast.success(`Switched to ${role} mode`);
-    } catch (err: any) {
-      toast.error(err.response?.data?.error || 'Failed to switch role');
+    } catch (err: unknown) {
+      toast.error(getApiErrorMessage(err, 'Failed to switch role'));
     } finally {
       setSwitching(false);
     }

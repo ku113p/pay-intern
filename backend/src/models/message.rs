@@ -2,6 +2,7 @@ use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 use validator::Validate;
 
+#[allow(dead_code)]
 #[derive(Debug, FromRow)]
 pub struct Message {
     pub id: String,
@@ -56,7 +57,7 @@ impl MessageQuery {
         self.page.unwrap_or(1).max(1)
     }
     pub fn per_page(&self) -> u32 {
-        self.per_page.unwrap_or(50).min(100).max(1)
+        self.per_page.unwrap_or(50).clamp(1, 100)
     }
     pub fn offset(&self) -> u32 {
         (self.page() - 1) * self.per_page()

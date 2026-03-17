@@ -14,6 +14,7 @@ pub enum AppError {
     NotFound(String),
     #[error("{0}")]
     Conflict(String),
+    #[allow(dead_code)]
     #[error("Too many requests")]
     RateLimited,
     #[error("Internal server error")]

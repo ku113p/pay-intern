@@ -148,33 +148,33 @@ impl From<ProfileLink> for ProfileLinkResponse {
 }
 
 impl IndividualProfile {
-    pub fn to_response(self, links: Vec<ProfileLinkResponse>) -> IndividualProfileResponse {
+    pub fn to_response(&self, links: Vec<ProfileLinkResponse>) -> IndividualProfileResponse {
         let skills: Vec<String> = serde_json::from_str(&self.skills).unwrap_or_default();
         IndividualProfileResponse {
-            user_id: self.user_id,
-            bio: self.bio,
-            headline: self.headline,
-            profession: self.profession,
+            user_id: self.user_id.clone(),
+            bio: self.bio.clone(),
+            headline: self.headline.clone(),
+            profession: self.profession.clone(),
             skills,
-            experience_level: self.experience_level,
-            contact_email: self.contact_email,
+            experience_level: self.experience_level.clone(),
+            contact_email: self.contact_email.clone(),
             links,
         }
     }
 }
 
 impl OrganizationProfile {
-    pub fn to_response(self, links: Vec<ProfileLinkResponse>) -> OrganizationProfileResponse {
+    pub fn to_response(&self, links: Vec<ProfileLinkResponse>) -> OrganizationProfileResponse {
         let skills_sought: Vec<String> =
             serde_json::from_str(&self.skills_sought).unwrap_or_default();
         OrganizationProfileResponse {
-            user_id: self.user_id,
-            organization_name: self.organization_name,
-            description: self.description,
-            industry: self.industry,
-            size: self.size,
+            user_id: self.user_id.clone(),
+            organization_name: self.organization_name.clone(),
+            description: self.description.clone(),
+            industry: self.industry.clone(),
+            size: self.size.clone(),
             skills_sought,
-            contact_email: self.contact_email,
+            contact_email: self.contact_email.clone(),
             links,
         }
     }

@@ -108,7 +108,7 @@ impl ListingFeedQuery {
     }
 
     pub fn per_page(&self) -> u32 {
-        self.per_page.unwrap_or(20).min(100).max(1)
+        self.per_page.unwrap_or(20).clamp(1, 100)
     }
 
     pub fn offset(&self) -> u32 {
@@ -219,7 +219,7 @@ impl PaginationQuery {
     }
 
     pub fn per_page(&self) -> u32 {
-        self.per_page.unwrap_or(20).min(100).max(1)
+        self.per_page.unwrap_or(20).clamp(1, 100)
     }
 
     pub fn offset(&self) -> u32 {

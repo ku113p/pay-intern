@@ -8,11 +8,13 @@ export function ListingDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { data: listing, isLoading, error } = useListing(id!);
 
+  const listingId = listing?.id;
+  const authorRole = listing?.author_role;
   useEffect(() => {
-    if (listing) {
-      trackEvent('listing_viewed', { listing_id: listing.id, type: listing.author_role });
+    if (listingId && authorRole) {
+      trackEvent('listing_viewed', { listing_id: listingId, type: authorRole });
     }
-  }, [listing?.id, listing?.author_role]);
+  }, [listingId, authorRole]);
 
   if (isLoading) return <p className="text-gray-500">Loading...</p>;
   if (error || !listing) return <p className="text-red-600">Listing not found</p>;

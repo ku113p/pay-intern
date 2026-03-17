@@ -4,6 +4,7 @@ use uuid::Uuid;
 use crate::error::AppError;
 use crate::models::user::*;
 
+#[allow(dead_code)]
 pub async fn get_user_by_id(user_id: &Uuid, read_db: &SqlitePool) -> Result<User, AppError> {
     sqlx::query_as::<_, User>("SELECT * FROM users WHERE id = ?")
         .bind(user_id.to_string())

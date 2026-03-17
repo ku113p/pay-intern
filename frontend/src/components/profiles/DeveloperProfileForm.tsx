@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
+import { getApiErrorMessage } from '../../lib/errors';
 import { profilesApi, type IndividualProfile } from '../../api/profiles';
 
 export function IndividualProfileForm() {
@@ -55,8 +56,8 @@ export function IndividualProfileForm() {
       setProfile(res.data);
       setNotFound(false);
       toast.success('Individual profile saved!');
-    } catch (err: any) {
-      toast.error(err.response?.data?.error || 'Failed to save profile');
+    } catch (err: unknown) {
+      toast.error(getApiErrorMessage(err, 'Failed to save profile'));
     } finally {
       setSaving(false);
     }

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import { getApiErrorMessage } from '../../lib/errors';
 import { listingsApi, type CreateListingRequest, type Listing } from '../../api/listings';
 
 interface ListingFormProps {
@@ -71,8 +72,8 @@ export function ListingForm({ initialData, onSuccess }: ListingFormProps) {
       } else {
         navigate(`/listings/${res.data.id}`);
       }
-    } catch (err: any) {
-      toast.error(err.response?.data?.error || `Failed to ${initialData ? 'update' : 'create'} listing`);
+    } catch (err: unknown) {
+      toast.error(getApiErrorMessage(err, `Failed to ${initialData ? 'update' : 'create'} listing`));
     } finally {
       setLoading(false);
     }

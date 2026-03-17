@@ -10,16 +10,15 @@ export function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
   const { pathname } = useLocation();
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- closing menu on navigation is a legitimate sync pattern
+  useEffect(() => { setMenuOpen(false); }, [pathname]);
+
   const { data: msgUnread } = useQuery({
     queryKey: ['messages-unread'],
     queryFn: () => messagesApi.getUnreadCount().then((r) => r.data),
     enabled: isAuthenticated,
     refetchInterval: 15_000,
   });
-
-  useEffect(() => {
-    setMenuOpen(false);
-  }, [pathname]);
 
   useEffect(() => {
     if (menuOpen) {

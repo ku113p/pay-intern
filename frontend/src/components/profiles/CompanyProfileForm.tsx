@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
+import { getApiErrorMessage } from '../../lib/errors';
 import { profilesApi, type OrganizationProfile } from '../../api/profiles';
 
 export function OrganizationProfileForm() {
@@ -55,8 +56,8 @@ export function OrganizationProfileForm() {
       setProfile(res.data);
       setNotFound(false);
       toast.success('Organization profile saved!');
-    } catch (err: any) {
-      toast.error(err.response?.data?.error || 'Failed to save profile');
+    } catch (err: unknown) {
+      toast.error(getApiErrorMessage(err, 'Failed to save profile'));
     } finally {
       setSaving(false);
     }

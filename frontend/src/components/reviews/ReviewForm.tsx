@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { reviewsApi, type CriterionResult } from '../../api/reviews';
+import { getApiErrorMessage } from '../../lib/errors';
 
 interface Props {
   applicationId: string;
@@ -34,8 +35,8 @@ export function ReviewForm({ applicationId, criteria, onCreated }: Props) {
         comment: comment || undefined,
       });
       onCreated();
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to create review');
+    } catch (err: unknown) {
+      setError(getApiErrorMessage(err, 'Failed to create review'));
     } finally {
       setLoading(false);
     }

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { getApiErrorMessage } from '../../lib/errors';
 import type { Listing } from '../../api/listings';
 import { listingsApi } from '../../api/listings';
 import { applicationsApi } from '../../api/applications';
@@ -33,8 +34,8 @@ export function ListingDetail({ listing }: { listing: Listing }) {
       setApplied(true);
       toast.success('Application sent!');
       trackEvent('application_sent', { listing_id: listing.id });
-    } catch (err: any) {
-      toast.error(err.response?.data?.error || 'Failed to apply');
+    } catch (err: unknown) {
+      toast.error(getApiErrorMessage(err, 'Failed to apply'));
     } finally {
       setApplying(false);
     }

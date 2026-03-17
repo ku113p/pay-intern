@@ -157,7 +157,7 @@ pub async fn get_applications(
     let applications = select_query.fetch_all(read_db).await?;
 
     let per_page = query.per_page();
-    let total_pages = if total == 0 { 1 } else { (total + per_page - 1) / per_page };
+    let total_pages = total.div_ceil(per_page).max(1);
 
     Ok(PaginatedResponse {
         data: applications.into_iter().map(Into::into).collect(),
