@@ -1,5 +1,6 @@
 import api from './client';
 import type { PaginatedResponse } from './listings';
+import type { ProfileLink } from './profiles';
 
 export interface Application {
   id: string;
@@ -10,19 +11,15 @@ export interface Application {
   created_at: string;
   updated_at: string;
   listing_title?: string;
-  listing_type?: string;
+  listing_author_role?: string;
   applicant_name?: string;
-  applicant_role?: string;
 }
 
 export interface ContactInfo {
   user_id: string;
   display_name: string;
   email: string;
-  role: string;
-  github_url: string | null;
-  linkedin_url: string | null;
-  website: string | null;
+  links: ProfileLink[];
 }
 
 export const applicationsApi = {

@@ -9,7 +9,7 @@ use crate::AppState;
 #[derive(Debug, Clone)]
 pub struct AuthUser {
     pub user_id: Uuid,
-    pub role: String,
+    pub active_role: String,
 }
 
 impl FromRequestParts<AppState> for AuthUser {
@@ -36,7 +36,7 @@ impl FromRequestParts<AppState> for AuthUser {
 
         Ok(AuthUser {
             user_id,
-            role: claims.role,
+            active_role: claims.active_role,
         })
     }
 }

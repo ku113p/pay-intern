@@ -182,7 +182,6 @@ pub async fn get_conversations(
            l.title AS listing_title, \
            CASE WHEN a.applicant_id = ? THEN l.author_id ELSE a.applicant_id END AS other_party_id, \
            CASE WHEN a.applicant_id = ? THEN ou.display_name ELSE au.display_name END AS other_party_name, \
-           CASE WHEN a.applicant_id = ? THEN ou.role ELSE au.role END AS other_party_role, \
            latest_msg.body AS last_message_body, \
            latest_msg.created_at AS last_message_at, \
            COALESCE(unread.cnt, 0) AS unread_count \
@@ -210,14 +209,13 @@ pub async fn get_conversations(
            AND (a.applicant_id = ? OR l.author_id = ?) \
          ORDER BY latest_msg.created_at DESC",
     )
-    .bind(&user_str)
-    .bind(&user_str)
-    .bind(&user_str)
-    .bind(&user_str)
-    .bind(&user_str)
-    .bind(&user_str)
-    .bind(&user_str)
-    .bind(&user_str)
+    .bind(&user_str) // other_party_id CASE
+    .bind(&user_str) // other_party_name CASE
+    .bind(&user_str) // subquery applicant_id
+    .bind(&user_str) // subquery author_id
+    .bind(&user_str) // unread sender_id !=
+    .bind(&user_str) // WHERE applicant_id
+    .bind(&user_str) // WHERE author_id
     .fetch_all(read_db)
     .await?;
 

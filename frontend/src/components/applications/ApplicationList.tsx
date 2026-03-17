@@ -2,12 +2,10 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { applicationsApi } from '../../api/applications';
-import { useAuthStore } from '../../stores/auth';
 import { StatusBadge } from '../common/StatusBadge';
 import { ContactInfoCard } from './ContactInfoCard';
 
 export function ApplicationList() {
-  const user = useAuthStore((s) => s.user);
   const queryClient = useQueryClient();
   const navigate = useNavigate();
 
@@ -88,7 +86,6 @@ export function ApplicationList() {
       <section>
         <h2 className="text-lg font-semibold text-gray-900 mb-4">
           Received Applications
-          {user?.role === 'company' ? ' (to your listings)' : ''}
         </h2>
         {!received?.data.length ? (
           <p className="text-gray-500 text-sm">No applications received.</p>
@@ -98,13 +95,9 @@ export function ApplicationList() {
               <div key={app.id} className="bg-white border border-gray-200 rounded-lg p-4">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center sm:justify-between gap-1">
                   <p className="text-sm text-gray-600">
-                    {app.applicant_role ? (
-                      <Link to={`/profiles/${app.applicant_role}/${app.applicant_id}`} className="text-indigo-600 hover:text-indigo-500">
-                        {app.applicant_name || 'Applicant'}
-                      </Link>
-                    ) : (
-                      <span>{app.applicant_id.slice(0, 8)}...</span>
-                    )}
+                    <span className="text-indigo-600">
+                      {app.applicant_name || 'Applicant'}
+                    </span>
                     {' · '}
                     <Link to={`/listings/${app.listing_id}`} className="text-indigo-600 hover:text-indigo-500">
                       {app.listing_title || app.listing_id.slice(0, 8) + '...'}

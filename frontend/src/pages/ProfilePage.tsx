@@ -3,15 +3,21 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useAuthStore } from '../stores/auth';
 import { profilesApi } from '../api/profiles';
-import { DeveloperProfileForm } from '../components/profiles/DeveloperProfileForm';
-import { CompanyProfileForm } from '../components/profiles/CompanyProfileForm';
+import { authApi } from '../api/auth';
+import { IndividualProfileForm } from '../components/profiles/DeveloperProfileForm';
+import { OrganizationProfileForm } from '../components/profiles/CompanyProfileForm';
+import type { ActiveRole } from '../stores/auth';
 
 export function ProfilePage() {
-  const { user, setUser, logout } = useAuthStore();
+  const { user, setUser, activeRole, setTokens, logout } = useAuthStore();
   const navigate = useNavigate();
   const [editingName, setEditingName] = useState(false);
   const [displayName, setDisplayName] = useState(user?.display_name || '');
   const [deleting, setDeleting] = useState(false);
+  const [tab, setTab] = useState<'individual' | 'organization'>(
+    activeRole === 'organization' ? 'organization' : 'individual'
+  );
+  const [switching, setSwitching] = useState(false);
 
   const saveName = async () => {
     try {
@@ -20,6 +26,19 @@ export function ProfilePage() {
       setEditingName(false);
     } catch {
       // ignore
+    }
+  };
+
+  const handleSwitchRole = async (role: ActiveRole) => {
+    setSwitching(true);
+    try {
+      const res = await authApi.switchRole(role);
+      setTokens(res.data.access_token, res.data.refresh_token);
+      toast.success(`Switched to ${role} mode`);
+    } catch (err: any) {
+      toast.error(err.response?.data?.error || 'Failed to switch role');
+    } finally {
+      setSwitching(false);
     }
   };
 
@@ -45,8 +64,30 @@ export function ProfilePage() {
     <div className="max-w-2xl mx-auto space-y-8">
       <div>
         <h1 className="text-2xl font-bold text-gray-900 mb-1">My Profile</h1>
-        <p className="text-sm text-gray-500">{user.email} &middot; {user.role}</p>
+        <p className="text-sm text-gray-500">
+          {user.email}
+          {activeRole && (
+            <span className={`ml-2 inline-block text-xs font-medium px-2 py-0.5 rounded ${
+              activeRole === 'organization' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'
+            }`}>
+              {activeRole}
+            </span>
+          )}
+        </p>
       </div>
+
+      {user.has_individual_profile && user.has_organization_profile && activeRole && (
+        <div className="bg-white border border-gray-200 rounded-lg p-4 flex items-center justify-between">
+          <span className="text-sm text-gray-700">Active role: <strong>{activeRole}</strong></span>
+          <button
+            onClick={() => handleSwitchRole(activeRole === 'individual' ? 'organization' : 'individual')}
+            disabled={switching}
+            className="text-sm bg-indigo-600 text-white px-4 py-1.5 rounded-md hover:bg-indigo-700 disabled:opacity-50"
+          >
+            {switching ? 'Switching...' : `Switch to ${activeRole === 'individual' ? 'organization' : 'individual'}`}
+          </button>
+        </div>
+      )}
 
       <div className="bg-white border border-gray-200 rounded-lg p-5">
         <div className="flex items-center justify-between mb-4">
@@ -72,11 +113,32 @@ export function ProfilePage() {
         )}
       </div>
 
-      <div className="bg-white border border-gray-200 rounded-lg p-5">
-        <h2 className="font-semibold text-gray-900 mb-4">
-          {user.role === 'developer' ? 'Developer' : 'Company'} Profile
-        </h2>
-        {user.role === 'developer' ? <DeveloperProfileForm /> : <CompanyProfileForm />}
+      <div className="bg-white border border-gray-200 rounded-lg">
+        <div className="flex border-b border-gray-200">
+          <button
+            onClick={() => setTab('individual')}
+            className={`flex-1 py-3 text-sm font-medium text-center ${
+              tab === 'individual'
+                ? 'border-b-2 border-indigo-600 text-indigo-600'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            Individual Profile
+          </button>
+          <button
+            onClick={() => setTab('organization')}
+            className={`flex-1 py-3 text-sm font-medium text-center ${
+              tab === 'organization'
+                ? 'border-b-2 border-indigo-600 text-indigo-600'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            Organization Profile
+          </button>
+        </div>
+        <div className="p-5">
+          {tab === 'individual' ? <IndividualProfileForm /> : <OrganizationProfileForm />}
+        </div>
       </div>
 
       <div className="border border-red-200 rounded-lg p-5">

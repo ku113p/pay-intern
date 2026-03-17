@@ -15,7 +15,7 @@ pub async fn create_listing(
 ) -> Result<Json<ListingResponse>, AppError> {
     req.validate()?;
     let listing =
-        listing_service::create_listing(&auth.user_id, &auth.role, &req, &state.write_db).await?;
+        listing_service::create_listing(&auth.user_id, &auth.active_role, &req, &state.write_db).await?;
     Ok(Json(listing.into()))
 }
 
@@ -50,28 +50,13 @@ pub async fn delete_listing(
     Ok(Json(serde_json::json!({"message": "Listing closed"})))
 }
 
-pub async fn developer_feed(
+pub async fn feed(
     State(state): State<AppState>,
     auth: OptionalAuthUser,
     Query(query): Query<ListingFeedQuery>,
 ) -> Result<Json<PaginatedResponse<ListingResponse>>, AppError> {
     let viewer_id = auth.0.as_ref().map(|a| &a.user_id);
-    let feed = listing_service::get_feed("developer", &query, viewer_id, &state.read_db).await?;
-    Ok(Json(feed))
-}
-
-pub async fn company_feed(
-    State(state): State<AppState>,
-    auth: AuthUser,
-    Query(query): Query<ListingFeedQuery>,
-) -> Result<Json<PaginatedResponse<ListingResponse>>, AppError> {
-    let feed = listing_service::get_feed(
-        "company",
-        &query,
-        Some(&auth.user_id),
-        &state.read_db,
-    )
-    .await?;
+    let feed = listing_service::get_feed(&query, viewer_id, &state.read_db).await?;
     Ok(Json(feed))
 }
 

@@ -58,14 +58,9 @@ export function Header() {
         )}
 
         <nav className={`${menuOpen ? 'flex' : 'hidden'} md:flex flex-col md:flex-row items-start md:items-center gap-4 md:gap-6 absolute md:static top-full left-0 right-0 bg-white md:bg-transparent border-b md:border-0 border-gray-200 p-4 md:p-0 shadow-lg md:shadow-none z-50`}>
-          <Link to="/developers" className="text-gray-600 hover:text-gray-900">
-            Developers
+          <Link to="/browse" className="text-gray-600 hover:text-gray-900">
+            Browse
           </Link>
-          {isAuthenticated && (
-            <Link to="/companies" className="text-gray-600 hover:text-gray-900">
-              Companies
-            </Link>
-          )}
 
           {isAuthenticated ? (
             <div className="flex flex-col md:flex-row items-start md:items-center gap-3 md:gap-4 w-full md:w-auto">

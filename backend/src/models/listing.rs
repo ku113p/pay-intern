@@ -5,11 +5,11 @@ use validator::Validate;
 pub struct Listing {
     pub id: String,
     pub author_id: String,
-    #[sqlx(rename = "type")]
-    pub listing_type: String,
+    pub author_role: String,
     pub title: String,
     pub description: String,
-    pub tech_stack: String,
+    pub category: String,
+    pub skills: String,
     pub duration_weeks: i32,
     pub price_usd: Option<f64>,
     pub payment_direction: String,
@@ -26,11 +26,11 @@ pub struct Listing {
 pub struct ListingWithAuthor {
     pub id: String,
     pub author_id: String,
-    #[sqlx(rename = "type")]
-    pub listing_type: String,
+    pub author_role: String,
     pub title: String,
     pub description: String,
-    pub tech_stack: String,
+    pub category: String,
+    pub skills: String,
     pub duration_weeks: i32,
     pub price_usd: Option<f64>,
     pub payment_direction: String,
@@ -42,9 +42,8 @@ pub struct ListingWithAuthor {
     pub created_at: String,
     pub updated_at: String,
     pub author_display_name: Option<String>,
-    pub company_name: Option<String>,
-    pub company_website: Option<String>,
-    pub developer_level: Option<String>,
+    pub organization_name: Option<String>,
+    pub individual_level: Option<String>,
     pub author_email_domain: Option<String>,
 }
 
@@ -54,7 +53,8 @@ pub struct CreateListingRequest {
     pub title: String,
     #[validate(length(min = 10, max = 5000))]
     pub description: String,
-    pub tech_stack: Vec<String>,
+    pub category: Option<String>,
+    pub skills: Vec<String>,
     #[validate(range(min = 1, max = 52))]
     pub duration_weeks: i32,
     pub price_usd: Option<f64>,
@@ -71,7 +71,8 @@ pub struct UpdateListingRequest {
     pub title: Option<String>,
     #[validate(length(min = 10, max = 5000))]
     pub description: Option<String>,
-    pub tech_stack: Option<Vec<String>>,
+    pub category: Option<String>,
+    pub skills: Option<Vec<String>>,
     #[validate(range(min = 1, max = 52))]
     pub duration_weeks: Option<i32>,
     pub price_usd: Option<f64>,
@@ -87,7 +88,10 @@ pub struct UpdateListingRequest {
 pub struct ListingFeedQuery {
     pub page: Option<u32>,
     pub per_page: Option<u32>,
-    pub tech: Option<String>,
+    pub skills: Option<String>,
+    pub category: Option<String>,
+    pub author_role: Option<String>,
+    pub payment_direction: Option<String>,
     pub format: Option<String>,
     pub min_weeks: Option<i32>,
     pub max_weeks: Option<i32>,
@@ -116,10 +120,11 @@ impl ListingFeedQuery {
 pub struct ListingResponse {
     pub id: String,
     pub author_id: String,
-    pub listing_type: String,
+    pub author_role: String,
     pub title: String,
     pub description: String,
-    pub tech_stack: Vec<String>,
+    pub category: String,
+    pub skills: Vec<String>,
     pub duration_weeks: i32,
     pub price_usd: Option<f64>,
     pub payment_direction: String,
@@ -131,16 +136,14 @@ pub struct ListingResponse {
     pub created_at: String,
     pub updated_at: String,
     pub author_display_name: Option<String>,
-    pub company_name: Option<String>,
-    pub company_website: Option<String>,
-    pub developer_level: Option<String>,
+    pub organization_name: Option<String>,
+    pub individual_level: Option<String>,
     pub author_email_domain: Option<String>,
 }
 
 impl From<Listing> for ListingResponse {
     fn from(l: Listing) -> Self {
-        let tech_stack: Vec<String> =
-            serde_json::from_str(&l.tech_stack).unwrap_or_default();
+        let skills: Vec<String> = serde_json::from_str(&l.skills).unwrap_or_default();
         let outcome_criteria: Option<Vec<String>> = l
             .outcome_criteria
             .as_ref()
@@ -148,10 +151,11 @@ impl From<Listing> for ListingResponse {
         Self {
             id: l.id,
             author_id: l.author_id,
-            listing_type: l.listing_type,
+            author_role: l.author_role,
             title: l.title,
             description: l.description,
-            tech_stack,
+            category: l.category,
+            skills,
             duration_weeks: l.duration_weeks,
             price_usd: l.price_usd,
             payment_direction: l.payment_direction,
@@ -163,9 +167,8 @@ impl From<Listing> for ListingResponse {
             created_at: l.created_at,
             updated_at: l.updated_at,
             author_display_name: None,
-            company_name: None,
-            company_website: None,
-            developer_level: None,
+            organization_name: None,
+            individual_level: None,
             author_email_domain: None,
         }
     }
@@ -173,8 +176,7 @@ impl From<Listing> for ListingResponse {
 
 impl From<ListingWithAuthor> for ListingResponse {
     fn from(l: ListingWithAuthor) -> Self {
-        let tech_stack: Vec<String> =
-            serde_json::from_str(&l.tech_stack).unwrap_or_default();
+        let skills: Vec<String> = serde_json::from_str(&l.skills).unwrap_or_default();
         let outcome_criteria: Option<Vec<String>> = l
             .outcome_criteria
             .as_ref()
@@ -182,10 +184,11 @@ impl From<ListingWithAuthor> for ListingResponse {
         Self {
             id: l.id,
             author_id: l.author_id,
-            listing_type: l.listing_type,
+            author_role: l.author_role,
             title: l.title,
             description: l.description,
-            tech_stack,
+            category: l.category,
+            skills,
             duration_weeks: l.duration_weeks,
             price_usd: l.price_usd,
             payment_direction: l.payment_direction,
@@ -197,9 +200,8 @@ impl From<ListingWithAuthor> for ListingResponse {
             created_at: l.created_at,
             updated_at: l.updated_at,
             author_display_name: l.author_display_name,
-            company_name: l.company_name,
-            company_website: l.company_website,
-            developer_level: l.developer_level,
+            organization_name: l.organization_name,
+            individual_level: l.individual_level,
             author_email_domain: l.author_email_domain,
         }
     }

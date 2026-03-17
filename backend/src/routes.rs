@@ -37,7 +37,8 @@ pub fn build_router(state: AppState) -> Router {
             post(handlers::auth::verify_magic_link),
         )
         .route("/refresh", post(handlers::auth::refresh))
-        .route("/logout", post(handlers::auth::logout));
+        .route("/logout", post(handlers::auth::logout))
+        .route("/switch-role", post(handlers::auth::switch_role));
 
     let user_routes = Router::new()
         .route("/me", get(handlers::users::get_me))
@@ -45,17 +46,45 @@ pub fn build_router(state: AppState) -> Router {
         .route("/me", delete(handlers::users::delete_me));
 
     let profile_routes = Router::new()
-        .route("/developer", get(handlers::profiles::get_my_developer_profile))
-        .route("/developer", put(handlers::profiles::update_my_developer_profile))
-        .route("/company", get(handlers::profiles::get_my_company_profile))
-        .route("/company", put(handlers::profiles::update_my_company_profile))
         .route(
-            "/developer/{id}",
-            get(handlers::profiles::get_public_developer_profile),
+            "/individual",
+            get(handlers::profiles::get_my_individual_profile),
         )
         .route(
-            "/company/{id}",
-            get(handlers::profiles::get_public_company_profile),
+            "/individual",
+            put(handlers::profiles::upsert_my_individual_profile),
+        )
+        .route(
+            "/individual",
+            delete(handlers::profiles::delete_my_individual_profile),
+        )
+        .route(
+            "/organization",
+            get(handlers::profiles::get_my_organization_profile),
+        )
+        .route(
+            "/organization",
+            put(handlers::profiles::upsert_my_organization_profile),
+        )
+        .route(
+            "/organization",
+            delete(handlers::profiles::delete_my_organization_profile),
+        )
+        .route(
+            "/{profile_type}/links",
+            get(handlers::profiles::get_my_profile_links),
+        )
+        .route(
+            "/{profile_type}/links",
+            put(handlers::profiles::replace_my_profile_links),
+        )
+        .route(
+            "/individual/{id}",
+            get(handlers::profiles::get_public_individual_profile),
+        )
+        .route(
+            "/organization/{id}",
+            get(handlers::profiles::get_public_organization_profile),
         )
         .route(
             "/preview/{id}",
@@ -78,12 +107,8 @@ pub fn build_router(state: AppState) -> Router {
             delete(handlers::interests::remove_interest),
         )
         .route(
-            "/feed/developers",
-            get(handlers::listings::developer_feed),
-        )
-        .route(
-            "/feed/companies",
-            get(handlers::listings::company_feed),
+            "/feed",
+            get(handlers::listings::feed),
         );
 
     let application_routes = Router::new()

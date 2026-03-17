@@ -11,13 +11,11 @@ use crate::AppState;
 #[derive(Deserialize)]
 pub struct GoogleAuthRequest {
     pub code: String,
-    pub role: String,
 }
 
 #[derive(Deserialize)]
 pub struct MagicLinkRequest {
     pub email: String,
-    pub role: String,
 }
 
 #[derive(Deserialize)]
@@ -40,12 +38,8 @@ pub async fn google_auth(
     State(state): State<AppState>,
     Json(req): Json<GoogleAuthRequest>,
 ) -> Result<Json<auth_service::TokenResponse>, AppError> {
-    if !["developer", "company"].contains(&req.role.as_str()) {
-        return Err(AppError::BadRequest("Role must be 'developer' or 'company'".into()));
-    }
-
     let user =
-        auth_service::exchange_google_code(&req.code, &req.role, &state.write_db, &state.config)
+        auth_service::exchange_google_code(&req.code, &state.write_db, &state.config)
             .await?;
     let tokens = auth_service::issue_tokens(&user, &state.write_db, &state.config).await?;
     Ok(Json(tokens))
@@ -55,18 +49,14 @@ pub async fn request_magic_link(
     State(state): State<AppState>,
     Json(req): Json<MagicLinkRequest>,
 ) -> Result<Json<serde_json::Value>, AppError> {
-    if !["developer", "company"].contains(&req.role.as_str()) {
-        return Err(AppError::BadRequest("Role must be 'developer' or 'company'".into()));
-    }
-
-    create_and_send_magic_link(&req.email, &req.role, &state).await
+    create_and_send_magic_link(&req.email, &state).await
 }
 
 pub async fn request_magic_link_login(
     State(state): State<AppState>,
     Json(req): Json<MagicLinkLoginRequest>,
 ) -> Result<Json<serde_json::Value>, AppError> {
-    let user: crate::models::user::User = sqlx::query_as(
+    let _user: crate::models::user::User = sqlx::query_as(
         "SELECT * FROM users WHERE email = ?",
     )
     .bind(&req.email)
@@ -74,16 +64,15 @@ pub async fn request_magic_link_login(
     .await?
     .ok_or_else(|| AppError::NotFound("No account found. Please register first.".into()))?;
 
-    create_and_send_magic_link(&req.email, &user.role, &state).await
+    create_and_send_magic_link(&req.email, &state).await
 }
 
 async fn create_and_send_magic_link(
     email: &str,
-    role: &str,
     state: &AppState,
 ) -> Result<Json<serde_json::Value>, AppError> {
     let raw_token =
-        auth_service::create_magic_link_token(email, role, &state.write_db).await?;
+        auth_service::create_magic_link_token(email, &state.write_db).await?;
 
     let magic_link = format!(
         "{}?token={}&email={}",
@@ -113,6 +102,27 @@ pub async fn refresh(
 ) -> Result<Json<auth_service::TokenResponse>, AppError> {
     let tokens =
         auth_service::refresh_tokens(&req.refresh_token, &state.write_db, &state.config).await?;
+    Ok(Json(tokens))
+}
+
+#[derive(Deserialize)]
+pub struct SwitchRoleRequest {
+    pub role: String,
+}
+
+pub async fn switch_role(
+    State(state): State<AppState>,
+    auth: AuthUser,
+    Json(req): Json<SwitchRoleRequest>,
+) -> Result<Json<auth_service::TokenResponse>, AppError> {
+    let tokens = auth_service::switch_role(
+        &auth.user_id.to_string(),
+        &req.role,
+        &state.read_db,
+        &state.write_db,
+        &state.config,
+    )
+    .await?;
     Ok(Json(tokens))
 }
 

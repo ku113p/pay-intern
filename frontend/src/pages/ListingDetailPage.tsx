@@ -10,9 +10,9 @@ export function ListingDetailPage() {
 
   useEffect(() => {
     if (listing) {
-      trackEvent('listing_viewed', { listing_id: listing.id, type: listing.listing_type });
+      trackEvent('listing_viewed', { listing_id: listing.id, type: listing.author_role });
     }
-  }, [listing?.id, listing?.listing_type]);
+  }, [listing?.id, listing?.author_role]);
 
   if (isLoading) return <p className="text-gray-500">Loading...</p>;
   if (error || !listing) return <p className="text-red-600">Listing not found</p>;

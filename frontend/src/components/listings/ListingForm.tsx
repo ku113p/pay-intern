@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { listingsApi, type CreateListingRequest, type Listing } from '../../api/listings';
-import { useAuthStore } from '../../stores/auth';
 
 interface ListingFormProps {
   initialData?: Listing;
@@ -11,36 +10,33 @@ interface ListingFormProps {
 
 export function ListingForm({ initialData, onSuccess }: ListingFormProps) {
   const navigate = useNavigate();
-  const user = useAuthStore((s) => s.user);
-  const isCompany = user?.role === 'company';
 
   const [form, setForm] = useState<CreateListingRequest>({
     title: initialData?.title ?? '',
     description: initialData?.description ?? '',
-    tech_stack: initialData?.tech_stack ?? [],
+    skills: initialData?.skills ?? [],
+    category: initialData?.category ?? undefined,
     duration_weeks: initialData?.duration_weeks ?? 4,
     price_usd: initialData?.price_usd ?? undefined,
-    payment_direction: initialData?.payment_direction ?? 'company_pays_developer',
+    payment_direction: initialData?.payment_direction ?? 'poster_pays',
     format: initialData?.format ?? 'remote',
     experience_level: initialData?.experience_level ?? 'any',
     visibility: initialData?.visibility ?? 'public',
-    outcome_criteria: initialData
-      ? (initialData.outcome_criteria ?? undefined)
-      : (isCompany ? ['', '', ''] : undefined),
+    outcome_criteria: initialData?.outcome_criteria ?? undefined,
   });
-  const [techInput, setTechInput] = useState('');
+  const [skillInput, setSkillInput] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const addTech = () => {
-    const t = techInput.trim();
-    if (t && !form.tech_stack.includes(t)) {
-      setForm({ ...form, tech_stack: [...form.tech_stack, t] });
-      setTechInput('');
+  const addSkill = () => {
+    const t = skillInput.trim();
+    if (t && !form.skills.includes(t)) {
+      setForm({ ...form, skills: [...form.skills, t] });
+      setSkillInput('');
     }
   };
 
-  const removeTech = (tech: string) => {
-    setForm({ ...form, tech_stack: form.tech_stack.filter((t) => t !== tech) });
+  const removeSkill = (skill: string) => {
+    setForm({ ...form, skills: form.skills.filter((s) => s !== skill) });
   };
 
   const updateCriteria = (index: number, value: string) => {
@@ -109,24 +105,34 @@ export function ListingForm({ initialData, onSuccess }: ListingFormProps) {
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700">Tech Stack</label>
+        <label className="block text-sm font-medium text-gray-700">Category</label>
+        <input
+          value={form.category ?? ''}
+          onChange={(e) => setForm({ ...form, category: e.target.value || undefined })}
+          className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2"
+          placeholder="e.g. software, design, marketing"
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700">Skills</label>
         <div className="flex gap-2 mt-1">
           <input
-            value={techInput}
-            onChange={(e) => setTechInput(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addTech())}
-            placeholder="Add technology"
+            value={skillInput}
+            onChange={(e) => setSkillInput(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addSkill())}
+            placeholder="Add skill"
             className="flex-1 rounded-md border border-gray-300 px-3 py-2"
           />
-          <button type="button" onClick={addTech} className="bg-gray-200 px-4 py-2 rounded-md text-sm">
+          <button type="button" onClick={addSkill} className="bg-gray-200 px-4 py-2 rounded-md text-sm">
             Add
           </button>
         </div>
         <div className="flex flex-wrap gap-1.5 mt-2">
-          {form.tech_stack.map((tech) => (
-            <span key={tech} className="text-sm bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded flex items-center gap-1">
-              {tech}
-              <button type="button" onClick={() => removeTech(tech)} className="text-indigo-400 hover:text-indigo-600">&times;</button>
+          {form.skills.map((skill) => (
+            <span key={skill} className="text-sm bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded flex items-center gap-1">
+              {skill}
+              <button type="button" onClick={() => removeSkill(skill)} className="text-indigo-400 hover:text-indigo-600">&times;</button>
             </span>
           ))}
         </div>
@@ -161,12 +167,14 @@ export function ListingForm({ initialData, onSuccess }: ListingFormProps) {
       <div>
         <label className="block text-sm font-medium text-gray-700">Who pays?</label>
         <select
-          value={form.payment_direction || 'company_pays_developer'}
+          value={form.payment_direction || 'poster_pays'}
           onChange={(e) => setForm({ ...form, payment_direction: e.target.value })}
           className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2"
         >
-          <option value="company_pays_developer">Company pays developer</option>
-          <option value="developer_pays_company">Developer pays company</option>
+          <option value="poster_pays">Poster pays</option>
+          <option value="applicant_pays">Applicant pays</option>
+          <option value="negotiable">Negotiable</option>
+          <option value="unpaid">Unpaid</option>
         </select>
       </div>
 
@@ -191,39 +199,36 @@ export function ListingForm({ initialData, onSuccess }: ListingFormProps) {
           className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2"
         >
           <option value="any">Any level</option>
-          <option value="junior">Junior</option>
+          <option value="entry">Entry</option>
           <option value="mid">Mid</option>
           <option value="senior">Senior</option>
+          <option value="expert">Expert</option>
         </select>
       </div>
 
-      {isCompany && (
-        <div>
-          <label className="block text-sm font-medium text-gray-700">
-            Outcome Criteria (min 3)
-          </label>
-          <div className="space-y-2 mt-1">
-            {(form.outcome_criteria || []).map((c, i) => (
-              <div key={i} className="flex gap-2">
-                <input
-                  value={c}
-                  onChange={(e) => updateCriteria(i, e.target.value)}
-                  placeholder={`Criterion ${i + 1}`}
-                  className="flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm"
-                />
-                {(form.outcome_criteria?.length || 0) > 3 && (
-                  <button type="button" onClick={() => removeCriteria(i)} className="text-red-400 hover:text-red-600 text-sm">
-                    Remove
-                  </button>
-                )}
-              </div>
-            ))}
-          </div>
-          <button type="button" onClick={addCriteria} className="text-sm text-indigo-600 hover:text-indigo-800 mt-2">
-            + Add criterion
-          </button>
+      <div>
+        <label className="block text-sm font-medium text-gray-700">
+          Outcome Criteria
+        </label>
+        <div className="space-y-2 mt-1">
+          {(form.outcome_criteria || []).map((c, i) => (
+            <div key={i} className="flex gap-2">
+              <input
+                value={c}
+                onChange={(e) => updateCriteria(i, e.target.value)}
+                placeholder={`Criterion ${i + 1}`}
+                className="flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm"
+              />
+              <button type="button" onClick={() => removeCriteria(i)} className="text-red-400 hover:text-red-600 text-sm">
+                Remove
+              </button>
+            </div>
+          ))}
         </div>
-      )}
+        <button type="button" onClick={addCriteria} className="text-sm text-indigo-600 hover:text-indigo-800 mt-2">
+          + Add criterion
+        </button>
+      </div>
 
       <button
         type="submit"

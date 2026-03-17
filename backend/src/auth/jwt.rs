@@ -10,7 +10,7 @@ use crate::error::AppError;
 #[derive(Debug, Serialize, Deserialize)]
 pub struct AccessClaims {
     pub sub: String,
-    pub role: String,
+    pub active_role: String,
     pub exp: usize,
 }
 
@@ -23,13 +23,13 @@ pub struct RefreshClaims {
 
 pub fn encode_access_token(
     user_id: &Uuid,
-    role: &str,
+    active_role: &str,
     config: &Config,
 ) -> Result<String, AppError> {
     let exp = (Utc::now().timestamp() as u64 + config.jwt_access_expiry_secs) as usize;
     let claims = AccessClaims {
         sub: user_id.to_string(),
-        role: role.to_string(),
+        active_role: active_role.to_string(),
         exp,
     };
     let token = encode(
@@ -129,10 +129,10 @@ mod tests {
     fn test_access_token_roundtrip() {
         let config = test_config();
         let user_id = Uuid::new_v4();
-        let token = encode_access_token(&user_id, "developer", &config).unwrap();
+        let token = encode_access_token(&user_id, "individual", &config).unwrap();
         let claims = decode_access_token(&token, &config).unwrap();
         assert_eq!(claims.sub, user_id.to_string());
-        assert_eq!(claims.role, "developer");
+        assert_eq!(claims.active_role, "individual");
     }
 
     #[test]
@@ -150,7 +150,7 @@ mod tests {
     fn test_wrong_secret_fails() {
         let config = test_config();
         let user_id = Uuid::new_v4();
-        let token = encode_access_token(&user_id, "developer", &config).unwrap();
+        let token = encode_access_token(&user_id, "individual", &config).unwrap();
 
         let mut bad_config = test_config();
         bad_config.jwt_access_secret = "wrong-secret-key-that-is-different!!!!".into();

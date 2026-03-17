@@ -5,9 +5,7 @@ import { interestsApi } from '../../api/interests';
 
 interface InterestButtonProps {
   listingId: string;
-  listingType: string;
   listingAuthorId: string;
-  userRole?: string;
   userId?: string;
   initialInterested?: boolean;
   variant?: 'icon' | 'full';
@@ -15,19 +13,13 @@ interface InterestButtonProps {
 
 export function InterestButton({
   listingId,
-  listingType,
   listingAuthorId,
-  userRole,
   userId,
   initialInterested = false,
   variant = 'icon',
 }: InterestButtonProps) {
   const [interested, setInterested] = useState(initialInterested);
-
-  // Don't render if same role or own listing or not authenticated
-  if (!userRole || !userId || userRole === listingType || userId === listingAuthorId) {
-    return null;
-  }
+  const hidden = !userId || userId === listingAuthorId;
 
   const toggleMutation = useMutation({
     mutationFn: () =>
@@ -45,6 +37,11 @@ export function InterestButton({
       toast.error('Failed to update interest');
     },
   });
+
+  // Don't render for own listing or not authenticated
+  if (hidden) {
+    return null;
+  }
 
   const handleClick = (e: React.MouseEvent) => {
     e.preventDefault();

@@ -8,15 +8,15 @@ import { Pagination } from '../components/common/Pagination';
 export function SavedListingsPage() {
   const user = useAuthStore((s) => s.user);
   const [page, setPage] = useState(1);
-  const [typeFilter, setTypeFilter] = useState<string>('');
+  const [roleFilter, setRoleFilter] = useState<string>('');
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ['saved-listings', page, typeFilter],
+    queryKey: ['saved-listings', page, roleFilter],
     queryFn: () =>
       interestsApi.getSavedListings({
         page,
         per_page: 20,
-        ...(typeFilter ? { listing_type: typeFilter } : {}),
+        ...(roleFilter ? { author_role: roleFilter } : {}),
       }).then((r) => r.data),
   });
 
@@ -26,17 +26,17 @@ export function SavedListingsPage() {
       <p className="text-sm text-gray-500 mt-1 mb-6">Listings you've bookmarked for later</p>
 
       <div className="flex gap-2 mb-4">
-        {['', 'developer', 'company'].map((t) => (
+        {['', 'individual', 'organization'].map((t) => (
           <button
             key={t}
-            onClick={() => { setTypeFilter(t); setPage(1); }}
+            onClick={() => { setRoleFilter(t); setPage(1); }}
             className={`text-sm px-3 py-1.5 rounded border ${
-              typeFilter === t
+              roleFilter === t
                 ? 'bg-indigo-50 border-indigo-200 text-indigo-700'
                 : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
             }`}
           >
-            {t === '' ? 'All' : t === 'developer' ? 'Developer' : 'Company'}
+            {t === '' ? 'All' : t === 'individual' ? 'Individual' : 'Organization'}
           </button>
         ))}
       </div>
@@ -49,7 +49,7 @@ export function SavedListingsPage() {
 
       <div className="space-y-4">
         {data?.data.map((listing) => (
-          <ListingCard key={listing.id} listing={listing} currentUserId={user?.id} currentUserRole={user?.role} />
+          <ListingCard key={listing.id} listing={listing} currentUserId={user?.id} />
         ))}
       </div>
 

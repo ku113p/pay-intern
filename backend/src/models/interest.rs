@@ -4,7 +4,6 @@ use serde::{Deserialize, Serialize};
 pub struct ReceivedInterest {
     pub id: String,
     pub user_name: String,
-    pub user_role: String,
     pub listing_title: String,
     pub created_at: String,
 }
@@ -40,7 +39,6 @@ pub struct InterestToggleResponse {
 pub struct MatchResponse {
     pub matched_user_id: String,
     pub matched_user_name: String,
-    pub matched_user_role: String,
     pub my_listing_id: String,
     pub my_listing_title: String,
     pub their_listing_id: String,
@@ -51,7 +49,7 @@ pub struct MatchResponse {
 pub struct SavedListingsQuery {
     pub page: Option<u32>,
     pub per_page: Option<u32>,
-    pub listing_type: Option<String>,
+    pub author_role: Option<String>,
 }
 
 impl SavedListingsQuery {

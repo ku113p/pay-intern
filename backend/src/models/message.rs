@@ -35,7 +35,6 @@ pub struct ConversationSummary {
     pub listing_title: String,
     pub other_party_id: String,
     pub other_party_name: String,
-    pub other_party_role: String,
     pub last_message_body: String,
     pub last_message_at: String,
     pub unread_count: i64,

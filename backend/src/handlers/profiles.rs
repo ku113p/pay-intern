@@ -8,76 +8,125 @@ use crate::models::user::*;
 use crate::services::user as user_service;
 use crate::AppState;
 
-pub async fn get_my_developer_profile(
+pub async fn get_my_individual_profile(
     State(state): State<AppState>,
     auth: AuthUser,
-) -> Result<Json<DeveloperProfileResponse>, AppError> {
-    if auth.role != "developer" {
-        return Err(AppError::Forbidden("Only developers can access this".into()));
-    }
-    let profile =
-        user_service::get_developer_profile(&auth.user_id.to_string(), &state.read_db).await?;
-    Ok(Json(profile.into()))
+) -> Result<Json<IndividualProfileResponse>, AppError> {
+    let uid = auth.user_id.to_string();
+    let profile = user_service::get_individual_profile(&uid, &state.read_db).await?;
+    let links = user_service::get_profile_links(&uid, "individual", &state.read_db).await?;
+    let link_responses: Vec<ProfileLinkResponse> = links.into_iter().map(Into::into).collect();
+    Ok(Json(profile.to_response(link_responses)))
 }
 
-pub async fn update_my_developer_profile(
+pub async fn upsert_my_individual_profile(
     State(state): State<AppState>,
     auth: AuthUser,
-    Json(req): Json<UpdateDeveloperProfileRequest>,
-) -> Result<Json<DeveloperProfileResponse>, AppError> {
-    if auth.role != "developer" {
-        return Err(AppError::Forbidden("Only developers can access this".into()));
-    }
+    Json(req): Json<UpdateIndividualProfileRequest>,
+) -> Result<Json<IndividualProfileResponse>, AppError> {
     req.validate()?;
-    let profile =
-        user_service::update_developer_profile(&auth.user_id.to_string(), &req, &state.write_db)
-            .await?;
-    Ok(Json(profile.into()))
+    let uid = auth.user_id.to_string();
+    let profile = user_service::upsert_individual_profile(&uid, &req, &state.write_db).await?;
+    let links = user_service::get_profile_links(&uid, "individual", &state.write_db).await?;
+    let link_responses: Vec<ProfileLinkResponse> = links.into_iter().map(Into::into).collect();
+    Ok(Json(profile.to_response(link_responses)))
 }
 
-pub async fn get_my_company_profile(
+pub async fn delete_my_individual_profile(
     State(state): State<AppState>,
     auth: AuthUser,
-) -> Result<Json<CompanyProfileResponse>, AppError> {
-    if auth.role != "company" {
-        return Err(AppError::Forbidden("Only companies can access this".into()));
-    }
-    let profile =
-        user_service::get_company_profile(&auth.user_id.to_string(), &state.read_db).await?;
-    Ok(Json(profile.into()))
+) -> Result<Json<serde_json::Value>, AppError> {
+    let uid = auth.user_id.to_string();
+    user_service::delete_profile(&uid, "individual", &state.write_db).await?;
+    Ok(Json(serde_json::json!({"message": "Individual profile deleted"})))
 }
 
-pub async fn update_my_company_profile(
+pub async fn get_my_organization_profile(
     State(state): State<AppState>,
     auth: AuthUser,
-    Json(req): Json<UpdateCompanyProfileRequest>,
-) -> Result<Json<CompanyProfileResponse>, AppError> {
-    if auth.role != "company" {
-        return Err(AppError::Forbidden("Only companies can access this".into()));
-    }
+) -> Result<Json<OrganizationProfileResponse>, AppError> {
+    let uid = auth.user_id.to_string();
+    let profile = user_service::get_organization_profile(&uid, &state.read_db).await?;
+    let links = user_service::get_profile_links(&uid, "organization", &state.read_db).await?;
+    let link_responses: Vec<ProfileLinkResponse> = links.into_iter().map(Into::into).collect();
+    Ok(Json(profile.to_response(link_responses)))
+}
+
+pub async fn upsert_my_organization_profile(
+    State(state): State<AppState>,
+    auth: AuthUser,
+    Json(req): Json<UpdateOrganizationProfileRequest>,
+) -> Result<Json<OrganizationProfileResponse>, AppError> {
     req.validate()?;
+    let uid = auth.user_id.to_string();
     let profile =
-        user_service::update_company_profile(&auth.user_id.to_string(), &req, &state.write_db)
-            .await?;
-    Ok(Json(profile.into()))
+        user_service::upsert_organization_profile(&uid, &req, &state.write_db).await?;
+    let links = user_service::get_profile_links(&uid, "organization", &state.write_db).await?;
+    let link_responses: Vec<ProfileLinkResponse> = links.into_iter().map(Into::into).collect();
+    Ok(Json(profile.to_response(link_responses)))
 }
 
-pub async fn get_public_developer_profile(
+pub async fn delete_my_organization_profile(
+    State(state): State<AppState>,
+    auth: AuthUser,
+) -> Result<Json<serde_json::Value>, AppError> {
+    let uid = auth.user_id.to_string();
+    user_service::delete_profile(&uid, "organization", &state.write_db).await?;
+    Ok(Json(serde_json::json!({"message": "Organization profile deleted"})))
+}
+
+pub async fn get_my_profile_links(
+    State(state): State<AppState>,
+    auth: AuthUser,
+    Path(profile_type): Path<String>,
+) -> Result<Json<Vec<ProfileLinkResponse>>, AppError> {
+    if !["individual", "organization"].contains(&profile_type.as_str()) {
+        return Err(AppError::BadRequest("Invalid profile type".into()));
+    }
+    let uid = auth.user_id.to_string();
+    let links = user_service::get_profile_links(&uid, &profile_type, &state.read_db).await?;
+    let responses: Vec<ProfileLinkResponse> = links.into_iter().map(Into::into).collect();
+    Ok(Json(responses))
+}
+
+pub async fn replace_my_profile_links(
+    State(state): State<AppState>,
+    auth: AuthUser,
+    Path(profile_type): Path<String>,
+    Json(req): Json<UpdateProfileLinksRequest>,
+) -> Result<Json<Vec<ProfileLinkResponse>>, AppError> {
+    if !["individual", "organization"].contains(&profile_type.as_str()) {
+        return Err(AppError::BadRequest("Invalid profile type".into()));
+    }
+    let uid = auth.user_id.to_string();
+    let links =
+        user_service::replace_profile_links(&uid, &profile_type, &req.links, &state.write_db)
+            .await?;
+    let responses: Vec<ProfileLinkResponse> = links.into_iter().map(Into::into).collect();
+    Ok(Json(responses))
+}
+
+pub async fn get_public_individual_profile(
     State(state): State<AppState>,
     _auth: OptionalAuthUser,
     Path(user_id): Path<String>,
-) -> Result<Json<DeveloperProfileResponse>, AppError> {
-    let profile = user_service::get_developer_profile(&user_id, &state.read_db).await?;
-    Ok(Json(profile.into()))
+) -> Result<Json<IndividualProfileResponse>, AppError> {
+    let profile = user_service::get_individual_profile(&user_id, &state.read_db).await?;
+    let links = user_service::get_profile_links(&user_id, "individual", &state.read_db).await?;
+    let link_responses: Vec<ProfileLinkResponse> = links.into_iter().map(Into::into).collect();
+    Ok(Json(profile.to_response(link_responses)))
 }
 
-pub async fn get_public_company_profile(
+pub async fn get_public_organization_profile(
     State(state): State<AppState>,
     _auth: OptionalAuthUser,
     Path(user_id): Path<String>,
-) -> Result<Json<CompanyProfileResponse>, AppError> {
-    let profile = user_service::get_company_profile(&user_id, &state.read_db).await?;
-    Ok(Json(profile.into()))
+) -> Result<Json<OrganizationProfileResponse>, AppError> {
+    let profile = user_service::get_organization_profile(&user_id, &state.read_db).await?;
+    let links =
+        user_service::get_profile_links(&user_id, "organization", &state.read_db).await?;
+    let link_responses: Vec<ProfileLinkResponse> = links.into_iter().map(Into::into).collect();
+    Ok(Json(profile.to_response(link_responses)))
 }
 
 pub async fn get_profile_preview(

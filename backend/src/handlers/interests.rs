@@ -40,7 +40,7 @@ pub async fn add_interest(
     auth: AuthUser,
     Path(id): Path<String>,
 ) -> Result<Json<InterestToggleResponse>, AppError> {
-    let result = interest_service::add_interest(&auth.user_id, &auth.role, &id, &state.write_db).await?;
+    let result = interest_service::add_interest(&auth.user_id, &id, &state.write_db).await?;
     Ok(Json(result))
 }
 

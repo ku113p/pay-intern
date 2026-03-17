@@ -56,9 +56,9 @@ pub async fn get_saved_listings(
     let mut type_filter = String::new();
     let mut bind_values: Vec<String> = vec![user_str.clone()];
 
-    if let Some(lt) = &query.listing_type {
-        type_filter = " AND l.type = ?".to_string();
-        bind_values.push(lt.clone());
+    if let Some(ar) = &query.author_role {
+        type_filter = " AND l.author_role = ?".to_string();
+        bind_values.push(ar.clone());
     }
 
     let count_sql = format!(
@@ -71,18 +71,18 @@ pub async fn get_saved_listings(
     let total = count_q.fetch_one(read_db).await? as u32;
 
     let select_sql = format!(
-        "SELECT l.id, l.author_id, l.type, l.title, l.description, l.tech_stack, \
+        "SELECT l.id, l.author_id, l.author_role, l.title, l.description, l.category, l.skills, \
          l.duration_weeks, l.price_usd, l.payment_direction, l.format, l.outcome_criteria, \
          l.visibility, l.status, l.experience_level, l.created_at, l.updated_at, \
          u.display_name AS author_display_name, \
-         cp.company_name, cp.website AS company_website, \
-         dp.level AS developer_level, \
+         op.organization_name AS organization_name, \
+         ip.experience_level AS individual_level, \
          SUBSTR(u.email, INSTR(u.email, '@') + 1) AS author_email_domain \
          FROM saved_listings sl \
          JOIN listings l ON l.id = sl.listing_id \
          JOIN users u ON u.id = l.author_id \
-         LEFT JOIN company_profiles cp ON cp.user_id = l.author_id \
-         LEFT JOIN developer_profiles dp ON dp.user_id = l.author_id \
+         LEFT JOIN organization_profiles op ON op.user_id = l.author_id \
+         LEFT JOIN individual_profiles ip ON ip.user_id = l.author_id \
          WHERE sl.user_id = ?{type_filter} \
          ORDER BY sl.created_at DESC LIMIT ? OFFSET ?"
     );
@@ -110,7 +110,6 @@ pub async fn get_saved_listings(
 
 pub async fn add_interest(
     user_id: &Uuid,
-    user_role: &str,
     listing_id: &str,
     write_db: &SqlitePool,
 ) -> Result<InterestToggleResponse, AppError> {
@@ -123,16 +122,6 @@ pub async fn add_interest(
     // Cannot interest own listing
     if listing.author_id == user_id.to_string() {
         return Err(AppError::BadRequest("Cannot signal interest on your own listing".into()));
-    }
-
-    // Cross-role check
-    let valid = match (user_role, listing.listing_type.as_str()) {
-        ("developer", "company") => true,
-        ("company", "developer") => true,
-        _ => false,
-    };
-    if !valid {
-        return Err(AppError::BadRequest("Interest signals are cross-role only".into()));
     }
 
     let id = Uuid::new_v4().to_string();
@@ -183,7 +172,7 @@ pub async fn get_received_interests(
     read_db: &SqlitePool,
 ) -> Result<Vec<ReceivedInterest>, AppError> {
     let rows = sqlx::query_as::<_, ReceivedInterest>(
-        "SELECT i.id, u.display_name AS user_name, u.role AS user_role, \
+        "SELECT i.id, u.display_name AS user_name, \
          l.title AS listing_title, i.created_at \
          FROM interests i \
          JOIN listings l ON l.id = i.listing_id \
@@ -206,7 +195,6 @@ pub async fn get_matches(
         "SELECT DISTINCT \
          other_user.id AS matched_user_id, \
          other_user.display_name AS matched_user_name, \
-         other_user.role AS matched_user_role, \
          my_listing.id AS my_listing_id, \
          my_listing.title AS my_listing_title, \
          their_listing.id AS their_listing_id, \

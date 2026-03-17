@@ -4,13 +4,12 @@ import { authApi } from '../../api/auth';
 
 export function LoginForm() {
   const [email, setEmail] = useState('');
-  const [role, setRole] = useState<'developer' | 'company'>('developer');
   const [magicLinkSent, setMagicLinkSent] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await authApi.requestMagicLink(email, role);
+      await authApi.requestMagicLink(email);
       setMagicLinkSent(true);
     } catch (err: any) {
       toast.error(err.response?.data?.error || 'Failed to send magic link');
@@ -31,33 +30,6 @@ export function LoginForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">I am a...</label>
-        <div className="flex gap-3">
-          <button
-            type="button"
-            onClick={() => setRole('developer')}
-            className={`flex-1 py-3 rounded-md border text-sm font-medium ${
-              role === 'developer'
-                ? 'border-indigo-600 bg-indigo-50 text-indigo-700'
-                : 'border-gray-300 text-gray-600 hover:border-gray-400'
-            }`}
-          >
-            Developer
-          </button>
-          <button
-            type="button"
-            onClick={() => setRole('company')}
-            className={`flex-1 py-3 rounded-md border text-sm font-medium ${
-              role === 'company'
-                ? 'border-indigo-600 bg-indigo-50 text-indigo-700'
-                : 'border-gray-300 text-gray-600 hover:border-gray-400'
-            }`}
-          >
-            Company
-          </button>
-        </div>
-      </div>
-      <div>
         <label htmlFor="email" className="block text-sm font-medium text-gray-700">
           Email address
         </label>
@@ -77,6 +49,9 @@ export function LoginForm() {
       >
         Send magic link
       </button>
+      <p className="text-xs text-gray-500 text-center">
+        Sign in or create an account. You can set up your profile after signing in.
+      </p>
     </form>
   );
 }

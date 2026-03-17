@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ErrorBoundary } from 'react-error-boundary';
 import { Toaster } from 'sonner';
@@ -8,8 +8,7 @@ import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { HomePage } from './pages/HomePage';
 import { LoginPage } from './pages/LoginPage';
 import { MagicLinkVerifyPage } from './pages/MagicLinkVerifyPage';
-import { DeveloperFeedPage } from './pages/DeveloperFeedPage';
-import { CompanyFeedPage } from './pages/CompanyFeedPage';
+import { BrowsePage } from './pages/DeveloperFeedPage';
 import { ListingDetailPage } from './pages/ListingDetailPage';
 import { CreateListingPage } from './pages/CreateListingPage';
 import { MyApplicationsPage } from './pages/MyApplicationsPage';
@@ -41,14 +40,16 @@ function App() {
           <Route element={<Layout />}>
             <Route path="/login" element={<LoginPage />} />
             <Route path="/auth/verify" element={<MagicLinkVerifyPage />} />
-            <Route path="/developers" element={<DeveloperFeedPage />} />
+            <Route path="/browse" element={<BrowsePage />} />
+            {/* Legacy routes redirect to unified browse */}
+            <Route path="/developers" element={<Navigate to="/browse" replace />} />
+            <Route path="/companies" element={<Navigate to="/browse" replace />} />
             <Route path="/listings/mine" element={<ProtectedRoute><MyListingsPage /></ProtectedRoute>} />
             <Route path="/listings/:id/edit" element={<ProtectedRoute><EditListingPage /></ProtectedRoute>} />
             <Route path="/listings/:id" element={<ListingDetailPage />} />
             <Route path="/profiles/:type/:id" element={<PublicProfilePage />} />
 
             {/* Protected routes */}
-            <Route path="/companies" element={<ProtectedRoute><CompanyFeedPage /></ProtectedRoute>} />
             <Route path="/listings/new" element={<ProtectedRoute><CreateListingPage /></ProtectedRoute>} />
             <Route path="/applications/:applicationId/review" element={<ProtectedRoute><ReviewPage /></ProtectedRoute>} />
             <Route path="/applications" element={<ProtectedRoute><MyApplicationsPage /></ProtectedRoute>} />

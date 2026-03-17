@@ -1,44 +1,60 @@
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
-import { profilesApi, type CompanyProfile } from '../../api/profiles';
+import { profilesApi, type OrganizationProfile } from '../../api/profiles';
 
-export function CompanyProfileForm() {
-  const [profile, setProfile] = useState<CompanyProfile | null>(null);
-  const [techInput, setTechInput] = useState('');
+export function OrganizationProfileForm() {
+  const [profile, setProfile] = useState<OrganizationProfile | null>(null);
+  const [skillInput, setSkillInput] = useState('');
   const [saving, setSaving] = useState(false);
+  const [notFound, setNotFound] = useState(false);
 
   useEffect(() => {
-    profilesApi.getMyCompanyProfile().then((r) => setProfile(r.data)).catch(() => {});
+    profilesApi.getMyOrganizationProfile()
+      .then((r) => setProfile(r.data))
+      .catch(() => {
+        setNotFound(true);
+        setProfile({
+          user_id: '',
+          organization_name: '',
+          description: '',
+          industry: '',
+          size: 'startup',
+          skills_sought: [],
+          contact_email: null,
+          links: [],
+        });
+      });
   }, []);
 
   if (!profile) return <p className="text-gray-500">Loading profile...</p>;
 
-  const addTech = () => {
-    const t = techInput.trim();
-    if (t && !profile.tech_stack.includes(t)) {
-      setProfile({ ...profile, tech_stack: [...profile.tech_stack, t] });
-      setTechInput('');
+  const addSkill = () => {
+    const t = skillInput.trim();
+    if (t && !profile.skills_sought.includes(t)) {
+      setProfile({ ...profile, skills_sought: [...profile.skills_sought, t] });
+      setSkillInput('');
     }
   };
 
-  const removeTech = (tech: string) => {
-    setProfile({ ...profile, tech_stack: profile.tech_stack.filter((t) => t !== tech) });
+  const removeSkill = (skill: string) => {
+    setProfile({ ...profile, skills_sought: profile.skills_sought.filter((s) => s !== skill) });
   };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
     try {
-      const res = await profilesApi.updateCompanyProfile({
-        company_name: profile.company_name,
+      const res = await profilesApi.upsertOrganizationProfile({
+        organization_name: profile.organization_name,
         description: profile.description,
-        website: profile.website || undefined,
+        industry: profile.industry,
         size: profile.size,
-        tech_stack: profile.tech_stack,
+        skills_sought: profile.skills_sought,
         contact_email: profile.contact_email || undefined,
       });
       setProfile(res.data);
-      toast.success('Profile saved!');
+      setNotFound(false);
+      toast.success('Organization profile saved!');
     } catch (err: any) {
       toast.error(err.response?.data?.error || 'Failed to save profile');
     } finally {
@@ -48,13 +64,29 @@ export function CompanyProfileForm() {
 
   return (
     <form onSubmit={handleSave} className="space-y-5">
+      {notFound && (
+        <p className="text-sm text-amber-600 bg-amber-50 border border-amber-200 rounded p-3">
+          No organization profile yet. Fill in the fields below to create one.
+        </p>
+      )}
+
       <div>
-        <label className="block text-sm font-medium text-gray-700">Company Name</label>
+        <label className="block text-sm font-medium text-gray-700">Organization Name</label>
         <input
           required
-          value={profile.company_name}
-          onChange={(e) => setProfile({ ...profile, company_name: e.target.value })}
+          value={profile.organization_name}
+          onChange={(e) => setProfile({ ...profile, organization_name: e.target.value })}
           className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2"
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700">Industry</label>
+        <input
+          value={profile.industry}
+          onChange={(e) => setProfile({ ...profile, industry: e.target.value })}
+          className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2"
+          placeholder="e.g. technology, healthcare, finance"
         />
       </div>
 
@@ -69,7 +101,7 @@ export function CompanyProfileForm() {
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700">Company Size</label>
+        <label className="block text-sm font-medium text-gray-700">Organization Size</label>
         <select
           value={profile.size}
           onChange={(e) => setProfile({ ...profile, size: e.target.value })}
@@ -83,32 +115,22 @@ export function CompanyProfileForm() {
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700">Website</label>
-        <input
-          value={profile.website || ''}
-          onChange={(e) => setProfile({ ...profile, website: e.target.value || null })}
-          className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2"
-          placeholder="https://yourcompany.com"
-        />
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium text-gray-700">Tech Stack</label>
+        <label className="block text-sm font-medium text-gray-700">Skills Sought</label>
         <div className="flex gap-2 mt-1">
           <input
-            value={techInput}
-            onChange={(e) => setTechInput(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addTech())}
-            placeholder="Add technology"
+            value={skillInput}
+            onChange={(e) => setSkillInput(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addSkill())}
+            placeholder="Add skill"
             className="flex-1 rounded-md border border-gray-300 px-3 py-2"
           />
-          <button type="button" onClick={addTech} className="bg-gray-200 px-4 py-2 rounded-md text-sm">Add</button>
+          <button type="button" onClick={addSkill} className="bg-gray-200 px-4 py-2 rounded-md text-sm">Add</button>
         </div>
         <div className="flex flex-wrap gap-1.5 mt-2">
-          {profile.tech_stack.map((tech) => (
-            <span key={tech} className="text-sm bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded flex items-center gap-1">
-              {tech}
-              <button type="button" onClick={() => removeTech(tech)} className="text-indigo-400 hover:text-indigo-600">&times;</button>
+          {profile.skills_sought.map((skill) => (
+            <span key={skill} className="text-sm bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded flex items-center gap-1">
+              {skill}
+              <button type="button" onClick={() => removeSkill(skill)} className="text-indigo-400 hover:text-indigo-600">&times;</button>
             </span>
           ))}
         </div>
@@ -127,8 +149,10 @@ export function CompanyProfileForm() {
       </div>
 
       <button type="submit" disabled={saving} className="bg-indigo-600 text-white px-6 py-2 rounded-md hover:bg-indigo-700 disabled:opacity-50">
-        {saving ? 'Saving...' : 'Save Profile'}
+        {saving ? 'Saving...' : 'Save Organization Profile'}
       </button>
     </form>
   );
 }
+
+export { OrganizationProfileForm as CompanyProfileForm };

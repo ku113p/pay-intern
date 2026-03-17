@@ -59,30 +59,14 @@ export function ContactInfoCard({ applicationId }: { applicationId: string }) {
             Copy
           </button>
         </div>
-        {contact.github_url && (
-          <div className="flex items-center gap-2 text-sm">
-            <span className="text-gray-500">GitHub:</span>
-            <a href={contact.github_url} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:text-indigo-500">
-              {contact.github_url}
+        {contact.links.map((link) => (
+          <div key={link.id} className="flex items-center gap-2 text-sm">
+            <span className="text-gray-500">{link.label || link.link_type}:</span>
+            <a href={link.url} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:text-indigo-500">
+              {link.url}
             </a>
           </div>
-        )}
-        {contact.linkedin_url && (
-          <div className="flex items-center gap-2 text-sm">
-            <span className="text-gray-500">LinkedIn:</span>
-            <a href={contact.linkedin_url} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:text-indigo-500">
-              {contact.linkedin_url}
-            </a>
-          </div>
-        )}
-        {contact.website && (
-          <div className="flex items-center gap-2 text-sm">
-            <span className="text-gray-500">Website:</span>
-            <a href={contact.website} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:text-indigo-500">
-              {contact.website}
-            </a>
-          </div>
-        )}
+        ))}
       </div>
     </div>
   );

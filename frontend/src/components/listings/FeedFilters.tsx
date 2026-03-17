@@ -5,22 +5,18 @@ import { useDebounce } from '../../hooks/useDebounce';
 interface Props {
   filters: ListingFeedParams;
   onChange: (filters: ListingFeedParams) => void;
-  feedType: 'developer' | 'company';
 }
 
-export function FeedFilters({ filters, onChange, feedType }: Props) {
-  const labels = feedType === 'developer'
-    ? { tech: 'Skills', level: 'Developer Level', minPrice: 'Min rate', maxPrice: 'Max rate', sortPriceAsc: 'Rate: Low to High', sortPriceDesc: 'Rate: High to Low' }
-    : { tech: 'Required Tech', level: 'Required Level', minPrice: 'Min budget', maxPrice: 'Max budget', sortPriceAsc: 'Budget: Low to High', sortPriceDesc: 'Budget: High to Low' };
+export function FeedFilters({ filters, onChange }: Props) {
   const [search, setSearch] = useState(filters.search || '');
-  const [tech, setTech] = useState(filters.tech || '');
+  const [skills, setSkills] = useState(filters.skills || '');
   const [minWeeks, setMinWeeks] = useState(filters.min_weeks?.toString() || '');
   const [maxWeeks, setMaxWeeks] = useState(filters.max_weeks?.toString() || '');
   const [minPrice, setMinPrice] = useState(filters.min_price?.toString() || '');
   const [maxPrice, setMaxPrice] = useState(filters.max_price?.toString() || '');
 
   const debouncedSearch = useDebounce(search, 400);
-  const debouncedTech = useDebounce(tech, 400);
+  const debouncedSkills = useDebounce(skills, 400);
   const debouncedMinWeeks = useDebounce(minWeeks, 400);
   const debouncedMaxWeeks = useDebounce(maxWeeks, 400);
   const debouncedMinPrice = useDebounce(minPrice, 400);
@@ -38,7 +34,7 @@ export function FeedFilters({ filters, onChange, feedType }: Props) {
     onChange({
       ...filtersRef.current,
       search: debouncedSearch || undefined,
-      tech: debouncedTech || undefined,
+      skills: debouncedSkills || undefined,
       min_weeks: debouncedMinWeeks ? +debouncedMinWeeks : undefined,
       max_weeks: debouncedMaxWeeks ? +debouncedMaxWeeks : undefined,
       min_price: debouncedMinPrice ? +debouncedMinPrice : undefined,
@@ -46,20 +42,20 @@ export function FeedFilters({ filters, onChange, feedType }: Props) {
       page: 1,
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedSearch, debouncedTech, debouncedMinWeeks, debouncedMaxWeeks, debouncedMinPrice, debouncedMaxPrice]);
+  }, [debouncedSearch, debouncedSkills, debouncedMinWeeks, debouncedMaxWeeks, debouncedMinPrice, debouncedMaxPrice]);
 
-  // Sync local state when filters change externally (e.g. "Clear filters")
   useEffect(() => {
     setSearch(filters.search || '');
-    setTech(filters.tech || '');
+    setSkills(filters.skills || '');
     setMinWeeks(filters.min_weeks?.toString() || '');
     setMaxWeeks(filters.max_weeks?.toString() || '');
     setMinPrice(filters.min_price?.toString() || '');
     setMaxPrice(filters.max_price?.toString() || '');
-  }, [filters.search, filters.tech, filters.min_weeks, filters.max_weeks, filters.min_price, filters.max_price]);
+  }, [filters.search, filters.skills, filters.min_weeks, filters.max_weeks, filters.min_price, filters.max_price]);
 
   const hasFilters = !!(
-    search || tech || filters.format || filters.experience_level ||
+    search || skills || filters.format || filters.experience_level ||
+    filters.author_role || filters.payment_direction || filters.category ||
     minWeeks || maxWeeks ||
     minPrice || maxPrice ||
     (filters.sort && filters.sort !== 'newest')
@@ -80,12 +76,36 @@ export function FeedFilters({ filters, onChange, feedType }: Props) {
       </div>
 
       <div>
-        <label className="block text-sm text-gray-600 mb-1">{labels.tech}</label>
+        <label className="block text-sm text-gray-600 mb-1">Skills</label>
         <input
           type="text"
           placeholder="e.g. rust,react"
-          value={tech}
-          onChange={(e) => setTech(e.target.value)}
+          value={skills}
+          onChange={(e) => setSkills(e.target.value)}
+          className="w-full border border-gray-300 rounded px-3 py-1.5 text-sm"
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm text-gray-600 mb-1">Author Role</label>
+        <select
+          value={filters.author_role || ''}
+          onChange={(e) => onChange({ ...filters, author_role: e.target.value || undefined, page: 1 })}
+          className="w-full border border-gray-300 rounded px-3 py-1.5 text-sm"
+        >
+          <option value="">All</option>
+          <option value="individual">Individual</option>
+          <option value="organization">Organization</option>
+        </select>
+      </div>
+
+      <div>
+        <label className="block text-sm text-gray-600 mb-1">Category</label>
+        <input
+          type="text"
+          placeholder="e.g. software"
+          value={filters.category || ''}
+          onChange={(e) => onChange({ ...filters, category: e.target.value || undefined, page: 1 })}
           className="w-full border border-gray-300 rounded px-3 py-1.5 text-sm"
         />
       </div>
@@ -105,16 +125,32 @@ export function FeedFilters({ filters, onChange, feedType }: Props) {
       </div>
 
       <div>
-        <label className="block text-sm text-gray-600 mb-1">{labels.level}</label>
+        <label className="block text-sm text-gray-600 mb-1">Payment Direction</label>
+        <select
+          value={filters.payment_direction || ''}
+          onChange={(e) => onChange({ ...filters, payment_direction: e.target.value || undefined, page: 1 })}
+          className="w-full border border-gray-300 rounded px-3 py-1.5 text-sm"
+        >
+          <option value="">All</option>
+          <option value="poster_pays">Poster pays</option>
+          <option value="applicant_pays">Applicant pays</option>
+          <option value="negotiable">Negotiable</option>
+          <option value="unpaid">Unpaid</option>
+        </select>
+      </div>
+
+      <div>
+        <label className="block text-sm text-gray-600 mb-1">Experience Level</label>
         <select
           value={filters.experience_level || ''}
           onChange={(e) => onChange({ ...filters, experience_level: e.target.value || undefined, page: 1 })}
           className="w-full border border-gray-300 rounded px-3 py-1.5 text-sm"
         >
           <option value="">All</option>
-          <option value="junior">Junior</option>
+          <option value="entry">Entry</option>
           <option value="mid">Mid</option>
           <option value="senior">Senior</option>
+          <option value="expert">Expert</option>
         </select>
       </div>
 
@@ -126,8 +162,8 @@ export function FeedFilters({ filters, onChange, feedType }: Props) {
           className="w-full border border-gray-300 rounded px-3 py-1.5 text-sm"
         >
           <option value="newest">Newest</option>
-          <option value="price_asc">{labels.sortPriceAsc}</option>
-          <option value="price_desc">{labels.sortPriceDesc}</option>
+          <option value="price_asc">Price: Low to High</option>
+          <option value="price_desc">Price: High to Low</option>
         </select>
       </div>
 
@@ -156,7 +192,7 @@ export function FeedFilters({ filters, onChange, feedType }: Props) {
 
       <div className="grid grid-cols-2 gap-2">
         <div>
-          <label className="block text-sm text-gray-600 mb-1">{labels.minPrice}</label>
+          <label className="block text-sm text-gray-600 mb-1">Min price</label>
           <input
             type="number"
             min={0}
@@ -168,7 +204,7 @@ export function FeedFilters({ filters, onChange, feedType }: Props) {
           />
         </div>
         <div>
-          <label className="block text-sm text-gray-600 mb-1">{labels.maxPrice}</label>
+          <label className="block text-sm text-gray-600 mb-1">Max price</label>
           <input
             type="number"
             min={0}

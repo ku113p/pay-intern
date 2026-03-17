@@ -1,32 +1,52 @@
 import { create } from 'zustand';
 import type { UserResponse } from '../api/profiles';
 
+export type ActiveRole = 'individual' | 'organization';
+
 interface AuthState {
   accessToken: string | null;
   refreshToken: string | null;
   user: UserResponse | null;
+  activeRole: ActiveRole | null;
   isAuthenticated: boolean;
 
   setTokens: (accessToken: string, refreshToken: string) => void;
   setUser: (user: UserResponse) => void;
+  setActiveRole: (role: ActiveRole) => void;
   logout: () => void;
+}
+
+function parseActiveRole(token: string): ActiveRole | null {
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    if (payload.active_role === 'individual' || payload.active_role === 'organization') {
+      return payload.active_role;
+    }
+  } catch {
+    // ignore
+  }
+  return null;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
   accessToken: null,
   refreshToken: localStorage.getItem('refresh_token'),
   user: null,
+  activeRole: null,
   isAuthenticated: false,
 
   setTokens: (accessToken, refreshToken) => {
     localStorage.setItem('refresh_token', refreshToken);
-    set({ accessToken, refreshToken, isAuthenticated: true });
+    const activeRole = parseActiveRole(accessToken);
+    set({ accessToken, refreshToken, isAuthenticated: true, activeRole });
   },
 
   setUser: (user) => set({ user }),
 
+  setActiveRole: (role) => set({ activeRole: role }),
+
   logout: () => {
     localStorage.removeItem('refresh_token');
-    set({ accessToken: null, refreshToken: null, user: null, isAuthenticated: false });
+    set({ accessToken: null, refreshToken: null, user: null, activeRole: null, isAuthenticated: false });
   },
 }));

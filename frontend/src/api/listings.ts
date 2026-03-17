@@ -3,10 +3,11 @@ import api from './client';
 export interface Listing {
   id: string;
   author_id: string;
-  listing_type: string;
+  author_role: string;
   title: string;
   description: string;
-  tech_stack: string[];
+  skills: string[];
+  category: string | null;
   duration_weeks: number;
   price_usd: number | null;
   payment_direction: string;
@@ -18,9 +19,8 @@ export interface Listing {
   created_at: string;
   updated_at: string;
   author_display_name: string | null;
-  company_name: string | null;
-  company_website: string | null;
-  developer_level: string | null;
+  organization_name: string | null;
+  individual_level: string | null;
   author_email_domain: string | null;
 }
 
@@ -37,7 +37,10 @@ export interface PaginatedResponse<T> {
 export interface ListingFeedParams {
   page?: number;
   per_page?: number;
-  tech?: string;
+  skills?: string;
+  category?: string;
+  author_role?: string;
+  payment_direction?: string;
   format?: string;
   min_weeks?: number;
   max_weeks?: number;
@@ -51,7 +54,8 @@ export interface ListingFeedParams {
 export interface CreateListingRequest {
   title: string;
   description: string;
-  tech_stack: string[];
+  skills: string[];
+  category?: string;
   duration_weeks: number;
   price_usd?: number;
   payment_direction?: string;
@@ -62,11 +66,8 @@ export interface CreateListingRequest {
 }
 
 export const listingsApi = {
-  getDeveloperFeed: (params?: ListingFeedParams) =>
-    api.get<PaginatedResponse<Listing>>('/listings/feed/developers', { params }),
-
-  getCompanyFeed: (params?: ListingFeedParams) =>
-    api.get<PaginatedResponse<Listing>>('/listings/feed/companies', { params }),
+  getFeed: (params?: ListingFeedParams) =>
+    api.get<PaginatedResponse<Listing>>('/listings/feed', { params }),
 
   getListing: (id: string) =>
     api.get<Listing>(`/listings/${id}`),

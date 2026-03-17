@@ -22,9 +22,8 @@ pub struct ApplicationWithDetails {
     pub created_at: String,
     pub updated_at: String,
     pub listing_title: String,
-    pub listing_type: String,
+    pub listing_author_role: String,
     pub applicant_name: String,
-    pub applicant_role: String,
 }
 
 #[derive(Debug, Deserialize, Validate)]
@@ -73,11 +72,9 @@ pub struct ApplicationResponse {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub listing_title: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub listing_type: Option<String>,
+    pub listing_author_role: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub applicant_name: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub applicant_role: Option<String>,
 }
 
 impl From<Application> for ApplicationResponse {
@@ -91,9 +88,8 @@ impl From<Application> for ApplicationResponse {
             created_at: a.created_at,
             updated_at: a.updated_at,
             listing_title: None,
-            listing_type: None,
+            listing_author_role: None,
             applicant_name: None,
-            applicant_role: None,
         }
     }
 }
@@ -103,10 +99,7 @@ pub struct ContactInfoResponse {
     pub user_id: String,
     pub display_name: String,
     pub email: String,
-    pub role: String,
-    pub github_url: Option<String>,
-    pub linkedin_url: Option<String>,
-    pub website: Option<String>,
+    pub links: Vec<crate::models::user::ProfileLinkResponse>,
 }
 
 impl From<ApplicationWithDetails> for ApplicationResponse {
@@ -120,9 +113,8 @@ impl From<ApplicationWithDetails> for ApplicationResponse {
             created_at: a.created_at,
             updated_at: a.updated_at,
             listing_title: Some(a.listing_title),
-            listing_type: Some(a.listing_type),
+            listing_author_role: Some(a.listing_author_role),
             applicant_name: Some(a.applicant_name),
-            applicant_role: Some(a.applicant_role),
         }
     }
 }

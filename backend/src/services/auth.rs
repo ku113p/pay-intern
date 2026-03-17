@@ -14,6 +14,96 @@ pub struct TokenResponse {
     pub refresh_token: String,
     pub token_type: String,
     pub expires_in: u64,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub needs_profile_setup: Option<bool>,
+}
+
+pub async fn determine_active_role(user_id: &str, db: &SqlitePool) -> Result<Option<String>, AppError> {
+    let has_individual = sqlx::query_scalar::<_, bool>(
+        "SELECT EXISTS(SELECT 1 FROM individual_profiles WHERE user_id = ?)"
+    )
+    .bind(user_id)
+    .fetch_one(db)
+    .await?;
+
+    let has_organization = sqlx::query_scalar::<_, bool>(
+        "SELECT EXISTS(SELECT 1 FROM organization_profiles WHERE user_id = ?)"
+    )
+    .bind(user_id)
+    .fetch_one(db)
+    .await?;
+
+    if has_individual {
+        Ok(Some("individual".into()))
+    } else if has_organization {
+        Ok(Some("organization".into()))
+    } else {
+        Ok(None)
+    }
+}
+
+pub async fn switch_role(
+    user_id: &str,
+    target_role: &str,
+    read_db: &SqlitePool,
+    write_db: &SqlitePool,
+    config: &Config,
+) -> Result<TokenResponse, AppError> {
+    if !["individual", "organization"].contains(&target_role) {
+        return Err(AppError::BadRequest("Invalid role".into()));
+    }
+
+    let table = if target_role == "individual" {
+        "individual_profiles"
+    } else {
+        "organization_profiles"
+    };
+    let exists = sqlx::query_scalar::<_, bool>(
+        &format!("SELECT EXISTS(SELECT 1 FROM {} WHERE user_id = ?)", table)
+    )
+    .bind(user_id)
+    .fetch_one(read_db)
+    .await?;
+
+    if !exists {
+        return Err(AppError::BadRequest(
+            format!("Create a {} profile first", target_role)
+        ));
+    }
+
+    let user_uuid = Uuid::parse_str(user_id)
+        .map_err(|_| AppError::Internal("Invalid user ID".into()))?;
+    let family_id = Uuid::new_v4();
+
+    let access_token = jwt::encode_access_token(&user_uuid, target_role, config)?;
+    let refresh_token = jwt::encode_refresh_token(&user_uuid, &family_id, config)?;
+    let refresh_hash = hash_sha256(&refresh_token);
+
+    let id = Uuid::new_v4().to_string();
+    let family_str = family_id.to_string();
+    let expires_at = Utc::now()
+        .checked_add_signed(chrono::Duration::seconds(config.jwt_refresh_expiry_secs as i64))
+        .unwrap()
+        .to_rfc3339();
+
+    sqlx::query(
+        "INSERT INTO refresh_tokens (id, user_id, token_hash, family_id, expires_at) VALUES (?, ?, ?, ?, ?)"
+    )
+    .bind(&id)
+    .bind(user_id)
+    .bind(&refresh_hash)
+    .bind(&family_str)
+    .bind(&expires_at)
+    .execute(write_db)
+    .await?;
+
+    Ok(TokenResponse {
+        access_token,
+        refresh_token,
+        token_type: "Bearer".into(),
+        expires_in: config.jwt_access_expiry_secs,
+        needs_profile_setup: None,
+    })
 }
 
 pub async fn issue_tokens(
@@ -25,7 +115,11 @@ pub async fn issue_tokens(
         .map_err(|_| AppError::Internal("Invalid user ID".into()))?;
     let family_id = Uuid::new_v4();
 
-    let access_token = jwt::encode_access_token(&user_id, &user.role, config)?;
+    let active_role = determine_active_role(&user.id, write_db).await?;
+    let needs_profile_setup = active_role.is_none();
+    let role_for_token = active_role.unwrap_or_else(|| "individual".into());
+
+    let access_token = jwt::encode_access_token(&user_id, &role_for_token, config)?;
     let refresh_token = jwt::encode_refresh_token(&user_id, &family_id, config)?;
     let refresh_hash = hash_sha256(&refresh_token);
 
@@ -52,6 +146,7 @@ pub async fn issue_tokens(
         refresh_token,
         token_type: "Bearer".into(),
         expires_in: config.jwt_access_expiry_secs,
+        needs_profile_setup: if needs_profile_setup { Some(true) } else { None },
     })
 }
 
@@ -79,11 +174,9 @@ pub async fn refresh_tokens(
                 .execute(write_db)
                 .await?;
 
-            // Fetch user
-            let user = sqlx::query_as::<_, User>("SELECT * FROM users WHERE id = ?")
-                .bind(&user_id)
-                .fetch_one(write_db)
-                .await?;
+            // Determine active role from profiles
+            let active_role = determine_active_role(&user_id, write_db).await?;
+            let role_for_token = active_role.unwrap_or_else(|| "individual".into());
 
             // Issue new tokens with same family
             let uid = Uuid::parse_str(&user_id)
@@ -91,7 +184,7 @@ pub async fn refresh_tokens(
             let fid = Uuid::parse_str(&family_id)
                 .map_err(|_| AppError::Internal("Invalid family ID".into()))?;
 
-            let new_access = jwt::encode_access_token(&uid, &user.role, config)?;
+            let new_access = jwt::encode_access_token(&uid, &role_for_token, config)?;
             let new_refresh = jwt::encode_refresh_token(&uid, &fid, config)?;
             let new_hash = hash_sha256(&new_refresh);
 
@@ -117,6 +210,7 @@ pub async fn refresh_tokens(
                 refresh_token: new_refresh,
                 token_type: "Bearer".into(),
                 expires_in: config.jwt_access_expiry_secs,
+                needs_profile_setup: None,
             })
         }
         None => {
@@ -145,7 +239,6 @@ pub async fn logout(user_id: &str, write_db: &SqlitePool) -> Result<(), AppError
 
 pub async fn create_magic_link_token(
     email: &str,
-    role: &str,
     write_db: &SqlitePool,
 ) -> Result<String, AppError> {
     let raw_token = jwt::generate_raw_token();
@@ -157,12 +250,11 @@ pub async fn create_magic_link_token(
         .to_rfc3339();
 
     sqlx::query(
-        "INSERT INTO magic_link_tokens (id, email, token_hash, role, expires_at) VALUES (?, ?, ?, ?, ?)"
+        "INSERT INTO magic_link_tokens (id, email, token_hash, expires_at) VALUES (?, ?, ?, ?)"
     )
     .bind(&id)
     .bind(email)
     .bind(&token_hash)
-    .bind(role)
     .bind(&expires_at)
     .execute(write_db)
     .await?;
@@ -177,15 +269,15 @@ pub async fn verify_magic_link_token(
 ) -> Result<User, AppError> {
     let token_hash = hash_sha256(token);
 
-    let row = sqlx::query_as::<_, (String, String)>(
-        "SELECT id, role FROM magic_link_tokens WHERE email = ? AND token_hash = ? AND used = 0 AND expires_at > datetime('now')"
+    let row = sqlx::query_as::<_, (String,)>(
+        "SELECT id FROM magic_link_tokens WHERE email = ? AND token_hash = ? AND used = 0 AND expires_at > datetime('now')"
     )
     .bind(email)
     .bind(&token_hash)
     .fetch_optional(write_db)
     .await?;
 
-    let (token_id, role) = row.ok_or_else(|| {
+    let (token_id,) = row.ok_or_else(|| {
         AppError::Unauthorized("Invalid or expired magic link".into())
     })?;
 
@@ -196,12 +288,11 @@ pub async fn verify_magic_link_token(
         .await?;
 
     // Find or create user
-    find_or_create_email_user(email, &role, write_db).await
+    find_or_create_email_user(email, write_db).await
 }
 
 pub async fn find_or_create_email_user(
     email: &str,
-    role: &str,
     write_db: &SqlitePool,
 ) -> Result<User, AppError> {
     if let Some(user) = sqlx::query_as::<_, User>("SELECT * FROM users WHERE email = ?")
@@ -216,34 +307,13 @@ pub async fn find_or_create_email_user(
     let display_name = email.split('@').next().unwrap_or("User").to_string();
 
     sqlx::query(
-        "INSERT INTO users (id, email, role, display_name, auth_provider) VALUES (?, ?, ?, ?, 'email')"
+        "INSERT INTO users (id, email, display_name, auth_provider) VALUES (?, ?, ?, 'email')"
     )
     .bind(&id)
     .bind(email)
-    .bind(role)
     .bind(&display_name)
     .execute(write_db)
     .await?;
-
-    // Create empty profile
-    match role {
-        "developer" => {
-            sqlx::query("INSERT INTO developer_profiles (user_id) VALUES (?)")
-                .bind(&id)
-                .execute(write_db)
-                .await?;
-        }
-        "company" => {
-            sqlx::query(
-                "INSERT INTO company_profiles (user_id, company_name) VALUES (?, ?)"
-            )
-            .bind(&id)
-            .bind(&display_name)
-            .execute(write_db)
-            .await?;
-        }
-        _ => return Err(AppError::BadRequest("Invalid role".into())),
-    }
 
     sqlx::query_as::<_, User>("SELECT * FROM users WHERE id = ?")
         .bind(&id)
@@ -268,7 +338,6 @@ struct GoogleIdTokenPayload {
 
 pub async fn exchange_google_code(
     code: &str,
-    role: &str,
     write_db: &SqlitePool,
     config: &Config,
 ) -> Result<User, AppError> {
@@ -347,32 +416,14 @@ pub async fn exchange_google_code(
     });
 
     sqlx::query(
-        "INSERT INTO users (id, email, role, display_name, auth_provider, auth_provider_id) VALUES (?, ?, ?, ?, 'google', ?)"
+        "INSERT INTO users (id, email, display_name, auth_provider, auth_provider_id) VALUES (?, ?, ?, 'google', ?)"
     )
     .bind(&id)
     .bind(&payload.email)
-    .bind(role)
     .bind(&display_name)
     .bind(&payload.sub)
     .execute(write_db)
     .await?;
-
-    match role {
-        "developer" => {
-            sqlx::query("INSERT INTO developer_profiles (user_id) VALUES (?)")
-                .bind(&id)
-                .execute(write_db)
-                .await?;
-        }
-        "company" => {
-            sqlx::query("INSERT INTO company_profiles (user_id, company_name) VALUES (?, ?)")
-                .bind(&id)
-                .bind(&display_name)
-                .execute(write_db)
-                .await?;
-        }
-        _ => return Err(AppError::BadRequest("Invalid role".into())),
-    }
 
     sqlx::query_as::<_, User>("SELECT * FROM users WHERE id = ?")
         .bind(&id)

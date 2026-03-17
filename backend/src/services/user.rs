@@ -12,6 +12,38 @@ pub async fn get_user_by_id(user_id: &Uuid, read_db: &SqlitePool) -> Result<User
         .map_err(Into::into)
 }
 
+pub async fn get_user_response(user_id: &str, db: &SqlitePool) -> Result<UserResponse, AppError> {
+    let user = sqlx::query_as::<_, User>("SELECT * FROM users WHERE id = ?")
+        .bind(user_id)
+        .fetch_one(db)
+        .await?;
+
+    let has_individual = sqlx::query_scalar::<_, bool>(
+        "SELECT EXISTS(SELECT 1 FROM individual_profiles WHERE user_id = ?)",
+    )
+    .bind(user_id)
+    .fetch_one(db)
+    .await
+    .unwrap_or(false);
+
+    let has_organization = sqlx::query_scalar::<_, bool>(
+        "SELECT EXISTS(SELECT 1 FROM organization_profiles WHERE user_id = ?)",
+    )
+    .bind(user_id)
+    .fetch_one(db)
+    .await
+    .unwrap_or(false);
+
+    Ok(UserResponse {
+        id: user.id,
+        email: user.email,
+        display_name: user.display_name,
+        has_individual_profile: has_individual,
+        has_organization_profile: has_organization,
+        created_at: user.created_at,
+    })
+}
+
 pub async fn update_user(
     user_id: &Uuid,
     req: &UpdateUserRequest,
@@ -30,12 +62,12 @@ pub async fn update_user(
         .map_err(Into::into)
 }
 
-pub async fn get_developer_profile(
+pub async fn get_individual_profile(
     user_id: &str,
     read_db: &SqlitePool,
-) -> Result<DeveloperProfile, AppError> {
-    sqlx::query_as::<_, DeveloperProfile>(
-        "SELECT * FROM developer_profiles WHERE user_id = ?",
+) -> Result<IndividualProfile, AppError> {
+    sqlx::query_as::<_, IndividualProfile>(
+        "SELECT * FROM individual_profiles WHERE user_id = ?",
     )
     .bind(user_id)
     .fetch_one(read_db)
@@ -43,55 +75,281 @@ pub async fn get_developer_profile(
     .map_err(Into::into)
 }
 
-pub async fn update_developer_profile(
+pub async fn upsert_individual_profile(
     user_id: &str,
-    req: &UpdateDeveloperProfileRequest,
+    req: &UpdateIndividualProfileRequest,
     write_db: &SqlitePool,
-) -> Result<DeveloperProfile, AppError> {
-    let current = sqlx::query_as::<_, DeveloperProfile>(
-        "SELECT * FROM developer_profiles WHERE user_id = ?",
+) -> Result<IndividualProfile, AppError> {
+    let existing = sqlx::query_as::<_, IndividualProfile>(
+        "SELECT * FROM individual_profiles WHERE user_id = ?",
     )
     .bind(user_id)
-    .fetch_one(write_db)
+    .fetch_optional(write_db)
     .await?;
 
-    let bio = req.bio.as_deref().unwrap_or(&current.bio);
-    let tech_stack = req
-        .tech_stack
-        .as_ref()
-        .map(|ts| serde_json::to_string(ts).unwrap_or_default())
-        .unwrap_or(current.tech_stack);
-    let github_url = req.github_url.as_deref().or(current.github_url.as_deref());
-    let linkedin_url = req.linkedin_url.as_deref().or(current.linkedin_url.as_deref());
-    let level = req.level.as_deref().unwrap_or(&current.level);
-    let contact_email = req.contact_email.as_deref().or(current.contact_email.as_deref());
+    if let Some(ref current) = existing {
+        let bio = req.bio.as_deref().unwrap_or(&current.bio);
+        let headline = req.headline.as_deref().unwrap_or(&current.headline);
+        let profession = req.profession.as_deref().unwrap_or(&current.profession);
+        let skills = req
+            .skills
+            .as_ref()
+            .map(|s| serde_json::to_string(s).unwrap_or_default())
+            .unwrap_or_else(|| current.skills.clone());
+        let experience_level = req.experience_level.as_deref().unwrap_or(&current.experience_level);
+        let contact_email = req.contact_email.as_deref().or(current.contact_email.as_deref());
 
-    if let Some(lvl) = &req.level {
-        if !["junior", "mid", "senior"].contains(&lvl.as_str()) {
-            return Err(AppError::BadRequest("Invalid level".into()));
+        if let Some(p) = &req.profession {
+            validate_category(p)?;
         }
+        if let Some(lvl) = &req.experience_level {
+            if !["entry", "mid", "senior", "expert"].contains(&lvl.as_str()) {
+                return Err(AppError::BadRequest("Invalid experience_level".into()));
+            }
+        }
+
+        sqlx::query(
+            "UPDATE individual_profiles SET bio = ?, headline = ?, profession = ?, skills = ?, experience_level = ?, contact_email = ? WHERE user_id = ?"
+        )
+        .bind(bio)
+        .bind(headline)
+        .bind(profession)
+        .bind(&skills)
+        .bind(experience_level)
+        .bind(contact_email)
+        .bind(user_id)
+        .execute(write_db)
+        .await?;
+    } else {
+        let bio = req.bio.as_deref().unwrap_or("");
+        let headline = req.headline.as_deref().unwrap_or("");
+        let profession = req.profession.as_deref().unwrap_or("other");
+        let skills = req
+            .skills
+            .as_ref()
+            .map(|s| serde_json::to_string(s).unwrap_or_default())
+            .unwrap_or_else(|| "[]".into());
+        let experience_level = req.experience_level.as_deref().unwrap_or("entry");
+        let contact_email = req.contact_email.as_deref();
+
+        if let Some(p) = &req.profession {
+            validate_category(p)?;
+        }
+
+        sqlx::query(
+            "INSERT INTO individual_profiles (user_id, bio, headline, profession, skills, experience_level, contact_email) VALUES (?, ?, ?, ?, ?, ?, ?)"
+        )
+        .bind(user_id)
+        .bind(bio)
+        .bind(headline)
+        .bind(profession)
+        .bind(&skills)
+        .bind(experience_level)
+        .bind(contact_email)
+        .execute(write_db)
+        .await?;
     }
 
-    sqlx::query(
-        "UPDATE developer_profiles SET bio = ?, tech_stack = ?, github_url = ?, linkedin_url = ?, level = ?, contact_email = ? WHERE user_id = ?"
-    )
-    .bind(bio)
-    .bind(&tech_stack)
-    .bind(github_url)
-    .bind(linkedin_url)
-    .bind(level)
-    .bind(contact_email)
-    .bind(user_id)
-    .execute(write_db)
-    .await?;
-
-    sqlx::query_as::<_, DeveloperProfile>(
-        "SELECT * FROM developer_profiles WHERE user_id = ?",
+    sqlx::query_as::<_, IndividualProfile>(
+        "SELECT * FROM individual_profiles WHERE user_id = ?",
     )
     .bind(user_id)
     .fetch_one(write_db)
     .await
     .map_err(Into::into)
+}
+
+pub async fn get_organization_profile(
+    user_id: &str,
+    read_db: &SqlitePool,
+) -> Result<OrganizationProfile, AppError> {
+    sqlx::query_as::<_, OrganizationProfile>(
+        "SELECT * FROM organization_profiles WHERE user_id = ?",
+    )
+    .bind(user_id)
+    .fetch_one(read_db)
+    .await
+    .map_err(Into::into)
+}
+
+pub async fn upsert_organization_profile(
+    user_id: &str,
+    req: &UpdateOrganizationProfileRequest,
+    write_db: &SqlitePool,
+) -> Result<OrganizationProfile, AppError> {
+    let existing = sqlx::query_as::<_, OrganizationProfile>(
+        "SELECT * FROM organization_profiles WHERE user_id = ?",
+    )
+    .bind(user_id)
+    .fetch_optional(write_db)
+    .await?;
+
+    if let Some(ref current) = existing {
+        let organization_name = req.organization_name.as_deref().unwrap_or(&current.organization_name);
+        let description = req.description.as_deref().unwrap_or(&current.description);
+        let industry = req.industry.as_deref().unwrap_or(&current.industry);
+        let size = req.size.as_deref().unwrap_or(&current.size);
+        let skills_sought = req
+            .skills_sought
+            .as_ref()
+            .map(|s| serde_json::to_string(s).unwrap_or_default())
+            .unwrap_or_else(|| current.skills_sought.clone());
+        let contact_email = req.contact_email.as_deref().or(current.contact_email.as_deref());
+
+        if let Some(i) = &req.industry {
+            validate_category(i)?;
+        }
+        if let Some(s) = &req.size {
+            if !["solo", "startup", "small", "medium", "large", "enterprise"].contains(&s.as_str()) {
+                return Err(AppError::BadRequest("Invalid size".into()));
+            }
+        }
+
+        sqlx::query(
+            "UPDATE organization_profiles SET organization_name = ?, description = ?, industry = ?, size = ?, skills_sought = ?, contact_email = ? WHERE user_id = ?"
+        )
+        .bind(organization_name)
+        .bind(description)
+        .bind(industry)
+        .bind(size)
+        .bind(&skills_sought)
+        .bind(contact_email)
+        .bind(user_id)
+        .execute(write_db)
+        .await?;
+    } else {
+        let organization_name = req.organization_name.as_deref().unwrap_or("My Organization");
+        let description = req.description.as_deref().unwrap_or("");
+        let industry = req.industry.as_deref().unwrap_or("other");
+        let size = req.size.as_deref().unwrap_or("startup");
+        let skills_sought = req
+            .skills_sought
+            .as_ref()
+            .map(|s| serde_json::to_string(s).unwrap_or_default())
+            .unwrap_or_else(|| "[]".into());
+        let contact_email = req.contact_email.as_deref();
+
+        if let Some(i) = &req.industry {
+            validate_category(i)?;
+        }
+
+        sqlx::query(
+            "INSERT INTO organization_profiles (user_id, organization_name, description, industry, size, skills_sought, contact_email) VALUES (?, ?, ?, ?, ?, ?, ?)"
+        )
+        .bind(user_id)
+        .bind(organization_name)
+        .bind(description)
+        .bind(industry)
+        .bind(size)
+        .bind(&skills_sought)
+        .bind(contact_email)
+        .execute(write_db)
+        .await?;
+    }
+
+    sqlx::query_as::<_, OrganizationProfile>(
+        "SELECT * FROM organization_profiles WHERE user_id = ?",
+    )
+    .bind(user_id)
+    .fetch_one(write_db)
+    .await
+    .map_err(Into::into)
+}
+
+pub async fn get_profile_links(
+    user_id: &str,
+    profile_type: &str,
+    read_db: &SqlitePool,
+) -> Result<Vec<ProfileLink>, AppError> {
+    sqlx::query_as::<_, ProfileLink>(
+        "SELECT * FROM profile_links WHERE user_id = ? AND profile_type = ? ORDER BY display_order",
+    )
+    .bind(user_id)
+    .bind(profile_type)
+    .fetch_all(read_db)
+    .await
+    .map_err(Into::into)
+}
+
+pub async fn replace_profile_links(
+    user_id: &str,
+    profile_type: &str,
+    links: &[ProfileLinkInput],
+    write_db: &SqlitePool,
+) -> Result<Vec<ProfileLink>, AppError> {
+    // Delete existing links
+    sqlx::query("DELETE FROM profile_links WHERE user_id = ? AND profile_type = ?")
+        .bind(user_id)
+        .bind(profile_type)
+        .execute(write_db)
+        .await?;
+
+    // Insert new links
+    for (i, link) in links.iter().enumerate() {
+        let valid_types = ["github", "linkedin", "portfolio", "website", "twitter", "dribbble", "behance", "stackoverflow", "other"];
+        if !valid_types.contains(&link.link_type.as_str()) {
+            return Err(AppError::BadRequest(format!("Invalid link_type: {}", link.link_type)));
+        }
+
+        let id = Uuid::new_v4().to_string();
+        let order = link.display_order.unwrap_or(i as i32);
+        sqlx::query(
+            "INSERT INTO profile_links (id, user_id, profile_type, link_type, label, url, display_order) VALUES (?, ?, ?, ?, ?, ?, ?)"
+        )
+        .bind(&id)
+        .bind(user_id)
+        .bind(profile_type)
+        .bind(&link.link_type)
+        .bind(&link.label)
+        .bind(&link.url)
+        .bind(order)
+        .execute(write_db)
+        .await?;
+    }
+
+    get_profile_links(user_id, profile_type, write_db).await
+}
+
+pub async fn delete_profile(
+    user_id: &str,
+    profile_type: &str,
+    write_db: &SqlitePool,
+) -> Result<(), AppError> {
+    // Check the user has the other profile
+    let other_table = if profile_type == "individual" {
+        "organization_profiles"
+    } else {
+        "individual_profiles"
+    };
+    let has_other = sqlx::query_scalar::<_, bool>(
+        &format!("SELECT EXISTS(SELECT 1 FROM {} WHERE user_id = ?)", other_table)
+    )
+    .bind(user_id)
+    .fetch_one(write_db)
+    .await?;
+
+    if !has_other {
+        return Err(AppError::BadRequest("Cannot delete your only profile".into()));
+    }
+
+    let table = if profile_type == "individual" {
+        "individual_profiles"
+    } else {
+        "organization_profiles"
+    };
+    sqlx::query(&format!("DELETE FROM {} WHERE user_id = ?", table))
+        .bind(user_id)
+        .execute(write_db)
+        .await?;
+
+    // Delete associated links
+    sqlx::query("DELETE FROM profile_links WHERE user_id = ? AND profile_type = ?")
+        .bind(user_id)
+        .bind(profile_type)
+        .execute(write_db)
+        .await?;
+
+    Ok(())
 }
 
 pub async fn get_profile_preview(
@@ -99,91 +357,20 @@ pub async fn get_profile_preview(
     read_db: &SqlitePool,
 ) -> Result<ProfilePreview, AppError> {
     sqlx::query_as::<_, ProfilePreview>(
-        "SELECT u.id AS user_id, u.display_name, u.role, \
-         CASE WHEN u.role = 'developer' \
-           THEN COALESCE(SUBSTR(dp.bio, 1, 150), '') \
-           ELSE COALESCE(SUBSTR(cp.description, 1, 150), '') \
-         END AS bio_excerpt, \
-         CASE WHEN u.role = 'developer' \
-           THEN COALESCE(dp.tech_stack, '[]') \
-           ELSE COALESCE(cp.tech_stack, '[]') \
-         END AS tech_stack, \
-         CASE WHEN u.role = 'developer' \
-           THEN COALESCE(dp.level, '') \
-           ELSE COALESCE(cp.size, '') \
-         END AS level_or_size, \
-         (SELECT COUNT(*) FROM listings WHERE author_id = u.id AND status = 'active') AS active_listing_count \
+        "SELECT u.id AS user_id, u.display_name, \
+         COALESCE(SUBSTR(ip.bio, 1, 150), SUBSTR(op.description, 1, 150), '') AS bio_excerpt, \
+         COALESCE(ip.skills, op.skills_sought, '[]') AS skills, \
+         COALESCE(ip.experience_level, op.size, '') AS level_or_size, \
+         (SELECT COUNT(*) FROM listings WHERE author_id = u.id AND status = 'active') AS active_listing_count, \
+         (ip.user_id IS NOT NULL) AS has_individual_profile, \
+         (op.user_id IS NOT NULL) AS has_organization_profile \
          FROM users u \
-         LEFT JOIN developer_profiles dp ON dp.user_id = u.id \
-         LEFT JOIN company_profiles cp ON cp.user_id = u.id \
+         LEFT JOIN individual_profiles ip ON ip.user_id = u.id \
+         LEFT JOIN organization_profiles op ON op.user_id = u.id \
          WHERE u.id = ?",
     )
     .bind(user_id)
     .fetch_one(read_db)
-    .await
-    .map_err(Into::into)
-}
-
-pub async fn get_company_profile(
-    user_id: &str,
-    read_db: &SqlitePool,
-) -> Result<CompanyProfile, AppError> {
-    sqlx::query_as::<_, CompanyProfile>(
-        "SELECT * FROM company_profiles WHERE user_id = ?",
-    )
-    .bind(user_id)
-    .fetch_one(read_db)
-    .await
-    .map_err(Into::into)
-}
-
-pub async fn update_company_profile(
-    user_id: &str,
-    req: &UpdateCompanyProfileRequest,
-    write_db: &SqlitePool,
-) -> Result<CompanyProfile, AppError> {
-    let current = sqlx::query_as::<_, CompanyProfile>(
-        "SELECT * FROM company_profiles WHERE user_id = ?",
-    )
-    .bind(user_id)
-    .fetch_one(write_db)
-    .await?;
-
-    let company_name = req.company_name.as_deref().unwrap_or(&current.company_name);
-    let description = req.description.as_deref().unwrap_or(&current.description);
-    let website = req.website.as_deref().or(current.website.as_deref());
-    let size = req.size.as_deref().unwrap_or(&current.size);
-    let tech_stack = req
-        .tech_stack
-        .as_ref()
-        .map(|ts| serde_json::to_string(ts).unwrap_or_default())
-        .unwrap_or(current.tech_stack);
-    let contact_email = req.contact_email.as_deref().or(current.contact_email.as_deref());
-
-    if let Some(s) = &req.size {
-        if !["startup", "small", "medium", "large"].contains(&s.as_str()) {
-            return Err(AppError::BadRequest("Invalid company size".into()));
-        }
-    }
-
-    sqlx::query(
-        "UPDATE company_profiles SET company_name = ?, description = ?, website = ?, size = ?, tech_stack = ?, contact_email = ? WHERE user_id = ?"
-    )
-    .bind(company_name)
-    .bind(description)
-    .bind(website)
-    .bind(size)
-    .bind(&tech_stack)
-    .bind(contact_email)
-    .bind(user_id)
-    .execute(write_db)
-    .await?;
-
-    sqlx::query_as::<_, CompanyProfile>(
-        "SELECT * FROM company_profiles WHERE user_id = ?",
-    )
-    .bind(user_id)
-    .fetch_one(write_db)
     .await
     .map_err(Into::into)
 }
@@ -210,21 +397,27 @@ pub async fn delete_account(user_id: &Uuid, write_db: &SqlitePool) -> Result<(),
         .execute(&mut *tx)
         .await?;
 
-    // Anonymize developer profile
+    // Anonymize individual profile (no-op if doesn't exist)
     sqlx::query(
-        "UPDATE developer_profiles SET bio = '', tech_stack = '[]', github_url = NULL, linkedin_url = NULL, contact_email = NULL WHERE user_id = ?",
+        "UPDATE individual_profiles SET bio = '', headline = '', skills = '[]', contact_email = NULL WHERE user_id = ?",
     )
     .bind(&uid)
     .execute(&mut *tx)
     .await?;
 
-    // Anonymize company profile
+    // Anonymize organization profile (no-op if doesn't exist)
     sqlx::query(
-        "UPDATE company_profiles SET company_name = '[Deleted]', description = '', website = NULL, tech_stack = '[]', contact_email = NULL WHERE user_id = ?",
+        "UPDATE organization_profiles SET organization_name = '[Deleted]', description = '', skills_sought = '[]', contact_email = NULL WHERE user_id = ?",
     )
     .bind(&uid)
     .execute(&mut *tx)
     .await?;
+
+    // Delete profile links
+    sqlx::query("DELETE FROM profile_links WHERE user_id = ?")
+        .bind(&uid)
+        .execute(&mut *tx)
+        .await?;
 
     // Delete auth tokens
     sqlx::query("DELETE FROM refresh_tokens WHERE user_id = ?")
@@ -279,6 +472,14 @@ pub async fn delete_account(user_id: &Uuid, write_db: &SqlitePool) -> Result<(),
     Ok(())
 }
 
+fn validate_category(cat: &str) -> Result<(), AppError> {
+    let valid = ["technology", "design", "marketing", "finance", "legal", "education", "healthcare", "engineering", "creative", "business", "trades", "other"];
+    if !valid.contains(&cat) {
+        return Err(AppError::BadRequest(format!("Invalid category: {}", cat)));
+    }
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -304,9 +505,9 @@ mod tests {
         let user_id = Uuid::new_v4();
         let uid = user_id.to_string();
 
-        // Insert user
+        // Insert user (no role column)
         sqlx::query(
-            "INSERT INTO users (id, email, role, display_name, auth_provider) VALUES (?, ?, 'developer', 'Test User', 'email')",
+            "INSERT INTO users (id, email, display_name, auth_provider) VALUES (?, ?, 'Test User', 'email')",
         )
         .bind(&uid)
         .bind("test@example.com")
@@ -314,9 +515,9 @@ mod tests {
         .await
         .unwrap();
 
-        // Insert developer profile
+        // Insert individual profile
         sqlx::query(
-            "INSERT INTO developer_profiles (user_id, bio, tech_stack, level) VALUES (?, 'My bio', '[\"rust\"]', 'mid')",
+            "INSERT INTO individual_profiles (user_id, bio, skills, experience_level) VALUES (?, 'My bio', '[\"rust\"]', 'mid')",
         )
         .bind(&uid)
         .execute(&db)
@@ -326,8 +527,8 @@ mod tests {
         // Insert listing
         let listing_id = Uuid::new_v4().to_string();
         sqlx::query(
-            "INSERT INTO listings (id, author_id, title, description, type, format, duration_weeks, tech_stack, status, visibility) \
-             VALUES (?, ?, 'Test', 'Desc', 'developer', 'remote', 4, '[\"rust\"]', 'active', 'public')",
+            "INSERT INTO listings (id, author_id, title, description, author_role, format, duration_weeks, skills, status, visibility, category) \
+             VALUES (?, ?, 'Test', 'Desc', 'individual', 'remote', 4, '[\"rust\"]', 'active', 'public', 'technology')",
         )
         .bind(&listing_id)
         .bind(&uid)
@@ -370,7 +571,7 @@ mod tests {
 
         // Verify profile anonymized
         let bio: String =
-            sqlx::query_scalar("SELECT bio FROM developer_profiles WHERE user_id = ?")
+            sqlx::query_scalar("SELECT bio FROM individual_profiles WHERE user_id = ?")
                 .bind(&uid)
                 .fetch_one(&db)
                 .await

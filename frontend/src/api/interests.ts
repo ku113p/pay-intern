@@ -13,7 +13,6 @@ export interface InterestToggleResponse {
 export interface MatchResponse {
   matched_user_id: string;
   matched_user_name: string;
-  matched_user_role: string;
   my_listing_id: string;
   my_listing_title: string;
   their_listing_id: string;
@@ -27,7 +26,7 @@ export const interestsApi = {
   unsaveListing: (listingId: string) =>
     api.delete<SaveToggleResponse>(`/listings/${listingId}/save`),
 
-  getSavedListings: (params?: { listing_type?: string; page?: number; per_page?: number }) =>
+  getSavedListings: (params?: { author_role?: string; page?: number; per_page?: number }) =>
     api.get<PaginatedResponse<Listing>>('/listings/saved', { params }),
 
   addInterest: (listingId: string) =>
@@ -37,7 +36,7 @@ export const interestsApi = {
     api.delete<InterestToggleResponse>(`/listings/${listingId}/interest`),
 
   getReceivedInterests: () =>
-    api.get<Array<{ id: string; user_name: string; user_role: string; listing_title: string; created_at: string }>>('/interests/received'),
+    api.get<Array<{ id: string; user_name: string; listing_title: string; created_at: string }>>('/interests/received'),
 
   getMatches: () =>
     api.get<MatchResponse[]>('/interests/matches'),

@@ -3,39 +3,58 @@ import api from './client';
 export interface UserResponse {
   id: string;
   email: string;
-  role: string;
   display_name: string;
+  has_individual_profile: boolean;
+  has_organization_profile: boolean;
   created_at: string;
 }
 
-export interface DeveloperProfile {
-  user_id: string;
-  bio: string;
-  tech_stack: string[];
-  github_url: string | null;
-  linkedin_url: string | null;
-  level: string;
-  contact_email?: string | null;
+export interface ProfileLink {
+  id: string;
+  link_type: string;
+  label: string;
+  url: string;
+  display_order: number;
 }
 
-export interface CompanyProfile {
+export interface ProfileLinkInput {
+  link_type: string;
+  label: string;
+  url: string;
+  display_order?: number;
+}
+
+export interface IndividualProfile {
   user_id: string;
-  company_name: string;
-  description: string;
-  website: string | null;
-  size: string;
-  tech_stack: string[];
+  bio: string;
+  headline: string;
+  profession: string;
+  skills: string[];
+  experience_level: string;
   contact_email?: string | null;
+  links: ProfileLink[];
+}
+
+export interface OrganizationProfile {
+  user_id: string;
+  organization_name: string;
+  description: string;
+  industry: string;
+  size: string;
+  skills_sought: string[];
+  contact_email?: string | null;
+  links: ProfileLink[];
 }
 
 export interface ProfilePreview {
   user_id: string;
   display_name: string;
-  role: string;
   bio_excerpt: string;
-  tech_stack: string[];
+  skills: string[];
   level_or_size: string;
   active_listing_count: number;
+  has_individual_profile: boolean;
+  has_organization_profile: boolean;
 }
 
 export const profilesApi = {
@@ -43,15 +62,22 @@ export const profilesApi = {
   updateMe: (displayName: string) => api.put<UserResponse>('/users/me', { display_name: displayName }),
   deleteAccount: () => api.delete('/users/me'),
 
-  getMyDeveloperProfile: () => api.get<DeveloperProfile>('/profiles/developer'),
-  updateDeveloperProfile: (data: Partial<Omit<DeveloperProfile, 'user_id'>>) =>
-    api.put<DeveloperProfile>('/profiles/developer', data),
+  getMyIndividualProfile: () => api.get<IndividualProfile>('/profiles/individual'),
+  upsertIndividualProfile: (data: Partial<Omit<IndividualProfile, 'user_id' | 'links'>>) =>
+    api.put<IndividualProfile>('/profiles/individual', data),
+  deleteIndividualProfile: () => api.delete('/profiles/individual'),
 
-  getMyCompanyProfile: () => api.get<CompanyProfile>('/profiles/company'),
-  updateCompanyProfile: (data: Partial<Omit<CompanyProfile, 'user_id'>>) =>
-    api.put<CompanyProfile>('/profiles/company', data),
+  getMyOrganizationProfile: () => api.get<OrganizationProfile>('/profiles/organization'),
+  upsertOrganizationProfile: (data: Partial<Omit<OrganizationProfile, 'user_id' | 'links'>>) =>
+    api.put<OrganizationProfile>('/profiles/organization', data),
+  deleteOrganizationProfile: () => api.delete('/profiles/organization'),
 
-  getPublicDeveloperProfile: (id: string) => api.get<DeveloperProfile>(`/profiles/developer/${id}`),
-  getPublicCompanyProfile: (id: string) => api.get<CompanyProfile>(`/profiles/company/${id}`),
+  getProfileLinks: (profileType: 'individual' | 'organization') =>
+    api.get<ProfileLink[]>(`/profiles/${profileType}/links`),
+  replaceProfileLinks: (profileType: 'individual' | 'organization', links: ProfileLinkInput[]) =>
+    api.put<ProfileLink[]>(`/profiles/${profileType}/links`, { links }),
+
+  getPublicIndividualProfile: (id: string) => api.get<IndividualProfile>(`/profiles/individual/${id}`),
+  getPublicOrganizationProfile: (id: string) => api.get<OrganizationProfile>(`/profiles/organization/${id}`),
   getProfilePreview: (id: string) => api.get<ProfilePreview>(`/profiles/preview/${id}`),
 };

@@ -13,8 +13,9 @@ pub async fn get_me(
     State(state): State<AppState>,
     auth: AuthUser,
 ) -> Result<Json<UserResponse>, AppError> {
-    let user = user_service::get_user_by_id(&auth.user_id, &state.read_db).await?;
-    Ok(Json(user.into()))
+    let uid = auth.user_id.to_string();
+    let response = user_service::get_user_response(&uid, &state.read_db).await?;
+    Ok(Json(response))
 }
 
 pub async fn update_me(
@@ -23,8 +24,10 @@ pub async fn update_me(
     Json(req): Json<UpdateUserRequest>,
 ) -> Result<Json<UserResponse>, AppError> {
     req.validate()?;
-    let user = user_service::update_user(&auth.user_id, &req, &state.write_db).await?;
-    Ok(Json(user.into()))
+    let uid = auth.user_id.to_string();
+    user_service::update_user(&auth.user_id, &req, &state.write_db).await?;
+    let response = user_service::get_user_response(&uid, &state.write_db).await?;
+    Ok(Json(response))
 }
 
 pub async fn delete_me(

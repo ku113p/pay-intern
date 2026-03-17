@@ -10,25 +10,20 @@ pub async fn create_listing(
     req: &CreateListingRequest,
     write_db: &SqlitePool,
 ) -> Result<Listing, AppError> {
-    let listing_type = match author_role {
-        "developer" => "developer",
-        "company" => "company",
-        _ => return Err(AppError::BadRequest("Invalid role".into())),
-    };
+    if !["individual", "organization"].contains(&author_role) {
+        return Err(AppError::BadRequest("Invalid role".into()));
+    }
 
     if !["remote", "onsite", "hybrid"].contains(&req.format.as_str()) {
         return Err(AppError::BadRequest("Invalid format".into()));
     }
 
-    // Company listings must have outcome_criteria with at least 3 items
-    if listing_type == "company" {
-        match &req.outcome_criteria {
-            Some(criteria) if criteria.len() >= 3 => {}
-            _ => {
-                return Err(AppError::BadRequest(
-                    "Company listings require at least 3 outcome criteria".into(),
-                ));
-            }
+    // If outcome_criteria provided, validate at least 3 items
+    if let Some(criteria) = &req.outcome_criteria {
+        if criteria.len() < 3 {
+            return Err(AppError::BadRequest(
+                "Outcome criteria require at least 3 items".into(),
+            ));
         }
     }
 
@@ -38,13 +33,13 @@ pub async fn create_listing(
         }
     }
 
-    let payment_direction = req.payment_direction.as_deref().unwrap_or("company_pays_developer");
-    if !["company_pays_developer", "developer_pays_company"].contains(&payment_direction) {
+    let payment_direction = req.payment_direction.as_deref().unwrap_or("poster_pays");
+    if !["poster_pays", "applicant_pays", "negotiable", "unpaid"].contains(&payment_direction) {
         return Err(AppError::BadRequest("Invalid payment_direction".into()));
     }
 
     let id = Uuid::new_v4().to_string();
-    let tech_stack = serde_json::to_string(&req.tech_stack).unwrap_or_default();
+    let skills = serde_json::to_string(&req.skills).unwrap_or_default();
     let outcome_criteria = req
         .outcome_criteria
         .as_ref()
@@ -56,19 +51,22 @@ pub async fn create_listing(
     }
 
     let experience_level = req.experience_level.as_deref().unwrap_or("any");
-    if !["junior", "mid", "senior", "any"].contains(&experience_level) {
-        return Err(AppError::BadRequest("experience_level must be junior, mid, senior, or any".into()));
+    if !["entry", "mid", "senior", "expert", "any"].contains(&experience_level) {
+        return Err(AppError::BadRequest("experience_level must be entry, mid, senior, expert, or any".into()));
     }
 
+    let category = req.category.as_deref().unwrap_or("other");
+
     sqlx::query(
-        "INSERT INTO listings (id, author_id, type, title, description, tech_stack, duration_weeks, price_usd, payment_direction, format, outcome_criteria, visibility, experience_level, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active')"
+        "INSERT INTO listings (id, author_id, author_role, title, description, category, skills, duration_weeks, price_usd, payment_direction, format, outcome_criteria, visibility, experience_level, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active')"
     )
     .bind(&id)
     .bind(author_id.to_string())
-    .bind(listing_type)
+    .bind(author_role)
     .bind(&req.title)
     .bind(&req.description)
-    .bind(&tech_stack)
+    .bind(category)
+    .bind(&skills)
     .bind(req.duration_weeks)
     .bind(req.price_usd)
     .bind(payment_direction)
@@ -92,18 +90,17 @@ pub async fn get_listing(
     read_db: &SqlitePool,
 ) -> Result<ListingWithAuthor, AppError> {
     let listing = sqlx::query_as::<_, ListingWithAuthor>(
-        "SELECT l.id, l.author_id, l.type, l.title, l.description, l.tech_stack, \
+        "SELECT l.id, l.author_id, l.author_role, l.title, l.description, l.category, l.skills, \
          l.duration_weeks, l.price_usd, l.payment_direction, l.format, l.outcome_criteria, \
          l.visibility, l.status, l.experience_level, l.created_at, l.updated_at, \
          u.display_name AS author_display_name, \
-         cp.company_name AS company_name, \
-         cp.website AS company_website, \
-         dp.level AS developer_level, \
+         op.organization_name AS organization_name, \
+         ip.experience_level AS individual_level, \
          SUBSTR(u.email, INSTR(u.email, '@') + 1) AS author_email_domain \
          FROM listings l \
          JOIN users u ON u.id = l.author_id \
-         LEFT JOIN company_profiles cp ON cp.user_id = l.author_id \
-         LEFT JOIN developer_profiles dp ON dp.user_id = l.author_id \
+         LEFT JOIN organization_profiles op ON op.user_id = l.author_id \
+         LEFT JOIN individual_profiles ip ON ip.user_id = l.author_id \
          WHERE l.id = ?"
     )
     .bind(id)
@@ -152,15 +149,16 @@ pub async fn update_listing(
 
     let title = req.title.as_deref().unwrap_or(&listing.title);
     let description = req.description.as_deref().unwrap_or(&listing.description);
-    let tech_stack = req
-        .tech_stack
+    let category = req.category.as_deref().unwrap_or(&listing.category);
+    let skills = req
+        .skills
         .as_ref()
         .map(|ts| serde_json::to_string(ts).unwrap_or_default())
-        .unwrap_or(listing.tech_stack);
+        .unwrap_or(listing.skills);
     let duration_weeks = req.duration_weeks.unwrap_or(listing.duration_weeks);
     let price_usd = req.price_usd.or(listing.price_usd);
     let payment_direction = req.payment_direction.as_deref().unwrap_or(&listing.payment_direction);
-    if !["company_pays_developer", "developer_pays_company"].contains(&payment_direction) {
+    if !["poster_pays", "applicant_pays", "negotiable", "unpaid"].contains(&payment_direction) {
         return Err(AppError::BadRequest("Invalid payment_direction".into()));
     }
     let format = req.format.as_deref().unwrap_or(&listing.format);
@@ -174,11 +172,12 @@ pub async fn update_listing(
     let experience_level = req.experience_level.as_deref().unwrap_or(&listing.experience_level);
 
     sqlx::query(
-        "UPDATE listings SET title = ?, description = ?, tech_stack = ?, duration_weeks = ?, price_usd = ?, payment_direction = ?, format = ?, outcome_criteria = ?, visibility = ?, status = ?, experience_level = ?, updated_at = datetime('now') WHERE id = ?"
+        "UPDATE listings SET title = ?, description = ?, category = ?, skills = ?, duration_weeks = ?, price_usd = ?, payment_direction = ?, format = ?, outcome_criteria = ?, visibility = ?, status = ?, experience_level = ?, updated_at = datetime('now') WHERE id = ?"
     )
     .bind(title)
     .bind(description)
-    .bind(&tech_stack)
+    .bind(category)
+    .bind(&skills)
     .bind(duration_weeks)
     .bind(price_usd)
     .bind(payment_direction)
@@ -221,16 +220,23 @@ pub async fn delete_listing(
 }
 
 pub async fn get_feed(
-    listing_type: &str,
     query: &ListingFeedQuery,
     viewer_id: Option<&Uuid>,
     read_db: &SqlitePool,
 ) -> Result<PaginatedResponse<ListingResponse>, AppError> {
     let mut where_clauses = vec![
-        "l.type = ?".to_string(),
         "l.status = 'active'".to_string(),
     ];
-    let mut bind_values: Vec<String> = vec![listing_type.to_string()];
+    let mut bind_values: Vec<String> = vec![];
+
+    // Author role filter (replaces old listing_type path parameter)
+    if let Some(author_role) = &query.author_role {
+        if !["individual", "organization"].contains(&author_role.as_str()) {
+            return Err(AppError::BadRequest("Invalid author_role filter".into()));
+        }
+        where_clauses.push("l.author_role = ?".to_string());
+        bind_values.push(author_role.clone());
+    }
 
     // Validate enum filter values
     if let Some(format) = &query.format {
@@ -239,7 +245,7 @@ pub async fn get_feed(
         }
     }
     if let Some(level) = &query.experience_level {
-        if !["junior", "mid", "senior", "any"].contains(&level.as_str()) {
+        if !["entry", "mid", "senior", "expert", "any"].contains(&level.as_str()) {
             return Err(AppError::BadRequest("Invalid experience_level filter".into()));
         }
     }
@@ -247,6 +253,19 @@ pub async fn get_feed(
         if !["newest", "price_asc", "price_desc"].contains(&sort.as_str()) {
             return Err(AppError::BadRequest("Invalid sort value".into()));
         }
+    }
+    if let Some(pd) = &query.payment_direction {
+        if !["poster_pays", "applicant_pays", "negotiable", "unpaid"].contains(&pd.as_str()) {
+            return Err(AppError::BadRequest("Invalid payment_direction filter".into()));
+        }
+        where_clauses.push("l.payment_direction = ?".to_string());
+        bind_values.push(pd.clone());
+    }
+
+    // Category filter
+    if let Some(category) = &query.category {
+        where_clauses.push("l.category = ?".to_string());
+        bind_values.push(category.clone());
     }
 
     // Visibility filter
@@ -288,19 +307,19 @@ pub async fn get_feed(
         }
     }
 
-    if let Some(tech_filter) = &query.tech {
-        let techs: Vec<&str> = tech_filter.split(',').map(|t| t.trim()).filter(|t| !t.is_empty()).collect();
-        if !techs.is_empty() {
-            let like_clauses: Vec<String> = techs
+    if let Some(skills_filter) = &query.skills {
+        let skills: Vec<&str> = skills_filter.split(',').map(|t| t.trim()).filter(|t| !t.is_empty()).collect();
+        if !skills.is_empty() {
+            let like_clauses: Vec<String> = skills
                 .iter()
                 .map(|_| "LOWER(je.value) LIKE ?".to_string())
                 .collect();
             where_clauses.push(format!(
-                "l.tech_stack IS NOT NULL AND l.tech_stack != '' AND json_valid(l.tech_stack) AND EXISTS (SELECT 1 FROM json_each(l.tech_stack) je WHERE {})",
+                "l.skills IS NOT NULL AND l.skills != '' AND json_valid(l.skills) AND EXISTS (SELECT 1 FROM json_each(l.skills) je WHERE {})",
                 like_clauses.join(" OR ")
             ));
-            for tech in &techs {
-                let escaped = tech.to_lowercase().replace('%', "\\%").replace('_', "\\_");
+            for skill in &skills {
+                let escaped = skill.to_lowercase().replace('%', "\\%").replace('_', "\\_");
                 bind_values.push(format!("%{}%", escaped));
             }
         }
@@ -337,18 +356,17 @@ pub async fn get_feed(
 
     // Fetch page with author info via JOINs
     let select_sql = format!(
-        "SELECT l.id, l.author_id, l.type, l.title, l.description, l.tech_stack, \
+        "SELECT l.id, l.author_id, l.author_role, l.title, l.description, l.category, l.skills, \
          l.duration_weeks, l.price_usd, l.payment_direction, l.format, l.outcome_criteria, \
          l.visibility, l.status, l.experience_level, l.created_at, l.updated_at, \
          u.display_name AS author_display_name, \
-         cp.company_name AS company_name, \
-         cp.website AS company_website, \
-         dp.level AS developer_level, \
+         op.organization_name AS organization_name, \
+         ip.experience_level AS individual_level, \
          SUBSTR(u.email, INSTR(u.email, '@') + 1) AS author_email_domain \
          FROM listings l \
          JOIN users u ON u.id = l.author_id \
-         LEFT JOIN company_profiles cp ON cp.user_id = l.author_id \
-         LEFT JOIN developer_profiles dp ON dp.user_id = l.author_id \
+         LEFT JOIN organization_profiles op ON op.user_id = l.author_id \
+         LEFT JOIN individual_profiles ip ON ip.user_id = l.author_id \
          WHERE {where_sql} ORDER BY {order_by} LIMIT ? OFFSET ?"
     );
     let mut select_query = sqlx::query_as::<_, ListingWithAuthor>(&select_sql);
@@ -388,18 +406,17 @@ pub async fn get_user_listings(
     .await? as u32;
 
     let listings = sqlx::query_as::<_, ListingWithAuthor>(
-        "SELECT l.id, l.author_id, l.type, l.title, l.description, l.tech_stack, \
+        "SELECT l.id, l.author_id, l.author_role, l.title, l.description, l.category, l.skills, \
          l.duration_weeks, l.price_usd, l.payment_direction, l.format, l.outcome_criteria, \
          l.visibility, l.status, l.experience_level, l.created_at, l.updated_at, \
          u.display_name AS author_display_name, \
-         cp.company_name AS company_name, \
-         cp.website AS company_website, \
-         dp.level AS developer_level, \
+         op.organization_name AS organization_name, \
+         ip.experience_level AS individual_level, \
          SUBSTR(u.email, INSTR(u.email, '@') + 1) AS author_email_domain \
          FROM listings l \
          JOIN users u ON u.id = l.author_id \
-         LEFT JOIN company_profiles cp ON cp.user_id = l.author_id \
-         LEFT JOIN developer_profiles dp ON dp.user_id = l.author_id \
+         LEFT JOIN organization_profiles op ON op.user_id = l.author_id \
+         LEFT JOIN individual_profiles ip ON ip.user_id = l.author_id \
          WHERE l.author_id = ? \
          ORDER BY l.created_at DESC \
          LIMIT ? OFFSET ?",
@@ -433,33 +450,32 @@ pub async fn get_similar_listings(
         .fetch_one(read_db)
         .await?;
 
-    // Find similar listings: same type, active, not same author, not same listing
-    // Rank by tech_stack overlap using json_each
+    // Find similar listings: same author_role, active, not same author, not same listing
+    // Rank by skills overlap using json_each
     let results = sqlx::query_as::<_, ListingWithAuthor>(
-        "SELECT l.id, l.author_id, l.type, l.title, l.description, l.tech_stack, \
+        "SELECT l.id, l.author_id, l.author_role, l.title, l.description, l.category, l.skills, \
          l.duration_weeks, l.price_usd, l.payment_direction, l.format, l.outcome_criteria, \
          l.visibility, l.status, l.experience_level, l.created_at, l.updated_at, \
          u.display_name AS author_display_name, \
-         cp.company_name AS company_name, \
-         cp.website AS company_website, \
-         dp.level AS developer_level, \
+         op.organization_name AS organization_name, \
+         ip.experience_level AS individual_level, \
          SUBSTR(u.email, INSTR(u.email, '@') + 1) AS author_email_domain \
          FROM listings l \
          JOIN users u ON u.id = l.author_id \
-         LEFT JOIN company_profiles cp ON cp.user_id = l.author_id \
-         LEFT JOIN developer_profiles dp ON dp.user_id = l.author_id \
-         WHERE l.id != ? AND l.type = ? AND l.status = 'active' AND l.visibility = 'public' \
+         LEFT JOIN organization_profiles op ON op.user_id = l.author_id \
+         LEFT JOIN individual_profiles ip ON ip.user_id = l.author_id \
+         WHERE l.id != ? AND l.author_role = ? AND l.status = 'active' AND l.visibility = 'public' \
            AND l.author_id != ? \
          ORDER BY \
-           (SELECT COUNT(*) FROM json_each(l.tech_stack) je \
+           (SELECT COUNT(*) FROM json_each(l.skills) je \
             WHERE je.value IN (SELECT value FROM json_each(?))) DESC, \
            ABS(l.duration_weeks - ?) ASC \
          LIMIT 4",
     )
     .bind(listing_id)
-    .bind(&listing.listing_type)
+    .bind(&listing.author_role)
     .bind(&listing.author_id)
-    .bind(&listing.tech_stack)
+    .bind(&listing.skills)
     .bind(listing.duration_weeks)
     .fetch_all(read_db)
     .await?;

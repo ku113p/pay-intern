@@ -13,7 +13,6 @@ use crate::services::notification as notif_service;
 
 pub async fn create_application(
     applicant_id: &Uuid,
-    applicant_role: &str,
     req: &CreateApplicationRequest,
     write_db: &SqlitePool,
     config: &Arc<Config>,
@@ -28,18 +27,6 @@ pub async fn create_application(
     // Cannot apply to own listing
     if listing.author_id == applicant_id.to_string() {
         return Err(AppError::BadRequest("Cannot apply to your own listing".into()));
-    }
-
-    // Cross-role check
-    let valid = match (applicant_role, listing.listing_type.as_str()) {
-        ("developer", "company") => true,
-        ("company", "developer") => true,
-        _ => false,
-    };
-    if !valid {
-        return Err(AppError::BadRequest(
-            "Developers apply to company listings, companies apply to developer listings".into(),
-        ));
     }
 
     let id = Uuid::new_v4().to_string();
@@ -140,9 +127,8 @@ pub async fn get_applications(
         "SELECT a.id, a.listing_id, a.applicant_id, a.message, a.status, \
          a.created_at, a.updated_at, \
          l.title AS listing_title, \
-         l.type AS listing_type, \
-         u.display_name AS applicant_name, \
-         u.role AS applicant_role \
+         l.author_role AS listing_author_role, \
+         u.display_name AS applicant_name \
          FROM applications a \
          JOIN listings l ON l.id = a.listing_id \
          JOIN users u ON u.id = a.applicant_id \
@@ -326,32 +312,25 @@ pub async fn get_contact_info(
         .fetch_one(read_db)
         .await?;
 
-    // Try to get contact_email override and profile links
-    let (contact_email, github_url, linkedin_url, website) = if other_user.role == "developer" {
-        let row = sqlx::query_as::<_, (Option<String>, Option<String>, Option<String>)>(
-            "SELECT contact_email, github_url, linkedin_url FROM developer_profiles WHERE user_id = ?",
-        )
-        .bind(other_user_id)
-        .fetch_optional(read_db)
-        .await?;
+    // Get contact email from either profile
+    let contact_email: Option<String> = sqlx::query_scalar(
+        "SELECT contact_email FROM individual_profiles WHERE user_id = ? AND contact_email IS NOT NULL \
+         UNION ALL \
+         SELECT contact_email FROM organization_profiles WHERE user_id = ? AND contact_email IS NOT NULL \
+         LIMIT 1"
+    )
+    .bind(other_user_id)
+    .bind(other_user_id)
+    .fetch_optional(read_db)
+    .await?;
 
-        match row {
-            Some((ce, gh, li)) => (ce, gh, li, None),
-            None => (None, None, None, None),
-        }
-    } else {
-        let row = sqlx::query_as::<_, (Option<String>, Option<String>)>(
-            "SELECT contact_email, website FROM company_profiles WHERE user_id = ?",
-        )
-        .bind(other_user_id)
-        .fetch_optional(read_db)
-        .await?;
-
-        match row {
-            Some((ce, ws)) => (ce, None, None, ws),
-            None => (None, None, None, None),
-        }
-    };
+    // Get all links for the other user
+    let links = sqlx::query_as::<_, crate::models::user::ProfileLink>(
+        "SELECT * FROM profile_links WHERE user_id = ? ORDER BY display_order"
+    )
+    .bind(other_user_id)
+    .fetch_all(read_db)
+    .await?;
 
     let email = contact_email.unwrap_or(other_user.email);
 
@@ -359,9 +338,6 @@ pub async fn get_contact_info(
         user_id: other_user.id,
         display_name: other_user.display_name,
         email,
-        role: other_user.role,
-        github_url,
-        linkedin_url,
-        website,
+        links: links.into_iter().map(Into::into).collect(),
     })
 }

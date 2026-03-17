@@ -25,7 +25,7 @@ pub async fn create_application(
 ) -> Result<Json<ApplicationResponse>, AppError> {
     req.validate()?;
     let application =
-        app_service::create_application(&auth.user_id, &auth.role, &req, &state.write_db, &state.config).await?;
+        app_service::create_application(&auth.user_id, &req, &state.write_db, &state.config).await?;
     Ok(Json(application.into()))
 }
 

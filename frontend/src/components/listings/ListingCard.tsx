@@ -5,8 +5,23 @@ import { SaveButton } from './SaveButton';
 import { InterestButton } from './InterestButton';
 import { ProfileAvatar } from '../common/ProfileAvatar';
 
-export function ListingCard({ listing, currentUserId, currentUserRole }: { listing: Listing; currentUserId?: string; currentUserRole?: string }) {
+export function ListingCard({ listing, currentUserId }: { listing: Listing; currentUserId?: string }) {
   const navigate = useNavigate();
+
+  const paymentLabel = (dir: string, price: number) => {
+    switch (dir) {
+      case 'poster_pays': return `Poster pays $${price.toLocaleString()}`;
+      case 'applicant_pays': return `Applicant pays $${price.toLocaleString()}`;
+      case 'negotiable': return `Negotiable $${price.toLocaleString()}`;
+      default: return `$${price.toLocaleString()}`;
+    }
+  };
+
+  const paymentColor = (dir: string) =>
+    dir === 'poster_pays' ? 'text-green-600 font-medium'
+    : dir === 'applicant_pays' ? 'text-amber-600 font-medium'
+    : 'text-blue-600 font-medium';
+
   return (
     <Link
       to={`/listings/${listing.id}`}
@@ -15,23 +30,23 @@ export function ListingCard({ listing, currentUserId, currentUserRole }: { listi
       <div className="flex flex-col sm:flex-row items-start sm:justify-between gap-2">
         <div>
           <h3 className="text-lg font-semibold text-gray-900">{listing.title}</h3>
-          {(listing.company_name || listing.author_display_name) && (
+          {(listing.organization_name || listing.author_display_name) && (
             <p className="text-xs text-gray-400 mt-0.5 flex items-center gap-1.5">
               <ProfileAvatar
-                name={listing.author_display_name || listing.company_name || ''}
+                name={listing.author_display_name || listing.organization_name || ''}
                 userId={listing.author_id}
                 size="sm"
               />
               <button
-                onClick={(e) => { e.preventDefault(); e.stopPropagation(); navigate(`/profiles/${listing.listing_type}/${listing.author_id}`); }}
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); navigate(`/profiles/${listing.author_role}/${listing.author_id}`); }}
                 className="text-indigo-600 hover:underline cursor-pointer"
               >
-                {listing.listing_type === 'company'
-                  ? listing.company_name || listing.author_display_name
+                {listing.author_role === 'organization'
+                  ? listing.organization_name || listing.author_display_name
                   : listing.author_display_name}
               </button>
-              {listing.developer_level && listing.listing_type === 'developer' && (
-                <span> · {listing.developer_level}</span>
+              {listing.individual_level && listing.author_role === 'individual' && (
+                <span> · {listing.individual_level}</span>
               )}
               {listing.author_email_domain && (
                 <span className="text-gray-400"> · @{listing.author_email_domain}</span>
@@ -41,13 +56,9 @@ export function ListingCard({ listing, currentUserId, currentUserRole }: { listi
           <p className="text-sm text-gray-500 mt-1">
             {listing.duration_weeks} weeks &middot; {listing.format}
             {listing.price_usd != null && listing.price_usd > 0 ? (
-              <span className={listing.payment_direction === 'company_pays_developer'
-                ? 'text-green-600 font-medium'
-                : 'text-amber-600 font-medium'}>
+              <span className={paymentColor(listing.payment_direction)}>
                 {' · '}
-                {listing.payment_direction === 'company_pays_developer'
-                  ? `Company → Dev $${listing.price_usd.toLocaleString()}`
-                  : `Dev → Company $${listing.price_usd.toLocaleString()}`}
+                {paymentLabel(listing.payment_direction, listing.price_usd)}
                 {listing.duration_weeks > 0 && (
                   <span className="font-normal opacity-70">
                     {` ($${Math.round(listing.price_usd / listing.duration_weeks).toLocaleString()}/wk)`}
@@ -65,9 +76,7 @@ export function ListingCard({ listing, currentUserId, currentUserRole }: { listi
             <>
               <InterestButton
                 listingId={listing.id}
-                listingType={listing.listing_type}
                 listingAuthorId={listing.author_id}
-                userRole={currentUserRole}
                 userId={currentUserId}
               />
               <SaveButton listingId={listing.id} />
@@ -83,14 +92,19 @@ export function ListingCard({ listing, currentUserId, currentUserRole }: { listi
               {listing.experience_level}
             </span>
           )}
+          {listing.category && (
+            <span className="text-xs font-medium px-2 py-1 rounded bg-gray-100 text-gray-600">
+              {listing.category}
+            </span>
+          )}
           <span
             className={`text-xs font-medium px-2 py-1 rounded ${
-              listing.listing_type === 'company'
+              listing.author_role === 'organization'
                 ? 'bg-blue-100 text-blue-700'
                 : 'bg-green-100 text-green-700'
             }`}
           >
-            {listing.listing_type}
+            {listing.author_role}
           </span>
         </div>
       </div>
@@ -98,12 +112,12 @@ export function ListingCard({ listing, currentUserId, currentUserRole }: { listi
       <p className="text-gray-600 text-sm mt-3 line-clamp-2">{listing.description}</p>
 
       <div className="flex flex-wrap gap-1.5 mt-3">
-        {listing.tech_stack.map((tech) => (
+        {listing.skills.map((skill) => (
           <span
-            key={tech}
+            key={skill}
             className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded"
           >
-            {tech}
+            {skill}
           </span>
         ))}
       </div>

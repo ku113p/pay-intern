@@ -1,86 +1,64 @@
 import { Link } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../hooks/useAuth';
-import { useDeveloperFeed, useCompanyFeed, useMyListings } from '../hooks/useListings';
+import { useFeed, useMyListings } from '../hooks/useListings';
 import { ListingCard } from '../components/listings/ListingCard';
-import { profilesApi, type UserResponse } from '../api/profiles';
 import { Header } from '../components/layout/Header';
 import { LandingPage } from '../components/landing/LandingPage';
-
-// ── Dashboard (logged-in) ──────────────────────────────────────────────
+import type { UserResponse } from '../api/profiles';
+import { useAuthStore } from '../stores/auth';
 
 function Dashboard({ user }: { user: UserResponse }) {
+  const activeRole = useAuthStore((s) => s.activeRole);
   const { data: myListings } = useMyListings();
-  const { data: devFeed } = useDeveloperFeed({ per_page: 4 });
-  const { data: companyFeed } = useCompanyFeed({ per_page: 4 });
+  const { data: feed } = useFeed({ per_page: 4 });
 
-  const devProfile = useQuery({
-    queryKey: ['profile', 'developer', 'me'],
-    queryFn: () => profilesApi.getMyDeveloperProfile().then((r) => r.data),
-    enabled: user.role === 'developer',
-  });
-  const companyProfile = useQuery({
-    queryKey: ['profile', 'company', 'me'],
-    queryFn: () => profilesApi.getMyCompanyProfile().then((r) => r.data),
-    enabled: user.role === 'company',
-  });
-
-  const profileComplete =
-    user.role === 'developer'
-      ? !!(devProfile.data?.bio && devProfile.data.tech_stack.length > 0)
-      : !!(companyProfile.data?.company_name && companyProfile.data.description);
-  const profileLoading = user.role === 'developer' ? devProfile.isLoading : companyProfile.isLoading;
-
-  const feed = user.role === 'developer' ? devFeed : companyFeed;
-  const feedLink = user.role === 'developer' ? '/developers' : '/companies';
-  const feedLabel = user.role === 'developer' ? 'Company' : 'Developer';
+  const needsProfile = !user.has_individual_profile && !user.has_organization_profile;
 
   return (
     <div className="min-h-screen bg-gray-50">
       <Header />
       <main className="max-w-7xl mx-auto px-4">
         <div className="py-8 space-y-8">
-          {/* Greeting */}
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
               Welcome back, {user.display_name}!
             </h1>
-            <span
-              className={`inline-block mt-2 text-xs font-medium px-2.5 py-1 rounded ${
-                user.role === 'developer'
-                  ? 'bg-green-100 text-green-700'
-                  : 'bg-blue-100 text-blue-700'
-              }`}
-            >
-              {user.role}
-            </span>
+            {activeRole && (
+              <span
+                className={`inline-block mt-2 text-xs font-medium px-2.5 py-1 rounded ${
+                  activeRole === 'organization'
+                    ? 'bg-blue-100 text-blue-700'
+                    : 'bg-green-100 text-green-700'
+                }`}
+              >
+                {activeRole}
+              </span>
+            )}
           </div>
 
-          {/* Profile completion banner */}
-          {!profileLoading && !profileComplete && (
+          {needsProfile && (
             <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
               <div>
-                <p className="font-medium text-amber-800">Your profile is incomplete</p>
+                <p className="font-medium text-amber-800">Set up your profile</p>
                 <p className="text-sm text-amber-600">
-                  Complete it to attract more attention from {user.role === 'developer' ? 'companies' : 'developers'}
+                  Create an individual or organization profile to get started
                 </p>
               </div>
               <Link
                 to="/profile"
                 className="bg-amber-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-amber-700 whitespace-nowrap"
               >
-                Complete Profile
+                Set Up Profile
               </Link>
             </div>
           )}
 
-          {/* Quick actions */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <Link
-              to={feedLink}
+              to="/browse"
               className="border border-gray-200 rounded-lg p-4 text-center hover:border-indigo-300 hover:shadow-sm transition"
             >
-              <p className="text-sm font-medium text-gray-900">Browse {feedLabel} Listings</p>
+              <p className="text-sm font-medium text-gray-900">Browse Listings</p>
             </Link>
             <Link
               to="/listings/new"
@@ -102,7 +80,6 @@ function Dashboard({ user }: { user: UserResponse }) {
             </Link>
           </div>
 
-          {/* Your Listings */}
           <section>
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold text-gray-900">
@@ -116,7 +93,7 @@ function Dashboard({ user }: { user: UserResponse }) {
                     {listing.status !== 'active' && (
                       <div className="absolute inset-0 bg-gray-50/60 rounded-lg z-10 pointer-events-none" />
                     )}
-                    <ListingCard listing={listing} currentUserId={user.id} currentUserRole={user.role} />
+                    <ListingCard listing={listing} currentUserId={user.id} />
                   </div>
                 ))}
                 {myListings.pagination.total > 3 && (
@@ -140,20 +117,19 @@ function Dashboard({ user }: { user: UserResponse }) {
             )}
           </section>
 
-          {/* Recommended feed */}
           {feed?.data && feed.data.length > 0 && (
             <section>
               <h2 className="text-lg font-semibold text-gray-900 mb-4">
-                Recommended {feedLabel} Listings
+                Recent Listings
               </h2>
               <div className="space-y-3">
                 {feed.data.map((listing) => (
-                  <ListingCard key={listing.id} listing={listing} currentUserId={user.id} currentUserRole={user.role} />
+                  <ListingCard key={listing.id} listing={listing} currentUserId={user.id} />
                 ))}
               </div>
               <div className="text-center mt-4">
-                <Link to={feedLink} className="text-sm text-indigo-600 hover:text-indigo-800">
-                  View all {feedLabel.toLowerCase()} listings →
+                <Link to="/browse" className="text-sm text-indigo-600 hover:text-indigo-800">
+                  View all listings →
                 </Link>
               </div>
             </section>
@@ -163,8 +139,6 @@ function Dashboard({ user }: { user: UserResponse }) {
     </div>
   );
 }
-
-// ── Router entry point ─────────────────────────────────────────────────
 
 export function HomePage() {
   const { isAuthenticated, user } = useAuth();

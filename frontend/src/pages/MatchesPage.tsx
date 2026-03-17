@@ -32,13 +32,6 @@ export function MatchesPage() {
                 </svg>
               </span>
               <span className="font-semibold text-gray-900">{match.matched_user_name}</span>
-              <span className={`text-xs font-medium px-2 py-0.5 rounded ${
-                match.matched_user_role === 'company'
-                  ? 'bg-blue-100 text-blue-700'
-                  : 'bg-green-100 text-green-700'
-              }`}>
-                {match.matched_user_role}
-              </span>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">

@@ -5,7 +5,6 @@ use validator::Validate;
 pub struct User {
     pub id: String,
     pub email: String,
-    pub role: String,
     pub display_name: String,
     pub auth_provider: String,
     pub auth_provider_id: Option<String>,
@@ -13,25 +12,37 @@ pub struct User {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
-pub struct DeveloperProfile {
+pub struct IndividualProfile {
     pub user_id: String,
     pub bio: String,
-    pub tech_stack: String, // JSON array stored as TEXT
-    pub github_url: Option<String>,
-    pub linkedin_url: Option<String>,
-    pub level: String,
+    pub headline: String,
+    pub profession: String,
+    pub skills: String, // JSON array stored as TEXT
+    pub experience_level: String,
     pub contact_email: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
-pub struct CompanyProfile {
+pub struct OrganizationProfile {
     pub user_id: String,
-    pub company_name: String,
+    pub organization_name: String,
     pub description: String,
-    pub website: Option<String>,
+    pub industry: String,
     pub size: String,
-    pub tech_stack: String, // JSON array stored as TEXT
+    pub skills_sought: String, // JSON array stored as TEXT
     pub contact_email: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
+pub struct ProfileLink {
+    pub id: String,
+    pub user_id: String,
+    pub profile_type: String,
+    pub link_type: String,
+    pub label: String,
+    pub url: String,
+    pub display_order: i32,
+    pub created_at: String,
 }
 
 // DTOs
@@ -43,101 +54,128 @@ pub struct UpdateUserRequest {
 }
 
 #[derive(Debug, Deserialize, Validate)]
-pub struct UpdateDeveloperProfileRequest {
+pub struct UpdateIndividualProfileRequest {
     #[validate(length(max = 2000))]
     pub bio: Option<String>,
-    pub tech_stack: Option<Vec<String>>,
-    pub github_url: Option<String>,
-    pub linkedin_url: Option<String>,
-    pub level: Option<String>,
+    #[validate(length(max = 200))]
+    pub headline: Option<String>,
+    pub profession: Option<String>,
+    pub skills: Option<Vec<String>>,
+    pub experience_level: Option<String>,
     pub contact_email: Option<String>,
 }
 
 #[derive(Debug, Deserialize, Validate)]
-pub struct UpdateCompanyProfileRequest {
+pub struct UpdateOrganizationProfileRequest {
     #[validate(length(min = 1, max = 200))]
-    pub company_name: Option<String>,
+    pub organization_name: Option<String>,
     #[validate(length(max = 2000))]
     pub description: Option<String>,
-    pub website: Option<String>,
+    pub industry: Option<String>,
     pub size: Option<String>,
-    pub tech_stack: Option<Vec<String>>,
+    pub skills_sought: Option<Vec<String>>,
     pub contact_email: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct UpdateProfileLinksRequest {
+    pub links: Vec<ProfileLinkInput>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct ProfileLinkInput {
+    pub link_type: String,
+    pub label: String,
+    pub url: String,
+    pub display_order: Option<i32>,
 }
 
 #[derive(Debug, Serialize)]
 pub struct UserResponse {
     pub id: String,
     pub email: String,
-    pub role: String,
     pub display_name: String,
+    pub has_individual_profile: bool,
+    pub has_organization_profile: bool,
     pub created_at: String,
 }
 
-impl From<User> for UserResponse {
-    fn from(u: User) -> Self {
-        Self {
-            id: u.id,
-            email: u.email,
-            role: u.role,
-            display_name: u.display_name,
-            created_at: u.created_at,
-        }
-    }
-}
-
 #[derive(Debug, Serialize)]
-pub struct DeveloperProfileResponse {
+pub struct IndividualProfileResponse {
     pub user_id: String,
     pub bio: String,
-    pub tech_stack: Vec<String>,
-    pub github_url: Option<String>,
-    pub linkedin_url: Option<String>,
-    pub level: String,
+    pub headline: String,
+    pub profession: String,
+    pub skills: Vec<String>,
+    pub experience_level: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub contact_email: Option<String>,
+    pub links: Vec<ProfileLinkResponse>,
 }
 
-impl From<DeveloperProfile> for DeveloperProfileResponse {
-    fn from(p: DeveloperProfile) -> Self {
-        let tech_stack: Vec<String> =
-            serde_json::from_str(&p.tech_stack).unwrap_or_default();
+#[derive(Debug, Serialize)]
+pub struct OrganizationProfileResponse {
+    pub user_id: String,
+    pub organization_name: String,
+    pub description: String,
+    pub industry: String,
+    pub size: String,
+    pub skills_sought: Vec<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub contact_email: Option<String>,
+    pub links: Vec<ProfileLinkResponse>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct ProfileLinkResponse {
+    pub id: String,
+    pub link_type: String,
+    pub label: String,
+    pub url: String,
+    pub display_order: i32,
+}
+
+impl From<ProfileLink> for ProfileLinkResponse {
+    fn from(l: ProfileLink) -> Self {
         Self {
-            user_id: p.user_id,
-            bio: p.bio,
-            tech_stack,
-            github_url: p.github_url,
-            linkedin_url: p.linkedin_url,
-            level: p.level,
-            contact_email: p.contact_email,
+            id: l.id,
+            link_type: l.link_type,
+            label: l.label,
+            url: l.url,
+            display_order: l.display_order,
         }
     }
 }
 
-#[derive(Debug, Serialize)]
-pub struct CompanyProfileResponse {
-    pub user_id: String,
-    pub company_name: String,
-    pub description: String,
-    pub website: Option<String>,
-    pub size: String,
-    pub tech_stack: Vec<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub contact_email: Option<String>,
+impl IndividualProfile {
+    pub fn to_response(self, links: Vec<ProfileLinkResponse>) -> IndividualProfileResponse {
+        let skills: Vec<String> = serde_json::from_str(&self.skills).unwrap_or_default();
+        IndividualProfileResponse {
+            user_id: self.user_id,
+            bio: self.bio,
+            headline: self.headline,
+            profession: self.profession,
+            skills,
+            experience_level: self.experience_level,
+            contact_email: self.contact_email,
+            links,
+        }
+    }
 }
 
-impl From<CompanyProfile> for CompanyProfileResponse {
-    fn from(p: CompanyProfile) -> Self {
-        let tech_stack: Vec<String> =
-            serde_json::from_str(&p.tech_stack).unwrap_or_default();
-        Self {
-            user_id: p.user_id,
-            company_name: p.company_name,
-            description: p.description,
-            website: p.website,
-            size: p.size,
-            tech_stack,
-            contact_email: p.contact_email,
+impl OrganizationProfile {
+    pub fn to_response(self, links: Vec<ProfileLinkResponse>) -> OrganizationProfileResponse {
+        let skills_sought: Vec<String> =
+            serde_json::from_str(&self.skills_sought).unwrap_or_default();
+        OrganizationProfileResponse {
+            user_id: self.user_id,
+            organization_name: self.organization_name,
+            description: self.description,
+            industry: self.industry,
+            size: self.size,
+            skills_sought,
+            contact_email: self.contact_email,
+            links,
         }
     }
 }
@@ -146,36 +184,38 @@ impl From<CompanyProfile> for CompanyProfileResponse {
 pub struct ProfilePreview {
     pub user_id: String,
     pub display_name: String,
-    pub role: String,
     pub bio_excerpt: String,
-    pub tech_stack: String,
+    pub skills: String,
     pub level_or_size: String,
     pub active_listing_count: i64,
+    pub has_individual_profile: bool,
+    pub has_organization_profile: bool,
 }
 
 #[derive(Debug, Serialize)]
 pub struct ProfilePreviewResponse {
     pub user_id: String,
     pub display_name: String,
-    pub role: String,
     pub bio_excerpt: String,
-    pub tech_stack: Vec<String>,
+    pub skills: Vec<String>,
     pub level_or_size: String,
     pub active_listing_count: i64,
+    pub has_individual_profile: bool,
+    pub has_organization_profile: bool,
 }
 
 impl From<ProfilePreview> for ProfilePreviewResponse {
     fn from(p: ProfilePreview) -> Self {
-        let tech_stack: Vec<String> =
-            serde_json::from_str(&p.tech_stack).unwrap_or_default();
+        let skills: Vec<String> = serde_json::from_str(&p.skills).unwrap_or_default();
         Self {
             user_id: p.user_id,
             display_name: p.display_name,
-            role: p.role,
             bio_excerpt: p.bio_excerpt,
-            tech_stack,
+            skills,
             level_or_size: p.level_or_size,
             active_listing_count: p.active_listing_count,
+            has_individual_profile: p.has_individual_profile,
+            has_organization_profile: p.has_organization_profile,
         }
     }
 }
