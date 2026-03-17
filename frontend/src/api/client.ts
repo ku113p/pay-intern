@@ -14,7 +14,34 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-let isRefreshing = false;
+// Shared refresh logic — ensures only one refresh request is in flight at a time.
+// Both the 401 interceptor and useAuth hook use this to avoid racing.
+let activeRefreshPromise: Promise<string> | null = null;
+
+export function refreshAccessToken(): Promise<string> {
+  if (activeRefreshPromise) return activeRefreshPromise;
+
+  const refreshToken = useAuthStore.getState().refreshToken;
+  if (!refreshToken) return Promise.reject(new Error('No refresh token'));
+
+  activeRefreshPromise = axios
+    .post('/api/auth/refresh', { refresh_token: refreshToken })
+    .then((res) => {
+      const { access_token, refresh_token } = res.data;
+      useAuthStore.getState().setTokens(access_token, refresh_token);
+      return access_token as string;
+    })
+    .catch((err) => {
+      useAuthStore.getState().logout();
+      throw err;
+    })
+    .finally(() => {
+      activeRefreshPromise = null;
+    });
+
+  return activeRefreshPromise;
+}
+
 let failedQueue: Array<{
   resolve: (token: string) => void;
   reject: (error: unknown) => void;
@@ -37,42 +64,25 @@ api.interceptors.response.use(
     const originalRequest = error.config;
 
     if (error.response?.status === 401 && !originalRequest._retry && !originalRequest._skipAuthRetry) {
-      if (isRefreshing) {
-        return new Promise<string>((resolve, reject) => {
-          failedQueue.push({ resolve, reject });
-        }).then((token) => {
+      originalRequest._retry = true;
+
+      // If a refresh is already in progress, queue this request
+      if (activeRefreshPromise) {
+        return activeRefreshPromise.then((token) => {
           originalRequest.headers.Authorization = `Bearer ${token}`;
           return api(originalRequest);
         });
       }
 
-      originalRequest._retry = true;
-      isRefreshing = true;
-      const refreshToken = useAuthStore.getState().refreshToken;
-
-      if (refreshToken) {
-        try {
-          const res = await axios.post('/api/auth/refresh', {
-            refresh_token: refreshToken,
-          });
-          const { access_token, refresh_token } = res.data;
-          useAuthStore.getState().setTokens(access_token, refresh_token);
-          processQueue(null, access_token);
-          originalRequest.headers.Authorization = `Bearer ${access_token}`;
-          return api(originalRequest);
-        } catch (refreshError) {
-          processQueue(refreshError, null);
-          useAuthStore.getState().logout();
-          window.location.href = '/login';
-          return Promise.reject(refreshError);
-        } finally {
-          isRefreshing = false;
-        }
-      } else {
-        isRefreshing = false;
-        processQueue(error, null);
-        useAuthStore.getState().logout();
+      try {
+        const token = await refreshAccessToken();
+        processQueue(null, token);
+        originalRequest.headers.Authorization = `Bearer ${token}`;
+        return api(originalRequest);
+      } catch (refreshError) {
+        processQueue(refreshError, null);
         window.location.href = '/login';
+        return Promise.reject(refreshError);
       }
     }
 
