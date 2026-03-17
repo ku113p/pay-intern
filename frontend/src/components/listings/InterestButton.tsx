@@ -22,10 +22,10 @@ export function InterestButton({
   const hidden = !userId || userId === listingAuthorId;
 
   const toggleMutation = useMutation({
-    mutationFn: () =>
-      interested ? interestsApi.removeInterest(listingId) : interestsApi.addInterest(listingId),
+    mutationFn: (action: 'add' | 'remove') =>
+      action === 'remove' ? interestsApi.removeInterest(listingId) : interestsApi.addInterest(listingId),
     onMutate: () => {
-      setInterested(!interested);
+      setInterested((prev) => !prev);
     },
     onSuccess: (res) => {
       if (res.data.matched) {
@@ -33,7 +33,7 @@ export function InterestButton({
       }
     },
     onError: () => {
-      setInterested(interested);
+      setInterested((prev) => !prev);
       toast.error('Failed to update interest');
     },
   });
@@ -46,7 +46,7 @@ export function InterestButton({
   const handleClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    toggleMutation.mutate();
+    toggleMutation.mutate(interested ? 'remove' : 'add');
   };
 
   if (variant === 'full') {

@@ -13,12 +13,13 @@ export function SaveButton({ listingId, initialSaved = false, variant = 'icon' }
   const [saved, setSaved] = useState(initialSaved);
 
   const toggleMutation = useMutation({
-    mutationFn: () => saved ? interestsApi.unsaveListing(listingId) : interestsApi.saveListing(listingId),
+    mutationFn: (action: 'save' | 'unsave') =>
+      action === 'unsave' ? interestsApi.unsaveListing(listingId) : interestsApi.saveListing(listingId),
     onMutate: () => {
-      setSaved(!saved);
+      setSaved((prev) => !prev);
     },
     onError: () => {
-      setSaved(saved);
+      setSaved((prev) => !prev);
       toast.error('Failed to update bookmark');
     },
   });
@@ -26,7 +27,7 @@ export function SaveButton({ listingId, initialSaved = false, variant = 'icon' }
   const handleClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    toggleMutation.mutate();
+    toggleMutation.mutate(saved ? 'unsave' : 'save');
   };
 
   if (variant === 'full') {
