@@ -18,21 +18,24 @@ pub async fn create_application(
     config: &Arc<Config>,
 ) -> Result<Application, AppError> {
     // Check listing exists and is active
-    let listing = sqlx::query_as::<_, Listing>("SELECT * FROM listings WHERE id = ? AND status = 'active'")
-        .bind(&req.listing_id)
-        .fetch_optional(write_db)
-        .await?
-        .ok_or_else(|| AppError::NotFound("Listing not found or not active".into()))?;
+    let listing =
+        sqlx::query_as::<_, Listing>("SELECT * FROM listings WHERE id = ? AND status = 'active'")
+            .bind(&req.listing_id)
+            .fetch_optional(write_db)
+            .await?
+            .ok_or_else(|| AppError::NotFound("Listing not found or not active".into()))?;
 
     // Cannot apply to own listing
     if listing.author_id == applicant_id.to_string() {
-        return Err(AppError::BadRequest("Cannot apply to your own listing".into()));
+        return Err(AppError::BadRequest(
+            "Cannot apply to your own listing".into(),
+        ));
     }
 
     let id = Uuid::new_v4().to_string();
 
     sqlx::query(
-        "INSERT INTO applications (id, listing_id, applicant_id, message) VALUES (?, ?, ?, ?)"
+        "INSERT INTO applications (id, listing_id, applicant_id, message) VALUES (?, ?, ?, ?)",
     )
     .bind(&id)
     .bind(&req.listing_id)
@@ -47,13 +50,12 @@ pub async fn create_application(
         .await?;
 
     // Notify listing owner
-    let applicant_name = sqlx::query_scalar::<_, String>(
-        "SELECT display_name FROM users WHERE id = ?",
-    )
-    .bind(applicant_id.to_string())
-    .fetch_optional(write_db)
-    .await?
-    .unwrap_or_else(|| "Someone".into());
+    let applicant_name =
+        sqlx::query_scalar::<_, String>("SELECT display_name FROM users WHERE id = ?")
+            .bind(applicant_id.to_string())
+            .fetch_optional(write_db)
+            .await?
+            .unwrap_or_else(|| "Someone".into());
 
     let _ = notif_service::create_notification(
         &listing.author_id,
@@ -66,12 +68,10 @@ pub async fn create_application(
     .await;
 
     // Fire-and-forget email to listing owner
-    let owner_email = sqlx::query_scalar::<_, String>(
-        "SELECT u.email FROM users u WHERE u.id = ?",
-    )
-    .bind(&listing.author_id)
-    .fetch_optional(write_db)
-    .await?;
+    let owner_email = sqlx::query_scalar::<_, String>("SELECT u.email FROM users u WHERE u.id = ?")
+        .bind(&listing.author_id)
+        .fetch_optional(write_db)
+        .await?;
 
     if let Some(email) = owner_email {
         // Check notification preferences before sending email
@@ -91,9 +91,13 @@ pub async fn create_application(
             let applicant_name_for_email = applicant_name;
             let config = Arc::clone(config);
             tokio::spawn(async move {
-                if let Err(e) =
-                    email_service::send_new_application_email(&email, &title, &applicant_name_for_email, &config)
-                        .await
+                if let Err(e) = email_service::send_new_application_email(
+                    &email,
+                    &title,
+                    &applicant_name_for_email,
+                    &config,
+                )
+                .await
                 {
                     tracing::warn!("Failed to send new application email: {e}");
                 }
@@ -128,9 +132,7 @@ pub async fn get_applications(
         bind_values.push(status.clone());
     }
 
-    let count_sql = format!(
-        "SELECT COUNT(*) FROM applications a WHERE {where_sql}{extra_where}"
-    );
+    let count_sql = format!("SELECT COUNT(*) FROM applications a WHERE {where_sql}{extra_where}");
     let mut count_query = sqlx::query_scalar::<_, i64>(&count_sql);
     for val in &bind_values {
         count_query = count_query.bind(val);
@@ -258,12 +260,11 @@ pub async fn update_application_status(
 
     // Fire-and-forget email to applicant on accept/reject
     if let Some(title) = listing_title_for_email {
-        let applicant_email = sqlx::query_scalar::<_, String>(
-            "SELECT email FROM users WHERE id = ?",
-        )
-        .bind(&app.applicant_id)
-        .fetch_optional(write_db)
-        .await?;
+        let applicant_email =
+            sqlx::query_scalar::<_, String>("SELECT email FROM users WHERE id = ?")
+                .bind(&app.applicant_id)
+                .fetch_optional(write_db)
+                .await?;
 
         if let Some(email) = applicant_email {
             // Check notification preferences before sending email
@@ -275,22 +276,26 @@ pub async fn update_application_status(
             .await?;
 
             let pref_field = if new_status == "accepted" {
-                prefs.as_ref().map(|p| p.email_application_accepted).unwrap_or(true)
+                prefs
+                    .as_ref()
+                    .map(|p| p.email_application_accepted)
+                    .unwrap_or(true)
             } else {
-                prefs.as_ref().map(|p| p.email_application_rejected).unwrap_or(true)
+                prefs
+                    .as_ref()
+                    .map(|p| p.email_application_rejected)
+                    .unwrap_or(true)
             };
-            let should_send = prefs
-                .as_ref()
-                .map(|p| p.email_enabled)
-                .unwrap_or(true) && pref_field;
+            let should_send = prefs.as_ref().map(|p| p.email_enabled).unwrap_or(true) && pref_field;
 
             if should_send {
                 let status = new_status.to_string();
                 let config = Arc::clone(config);
                 tokio::spawn(async move {
-                    if let Err(e) =
-                        email_service::send_application_status_email(&email, &title, &status, &config)
-                            .await
+                    if let Err(e) = email_service::send_application_status_email(
+                        &email, &title, &status, &config,
+                    )
+                    .await
                     {
                         tracing::warn!("Failed to send application status email: {e}");
                     }
@@ -360,7 +365,7 @@ pub async fn get_contact_info(
 
     // Get all links for the other user
     let links = sqlx::query_as::<_, crate::models::user::ProfileLink>(
-        "SELECT * FROM profile_links WHERE user_id = ? ORDER BY display_order"
+        "SELECT * FROM profile_links WHERE user_id = ? ORDER BY display_order",
     )
     .bind(other_user_id)
     .fetch_all(read_db)

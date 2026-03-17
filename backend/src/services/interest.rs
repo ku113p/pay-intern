@@ -3,7 +3,9 @@ use uuid::Uuid;
 
 use crate::error::AppError;
 use crate::models::interest::*;
-use crate::models::listing::{Listing, ListingWithAuthor, ListingResponse, PaginatedResponse, PaginationMeta};
+use crate::models::listing::{
+    Listing, ListingResponse, ListingWithAuthor, PaginatedResponse, PaginationMeta,
+};
 
 pub async fn save_listing(
     user_id: &Uuid,
@@ -18,18 +20,14 @@ pub async fn save_listing(
         .ok_or_else(|| AppError::NotFound("Listing not found".into()))?;
 
     let id = Uuid::new_v4().to_string();
-    sqlx::query(
-        "INSERT OR IGNORE INTO saved_listings (id, user_id, listing_id) VALUES (?, ?, ?)",
-    )
-    .bind(&id)
-    .bind(user_id.to_string())
-    .bind(listing_id)
-    .execute(write_db)
-    .await?;
+    sqlx::query("INSERT OR IGNORE INTO saved_listings (id, user_id, listing_id) VALUES (?, ?, ?)")
+        .bind(&id)
+        .bind(user_id.to_string())
+        .bind(listing_id)
+        .execute(write_db)
+        .await?;
 
-    Ok(SaveToggleResponse {
-        saved: true,
-    })
+    Ok(SaveToggleResponse { saved: true })
 }
 
 pub async fn unsave_listing(
@@ -113,15 +111,18 @@ pub async fn add_interest(
     listing_id: &str,
     write_db: &SqlitePool,
 ) -> Result<InterestToggleResponse, AppError> {
-    let listing = sqlx::query_as::<_, Listing>("SELECT * FROM listings WHERE id = ? AND status = 'active'")
-        .bind(listing_id)
-        .fetch_optional(write_db)
-        .await?
-        .ok_or_else(|| AppError::NotFound("Listing not found or not active".into()))?;
+    let listing =
+        sqlx::query_as::<_, Listing>("SELECT * FROM listings WHERE id = ? AND status = 'active'")
+            .bind(listing_id)
+            .fetch_optional(write_db)
+            .await?
+            .ok_or_else(|| AppError::NotFound("Listing not found or not active".into()))?;
 
     // Cannot interest own listing
     if listing.author_id == user_id.to_string() {
-        return Err(AppError::BadRequest("Cannot signal interest on your own listing".into()));
+        return Err(AppError::BadRequest(
+            "Cannot signal interest on your own listing".into(),
+        ));
     }
 
     let id = Uuid::new_v4().to_string();

@@ -17,16 +17,19 @@ pub struct TokenResponse {
     pub needs_profile_setup: Option<bool>,
 }
 
-pub async fn determine_active_role(user_id: &str, db: &SqlitePool) -> Result<Option<String>, AppError> {
+pub async fn determine_active_role(
+    user_id: &str,
+    db: &SqlitePool,
+) -> Result<Option<String>, AppError> {
     let has_individual = sqlx::query_scalar::<_, bool>(
-        "SELECT EXISTS(SELECT 1 FROM individual_profiles WHERE user_id = ?)"
+        "SELECT EXISTS(SELECT 1 FROM individual_profiles WHERE user_id = ?)",
     )
     .bind(user_id)
     .fetch_one(db)
     .await?;
 
     let has_organization = sqlx::query_scalar::<_, bool>(
-        "SELECT EXISTS(SELECT 1 FROM organization_profiles WHERE user_id = ?)"
+        "SELECT EXISTS(SELECT 1 FROM organization_profiles WHERE user_id = ?)",
     )
     .bind(user_id)
     .fetch_one(db)
@@ -57,21 +60,23 @@ pub async fn switch_role(
     } else {
         "organization_profiles"
     };
-    let exists = sqlx::query_scalar::<_, bool>(
-        &format!("SELECT EXISTS(SELECT 1 FROM {} WHERE user_id = ?)", table)
-    )
+    let exists = sqlx::query_scalar::<_, bool>(&format!(
+        "SELECT EXISTS(SELECT 1 FROM {} WHERE user_id = ?)",
+        table
+    ))
     .bind(user_id)
     .fetch_one(read_db)
     .await?;
 
     if !exists {
-        return Err(AppError::BadRequest(
-            format!("Create a {} profile first", target_role)
-        ));
+        return Err(AppError::BadRequest(format!(
+            "Create a {} profile first",
+            target_role
+        )));
     }
 
-    let user_uuid = Uuid::parse_str(user_id)
-        .map_err(|_| AppError::Internal("Invalid user ID".into()))?;
+    let user_uuid =
+        Uuid::parse_str(user_id).map_err(|_| AppError::Internal("Invalid user ID".into()))?;
     let family_id = Uuid::new_v4();
 
     let access_token = jwt::encode_access_token(&user_uuid, target_role, config)?;
@@ -81,7 +86,9 @@ pub async fn switch_role(
     let id = Uuid::new_v4().to_string();
     let family_str = family_id.to_string();
     let expires_at = Utc::now()
-        .checked_add_signed(chrono::Duration::seconds(config.jwt_refresh_expiry_secs as i64))
+        .checked_add_signed(chrono::Duration::seconds(
+            config.jwt_refresh_expiry_secs as i64,
+        ))
         .unwrap()
         .to_rfc3339();
 
@@ -110,8 +117,8 @@ pub async fn issue_tokens(
     write_db: &SqlitePool,
     config: &Config,
 ) -> Result<TokenResponse, AppError> {
-    let user_id = Uuid::parse_str(&user.id)
-        .map_err(|_| AppError::Internal("Invalid user ID".into()))?;
+    let user_id =
+        Uuid::parse_str(&user.id).map_err(|_| AppError::Internal("Invalid user ID".into()))?;
     let family_id = Uuid::new_v4();
 
     let active_role = determine_active_role(&user.id, write_db).await?;
@@ -125,7 +132,9 @@ pub async fn issue_tokens(
     let id = Uuid::new_v4().to_string();
     let family_str = family_id.to_string();
     let expires_at = Utc::now()
-        .checked_add_signed(chrono::Duration::seconds(config.jwt_refresh_expiry_secs as i64))
+        .checked_add_signed(chrono::Duration::seconds(
+            config.jwt_refresh_expiry_secs as i64,
+        ))
         .unwrap()
         .to_rfc3339();
 
@@ -145,7 +154,11 @@ pub async fn issue_tokens(
         refresh_token,
         token_type: "Bearer".into(),
         expires_in: config.jwt_access_expiry_secs,
-        needs_profile_setup: if needs_profile_setup { Some(true) } else { None },
+        needs_profile_setup: if needs_profile_setup {
+            Some(true)
+        } else {
+            None
+        },
     })
 }
 
@@ -182,14 +195,14 @@ pub async fn refresh_tokens(
 
             // Determine active role from profiles (inline to use transaction)
             let has_individual = sqlx::query_scalar::<_, bool>(
-                "SELECT EXISTS(SELECT 1 FROM individual_profiles WHERE user_id = ?)"
+                "SELECT EXISTS(SELECT 1 FROM individual_profiles WHERE user_id = ?)",
             )
             .bind(&user_id)
             .fetch_one(&mut *tx)
             .await?;
 
             let has_organization = sqlx::query_scalar::<_, bool>(
-                "SELECT EXISTS(SELECT 1 FROM organization_profiles WHERE user_id = ?)"
+                "SELECT EXISTS(SELECT 1 FROM organization_profiles WHERE user_id = ?)",
             )
             .bind(&user_id)
             .fetch_one(&mut *tx)
@@ -215,7 +228,9 @@ pub async fn refresh_tokens(
 
             let new_id = Uuid::new_v4().to_string();
             let expires_at = Utc::now()
-                .checked_add_signed(chrono::Duration::seconds(config.jwt_refresh_expiry_secs as i64))
+                .checked_add_signed(chrono::Duration::seconds(
+                    config.jwt_refresh_expiry_secs as i64,
+                ))
                 .unwrap()
                 .to_rfc3339();
 
@@ -284,7 +299,7 @@ pub async fn create_magic_link_token(
         .to_rfc3339();
 
     sqlx::query(
-        "INSERT INTO magic_link_tokens (id, email, token_hash, expires_at) VALUES (?, ?, ?, ?)"
+        "INSERT INTO magic_link_tokens (id, email, token_hash, expires_at) VALUES (?, ?, ?, ?)",
     )
     .bind(&id)
     .bind(email)
@@ -313,9 +328,8 @@ pub async fn verify_magic_link_token(
     .fetch_optional(&mut *tx)
     .await?;
 
-    let (token_id,) = row.ok_or_else(|| {
-        AppError::Unauthorized("Invalid or expired magic link".into())
-    })?;
+    let (token_id,) =
+        row.ok_or_else(|| AppError::Unauthorized("Invalid or expired magic link".into()))?;
 
     // Mark as used
     sqlx::query("UPDATE magic_link_tokens SET used = 1 WHERE id = ?")
@@ -330,7 +344,6 @@ pub async fn verify_magic_link_token(
 
     Ok(user)
 }
-
 
 async fn find_or_create_email_user_tx(
     email: &str,
@@ -348,7 +361,7 @@ async fn find_or_create_email_user_tx(
     let display_name = email.split('@').next().unwrap_or("User").to_string();
 
     sqlx::query(
-        "INSERT INTO users (id, email, display_name, auth_provider) VALUES (?, ?, ?, 'email')"
+        "INSERT INTO users (id, email, display_name, auth_provider) VALUES (?, ?, ?, 'email')",
     )
     .bind(&id)
     .bind(email)
@@ -399,7 +412,9 @@ pub async fn exchange_google_code(
     if !res.status().is_success() {
         let body = res.text().await.unwrap_or_default();
         tracing::error!("Google OAuth error response: {body}");
-        return Err(AppError::BadRequest("Google OAuth authentication failed".into()));
+        return Err(AppError::BadRequest(
+            "Google OAuth authentication failed".into(),
+        ));
     }
 
     let token_res: GoogleTokenResponse = res
@@ -423,7 +438,7 @@ pub async fn exchange_google_code(
 
     // Find or create user
     if let Some(user) = sqlx::query_as::<_, User>(
-        "SELECT * FROM users WHERE auth_provider = 'google' AND auth_provider_id = ?"
+        "SELECT * FROM users WHERE auth_provider = 'google' AND auth_provider_id = ?",
     )
     .bind(&payload.sub)
     .fetch_optional(write_db)
@@ -454,7 +469,12 @@ pub async fn exchange_google_code(
     // Create new user
     let id = Uuid::new_v4().to_string();
     let display_name = payload.name.unwrap_or_else(|| {
-        payload.email.split('@').next().unwrap_or("User").to_string()
+        payload
+            .email
+            .split('@')
+            .next()
+            .unwrap_or("User")
+            .to_string()
     });
 
     sqlx::query(
@@ -473,4 +493,3 @@ pub async fn exchange_google_code(
         .await
         .map_err(Into::into)
 }
-

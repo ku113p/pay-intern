@@ -39,8 +39,7 @@ pub async fn google_auth(
     Json(req): Json<GoogleAuthRequest>,
 ) -> Result<Json<auth_service::TokenResponse>, AppError> {
     let user =
-        auth_service::exchange_google_code(&req.code, &state.write_db, &state.config)
-            .await?;
+        auth_service::exchange_google_code(&req.code, &state.write_db, &state.config).await?;
     let tokens = auth_service::issue_tokens(&user, &state.write_db, &state.config).await?;
     Ok(Json(tokens))
 }
@@ -56,12 +55,11 @@ pub async fn request_magic_link_login(
     State(state): State<AppState>,
     Json(req): Json<MagicLinkLoginRequest>,
 ) -> Result<Json<serde_json::Value>, AppError> {
-    let user: Option<crate::models::user::User> = sqlx::query_as(
-        "SELECT * FROM users WHERE email = ?",
-    )
-    .bind(&req.email)
-    .fetch_optional(&state.read_db)
-    .await?;
+    let user: Option<crate::models::user::User> =
+        sqlx::query_as("SELECT * FROM users WHERE email = ?")
+            .bind(&req.email)
+            .fetch_optional(&state.read_db)
+            .await?;
 
     if user.is_some() {
         // Only actually send the magic link if the account exists
@@ -77,12 +75,13 @@ async fn create_and_send_magic_link(
     email: &str,
     state: &AppState,
 ) -> Result<Json<serde_json::Value>, AppError> {
-    let raw_token =
-        auth_service::create_magic_link_token(email, &state.write_db).await?;
+    let raw_token = auth_service::create_magic_link_token(email, &state.write_db).await?;
 
     let magic_link = format!(
         "{}?token={}&email={}",
-        state.config.magic_link_base_url, raw_token, urlencoding::encode(email)
+        state.config.magic_link_base_url,
+        raw_token,
+        urlencoding::encode(email)
     );
 
     email_service::send_magic_link_email(email, &magic_link, &state.config).await?;

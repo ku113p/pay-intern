@@ -108,10 +108,7 @@ pub fn build_router(state: AppState) -> Router {
             "/{id}/interest",
             delete(handlers::interests::remove_interest),
         )
-        .route(
-            "/feed",
-            get(handlers::listings::feed),
-        );
+        .route("/feed", get(handlers::listings::feed));
 
     let application_routes = Router::new()
         .route("/", post(handlers::applications::create_application))
@@ -134,15 +131,24 @@ pub fn build_router(state: AppState) -> Router {
         );
 
     let interest_routes = Router::new()
-        .route("/received", get(handlers::interests::get_received_interests))
+        .route(
+            "/received",
+            get(handlers::interests::get_received_interests),
+        )
         .route("/matches", get(handlers::interests::get_matches));
 
     let notification_routes = Router::new()
         .route("/", get(handlers::notifications::get_notifications))
-        .route("/unread-count", get(handlers::notifications::get_unread_count))
+        .route(
+            "/unread-count",
+            get(handlers::notifications::get_unread_count),
+        )
         .route("/{id}/read", put(handlers::notifications::mark_read))
         .route("/read-all", put(handlers::notifications::mark_all_read))
-        .route("/preferences", get(handlers::notifications::get_preferences))
+        .route(
+            "/preferences",
+            get(handlers::notifications::get_preferences),
+        )
         .route(
             "/preferences",
             put(handlers::notifications::update_preferences),
@@ -156,10 +162,7 @@ pub fn build_router(state: AppState) -> Router {
         )
         .route("/{application_id}", get(handlers::messages::get_messages))
         .route("/{application_id}", post(handlers::messages::send_message))
-        .route(
-            "/{application_id}/read",
-            put(handlers::messages::mark_read),
-        );
+        .route("/{application_id}/read", put(handlers::messages::mark_read));
 
     Router::new()
         .route("/health", get(health))

@@ -26,9 +26,10 @@ pub async fn create_review(
     // Validate criteria results
     for cr in &req.criteria_results {
         if !["pass", "partial", "fail"].contains(&cr.result.as_str()) {
-            return Err(AppError::BadRequest(
-                format!("Invalid result '{}' for criterion '{}'", cr.result, cr.criterion),
-            ));
+            return Err(AppError::BadRequest(format!(
+                "Invalid result '{}' for criterion '{}'",
+                cr.result, cr.criterion
+            )));
         }
     }
 
@@ -48,7 +49,9 @@ pub async fn create_review(
         .await?;
 
     if listing.author_id != reviewer_id.to_string() {
-        return Err(AppError::Forbidden("Only the listing owner can create reviews".into()));
+        return Err(AppError::Forbidden(
+            "Only the listing owner can create reviews".into(),
+        ));
     }
 
     let id = Uuid::new_v4().to_string();
@@ -73,12 +76,10 @@ pub async fn create_review(
         .await?;
 
     // Fire-and-forget email to the reviewed developer
-    let developer_email = sqlx::query_scalar::<_, String>(
-        "SELECT email FROM users WHERE id = ?",
-    )
-    .bind(&app.applicant_id)
-    .fetch_optional(write_db)
-    .await?;
+    let developer_email = sqlx::query_scalar::<_, String>("SELECT email FROM users WHERE id = ?")
+        .bind(&app.applicant_id)
+        .fetch_optional(write_db)
+        .await?;
 
     if let Some(email) = developer_email {
         // Check notification preferences before sending email
@@ -97,8 +98,7 @@ pub async fn create_review(
             let title = listing.title.clone();
             let config = Arc::clone(config);
             tokio::spawn(async move {
-                if let Err(e) =
-                    email_service::send_new_review_email(&email, &title, &config).await
+                if let Err(e) = email_service::send_new_review_email(&email, &title, &config).await
                 {
                     tracing::warn!("Failed to send new review email: {e}");
                 }
@@ -131,7 +131,9 @@ pub async fn get_review(
             // Public review — anyone can see
             return Ok(review);
         }
-        return Err(AppError::Forbidden("Not authorized to view this review".into()));
+        return Err(AppError::Forbidden(
+            "Not authorized to view this review".into(),
+        ));
     }
 
     Ok(review)
@@ -155,11 +157,13 @@ pub async fn consent_review(
         .await?;
 
     if app.applicant_id != developer_id.to_string() {
-        return Err(AppError::Forbidden("Only the reviewed party can consent".into()));
+        return Err(AppError::Forbidden(
+            "Only the reviewed party can consent".into(),
+        ));
     }
 
     sqlx::query(
-        "UPDATE outcome_reviews SET visible_in_profile = ?, developer_response = ? WHERE id = ?"
+        "UPDATE outcome_reviews SET visible_in_profile = ?, developer_response = ? WHERE id = ?",
     )
     .bind(req.visible_in_profile)
     .bind(&req.developer_response)

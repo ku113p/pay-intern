@@ -67,13 +67,11 @@ pub async fn get_individual_profile(
     user_id: &str,
     read_db: &SqlitePool,
 ) -> Result<IndividualProfile, AppError> {
-    sqlx::query_as::<_, IndividualProfile>(
-        "SELECT * FROM individual_profiles WHERE user_id = ?",
-    )
-    .bind(user_id)
-    .fetch_one(read_db)
-    .await
-    .map_err(Into::into)
+    sqlx::query_as::<_, IndividualProfile>("SELECT * FROM individual_profiles WHERE user_id = ?")
+        .bind(user_id)
+        .fetch_one(read_db)
+        .await
+        .map_err(Into::into)
 }
 
 pub async fn upsert_individual_profile(
@@ -97,8 +95,14 @@ pub async fn upsert_individual_profile(
             .as_ref()
             .map(|s| serde_json::to_string(s).unwrap_or_default())
             .unwrap_or_else(|| current.skills.clone());
-        let experience_level = req.experience_level.as_deref().unwrap_or(&current.experience_level);
-        let contact_email = req.contact_email.as_deref().or(current.contact_email.as_deref());
+        let experience_level = req
+            .experience_level
+            .as_deref()
+            .unwrap_or(&current.experience_level);
+        let contact_email = req
+            .contact_email
+            .as_deref()
+            .or(current.contact_email.as_deref());
 
         if let Some(p) = &req.profession {
             validate_category(p)?;
@@ -151,13 +155,11 @@ pub async fn upsert_individual_profile(
         .await?;
     }
 
-    sqlx::query_as::<_, IndividualProfile>(
-        "SELECT * FROM individual_profiles WHERE user_id = ?",
-    )
-    .bind(user_id)
-    .fetch_one(write_db)
-    .await
-    .map_err(Into::into)
+    sqlx::query_as::<_, IndividualProfile>("SELECT * FROM individual_profiles WHERE user_id = ?")
+        .bind(user_id)
+        .fetch_one(write_db)
+        .await
+        .map_err(Into::into)
 }
 
 pub async fn get_organization_profile(
@@ -186,7 +188,10 @@ pub async fn upsert_organization_profile(
     .await?;
 
     if let Some(ref current) = existing {
-        let organization_name = req.organization_name.as_deref().unwrap_or(&current.organization_name);
+        let organization_name = req
+            .organization_name
+            .as_deref()
+            .unwrap_or(&current.organization_name);
         let description = req.description.as_deref().unwrap_or(&current.description);
         let industry = req.industry.as_deref().unwrap_or(&current.industry);
         let size = req.size.as_deref().unwrap_or(&current.size);
@@ -195,13 +200,17 @@ pub async fn upsert_organization_profile(
             .as_ref()
             .map(|s| serde_json::to_string(s).unwrap_or_default())
             .unwrap_or_else(|| current.skills_sought.clone());
-        let contact_email = req.contact_email.as_deref().or(current.contact_email.as_deref());
+        let contact_email = req
+            .contact_email
+            .as_deref()
+            .or(current.contact_email.as_deref());
 
         if let Some(i) = &req.industry {
             validate_category(i)?;
         }
         if let Some(s) = &req.size {
-            if !["solo", "startup", "small", "medium", "large", "enterprise"].contains(&s.as_str()) {
+            if !["solo", "startup", "small", "medium", "large", "enterprise"].contains(&s.as_str())
+            {
                 return Err(AppError::BadRequest("Invalid size".into()));
             }
         }
@@ -219,7 +228,10 @@ pub async fn upsert_organization_profile(
         .execute(write_db)
         .await?;
     } else {
-        let organization_name = req.organization_name.as_deref().unwrap_or("My Organization");
+        let organization_name = req
+            .organization_name
+            .as_deref()
+            .unwrap_or("My Organization");
         let description = req.description.as_deref().unwrap_or("");
         let industry = req.industry.as_deref().unwrap_or("other");
         let size = req.size.as_deref().unwrap_or("startup");
@@ -279,26 +291,50 @@ pub async fn replace_profile_links(
     write_db: &SqlitePool,
 ) -> Result<Vec<ProfileLink>, AppError> {
     if links.len() > 20 {
-        return Err(AppError::BadRequest("Maximum 20 profile links allowed".into()));
+        return Err(AppError::BadRequest(
+            "Maximum 20 profile links allowed".into(),
+        ));
     }
 
     for link in links {
         if link.url.len() > 2000 {
-            return Err(AppError::BadRequest("Link URL must be 2000 characters or fewer".into()));
+            return Err(AppError::BadRequest(
+                "Link URL must be 2000 characters or fewer".into(),
+            ));
         }
         if link.label.len() > 100 {
-            return Err(AppError::BadRequest("Link label must be 100 characters or fewer".into()));
+            return Err(AppError::BadRequest(
+                "Link label must be 100 characters or fewer".into(),
+            ));
         }
-        if link.url.trim_start().to_lowercase().starts_with("javascript:") {
+        if link
+            .url
+            .trim_start()
+            .to_lowercase()
+            .starts_with("javascript:")
+        {
             return Err(AppError::BadRequest("Invalid URL scheme".into()));
         }
     }
 
     // Validate all link types before starting the transaction
     for link in links.iter() {
-        let valid_types = ["github", "linkedin", "portfolio", "website", "twitter", "dribbble", "behance", "stackoverflow", "other"];
+        let valid_types = [
+            "github",
+            "linkedin",
+            "portfolio",
+            "website",
+            "twitter",
+            "dribbble",
+            "behance",
+            "stackoverflow",
+            "other",
+        ];
         if !valid_types.contains(&link.link_type.as_str()) {
-            return Err(AppError::BadRequest(format!("Invalid link_type: {}", link.link_type)));
+            return Err(AppError::BadRequest(format!(
+                "Invalid link_type: {}",
+                link.link_type
+            )));
         }
     }
 
@@ -345,15 +381,18 @@ pub async fn delete_profile(
     } else {
         "individual_profiles"
     };
-    let has_other = sqlx::query_scalar::<_, bool>(
-        &format!("SELECT EXISTS(SELECT 1 FROM {} WHERE user_id = ?)", other_table)
-    )
+    let has_other = sqlx::query_scalar::<_, bool>(&format!(
+        "SELECT EXISTS(SELECT 1 FROM {} WHERE user_id = ?)",
+        other_table
+    ))
     .bind(user_id)
     .fetch_one(write_db)
     .await?;
 
     if !has_other {
-        return Err(AppError::BadRequest("Cannot delete your only profile".into()));
+        return Err(AppError::BadRequest(
+            "Cannot delete your only profile".into(),
+        ));
     }
 
     let table = if profile_type == "individual" {
@@ -454,10 +493,12 @@ pub async fn delete_account(user_id: &Uuid, write_db: &SqlitePool) -> Result<(),
         .execute(&mut *tx)
         .await?;
 
-    sqlx::query("DELETE FROM magic_link_tokens WHERE email = (SELECT email FROM users WHERE id = ?)")
-        .bind(&uid)
-        .execute(&mut *tx)
-        .await?;
+    sqlx::query(
+        "DELETE FROM magic_link_tokens WHERE email = (SELECT email FROM users WHERE id = ?)",
+    )
+    .bind(&uid)
+    .execute(&mut *tx)
+    .await?;
 
     // Delete notifications & preferences
     sqlx::query("DELETE FROM notifications WHERE user_id = ?")
@@ -502,7 +543,20 @@ pub async fn delete_account(user_id: &Uuid, write_db: &SqlitePool) -> Result<(),
 }
 
 fn validate_category(cat: &str) -> Result<(), AppError> {
-    let valid = ["technology", "design", "marketing", "finance", "legal", "education", "healthcare", "engineering", "creative", "business", "trades", "other"];
+    let valid = [
+        "technology",
+        "design",
+        "marketing",
+        "finance",
+        "legal",
+        "education",
+        "healthcare",
+        "engineering",
+        "creative",
+        "business",
+        "trades",
+        "other",
+    ];
     if !valid.contains(&cat) {
         return Err(AppError::BadRequest(format!("Invalid category: {}", cat)));
     }
@@ -604,12 +658,11 @@ mod tests {
         assert!(deleted.is_some());
 
         // Verify listing closed
-        let status: String =
-            sqlx::query_scalar("SELECT status FROM listings WHERE id = ?")
-                .bind(&listing_id)
-                .fetch_one(&db)
-                .await
-                .unwrap();
+        let status: String = sqlx::query_scalar("SELECT status FROM listings WHERE id = ?")
+            .bind(&listing_id)
+            .fetch_one(&db)
+            .await
+            .unwrap();
         assert_eq!(status, "closed");
 
         // Verify profile anonymized
@@ -622,12 +675,11 @@ mod tests {
         assert_eq!(bio, "");
 
         // Verify notifications deleted
-        let count: i64 =
-            sqlx::query_scalar("SELECT COUNT(*) FROM notifications WHERE user_id = ?")
-                .bind(&uid)
-                .fetch_one(&db)
-                .await
-                .unwrap();
+        let count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM notifications WHERE user_id = ?")
+            .bind(&uid)
+            .fetch_one(&db)
+            .await
+            .unwrap();
         assert_eq!(count, 0);
     }
 }

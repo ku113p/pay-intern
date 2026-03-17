@@ -52,7 +52,9 @@ pub async fn create_listing(
 
     let experience_level = req.experience_level.as_deref().unwrap_or("any");
     if !["entry", "mid", "senior", "expert", "any"].contains(&experience_level) {
-        return Err(AppError::BadRequest("experience_level must be entry, mid, senior, expert, or any".into()));
+        return Err(AppError::BadRequest(
+            "experience_level must be entry, mid, senior, expert, or any".into(),
+        ));
     }
 
     let category = req.category.as_deref().unwrap_or("other");
@@ -101,7 +103,7 @@ pub async fn get_listing(
          JOIN users u ON u.id = l.author_id \
          LEFT JOIN organization_profiles op ON op.user_id = l.author_id \
          LEFT JOIN individual_profiles ip ON ip.user_id = l.author_id \
-         WHERE l.id = ?"
+         WHERE l.id = ?",
     )
     .bind(id)
     .fetch_one(read_db)
@@ -157,7 +159,10 @@ pub async fn update_listing(
         .unwrap_or(listing.skills);
     let duration_weeks = req.duration_weeks.unwrap_or(listing.duration_weeks);
     let price_usd = req.price_usd.or(listing.price_usd);
-    let payment_direction = req.payment_direction.as_deref().unwrap_or(&listing.payment_direction);
+    let payment_direction = req
+        .payment_direction
+        .as_deref()
+        .unwrap_or(&listing.payment_direction);
     if !["poster_pays", "applicant_pays", "negotiable", "unpaid"].contains(&payment_direction) {
         return Err(AppError::BadRequest("Invalid payment_direction".into()));
     }
@@ -180,7 +185,10 @@ pub async fn update_listing(
     if !["active", "closed", "paused", "draft"].contains(&status) {
         return Err(AppError::BadRequest("Invalid status".into()));
     }
-    let experience_level = req.experience_level.as_deref().unwrap_or(&listing.experience_level);
+    let experience_level = req
+        .experience_level
+        .as_deref()
+        .unwrap_or(&listing.experience_level);
 
     sqlx::query(
         "UPDATE listings SET title = ?, description = ?, category = ?, skills = ?, duration_weeks = ?, price_usd = ?, payment_direction = ?, format = ?, outcome_criteria = ?, visibility = ?, status = ?, experience_level = ?, updated_at = datetime('now') WHERE id = ?"
@@ -235,9 +243,7 @@ pub async fn get_feed(
     viewer_id: Option<&Uuid>,
     read_db: &SqlitePool,
 ) -> Result<PaginatedResponse<ListingResponse>, AppError> {
-    let mut where_clauses = vec![
-        "l.status = 'active'".to_string(),
-    ];
+    let mut where_clauses = vec!["l.status = 'active'".to_string()];
     let mut bind_values: Vec<String> = vec![];
 
     // Author role filter (replaces old listing_type path parameter)
@@ -257,7 +263,9 @@ pub async fn get_feed(
     }
     if let Some(level) = &query.experience_level {
         if !["entry", "mid", "senior", "expert", "any"].contains(&level.as_str()) {
-            return Err(AppError::BadRequest("Invalid experience_level filter".into()));
+            return Err(AppError::BadRequest(
+                "Invalid experience_level filter".into(),
+            ));
         }
     }
     if let Some(sort) = &query.sort {
@@ -267,7 +275,9 @@ pub async fn get_feed(
     }
     if let Some(pd) = &query.payment_direction {
         if !["poster_pays", "applicant_pays", "negotiable", "unpaid"].contains(&pd.as_str()) {
-            return Err(AppError::BadRequest("Invalid payment_direction filter".into()));
+            return Err(AppError::BadRequest(
+                "Invalid payment_direction filter".into(),
+            ));
         }
         where_clauses.push("l.payment_direction = ?".to_string());
         bind_values.push(pd.clone());
@@ -313,13 +323,18 @@ pub async fn get_feed(
 
     if let Some(level) = &query.experience_level {
         if level != "any" {
-            where_clauses.push("(l.experience_level = ? OR l.experience_level = 'any')".to_string());
+            where_clauses
+                .push("(l.experience_level = ? OR l.experience_level = 'any')".to_string());
             bind_values.push(level.clone());
         }
     }
 
     if let Some(skills_filter) = &query.skills {
-        let skills: Vec<&str> = skills_filter.split(',').map(|t| t.trim()).filter(|t| !t.is_empty()).collect();
+        let skills: Vec<&str> = skills_filter
+            .split(',')
+            .map(|t| t.trim())
+            .filter(|t| !t.is_empty())
+            .collect();
         if !skills.is_empty() {
             let like_clauses: Vec<String> = skills
                 .iter()
@@ -409,12 +424,10 @@ pub async fn get_user_listings(
     query: &PaginationQuery,
     read_db: &SqlitePool,
 ) -> Result<PaginatedResponse<ListingResponse>, AppError> {
-    let total = sqlx::query_scalar::<_, i64>(
-        "SELECT COUNT(*) FROM listings WHERE author_id = ?"
-    )
-    .bind(user_id.to_string())
-    .fetch_one(read_db)
-    .await? as u32;
+    let total = sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM listings WHERE author_id = ?")
+        .bind(user_id.to_string())
+        .fetch_one(read_db)
+        .await? as u32;
 
     let listings = sqlx::query_as::<_, ListingWithAuthor>(
         "SELECT l.id, l.author_id, l.author_role, l.title, l.description, l.category, l.skills, \

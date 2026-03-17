@@ -52,21 +52,20 @@ pub async fn send_message(
     let id = Uuid::new_v4().to_string();
     let sender_str = sender_id.to_string();
 
-    sqlx::query(
-        "INSERT INTO messages (id, application_id, sender_id, body) VALUES (?, ?, ?, ?)",
-    )
-    .bind(&id)
-    .bind(application_id)
-    .bind(&sender_str)
-    .bind(&req.body)
-    .execute(write_db)
-    .await?;
-
-    let sender_name = sqlx::query_scalar::<_, String>("SELECT display_name FROM users WHERE id = ?")
+    sqlx::query("INSERT INTO messages (id, application_id, sender_id, body) VALUES (?, ?, ?, ?)")
+        .bind(&id)
+        .bind(application_id)
         .bind(&sender_str)
-        .fetch_optional(read_db)
-        .await?
-        .unwrap_or_else(|| "Someone".into());
+        .bind(&req.body)
+        .execute(write_db)
+        .await?;
+
+    let sender_name =
+        sqlx::query_scalar::<_, String>("SELECT display_name FROM users WHERE id = ?")
+            .bind(&sender_str)
+            .fetch_optional(read_db)
+            .await?
+            .unwrap_or_else(|| "Someone".into());
 
     // Notify the other party
     let recipient_id = if app.applicant_id == sender_str {
@@ -128,7 +127,18 @@ pub async fn get_messages(
 
     let caller_str = caller_id.to_string();
 
-    let rows = sqlx::query_as::<_, (String, String, String, String, Option<String>, String, String)>(
+    let rows = sqlx::query_as::<
+        _,
+        (
+            String,
+            String,
+            String,
+            String,
+            Option<String>,
+            String,
+            String,
+        ),
+    >(
         "SELECT m.id, m.application_id, m.sender_id, m.body, m.read_at, m.created_at, \
          u.display_name \
          FROM messages m JOIN users u ON u.id = m.sender_id \
@@ -144,15 +154,17 @@ pub async fn get_messages(
 
     Ok(rows
         .into_iter()
-        .map(|(id, app_id, sid, body, read_at, created_at, name)| MessageResponse {
-            id,
-            application_id: app_id,
-            is_read: sid == caller_str || read_at.is_some(),
-            sender_id: sid,
-            sender_name: name,
-            body,
-            created_at,
-        })
+        .map(
+            |(id, app_id, sid, body, read_at, created_at, name)| MessageResponse {
+                id,
+                application_id: app_id,
+                is_read: sid == caller_str || read_at.is_some(),
+                sender_id: sid,
+                sender_name: name,
+                body,
+                created_at,
+            },
+        )
         .collect())
 }
 

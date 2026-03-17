@@ -14,9 +14,11 @@ use crate::error::AppError;
 fn build_mailer(config: &Config) -> Result<AsyncSmtpTransport<Tokio1Executor>, AppError> {
     if config.smtp_user.is_empty() {
         // No auth — plain unencrypted connection (local dev / mailhog)
-        Ok(AsyncSmtpTransport::<Tokio1Executor>::builder_dangerous(&config.smtp_host)
-            .port(config.smtp_port)
-            .build())
+        Ok(
+            AsyncSmtpTransport::<Tokio1Executor>::builder_dangerous(&config.smtp_host)
+                .port(config.smtp_port)
+                .build(),
+        )
     } else {
         let creds = Credentials::new(config.smtp_user.clone(), config.smtp_pass.clone());
         let tls_params = TlsParametersBuilder::new(config.smtp_host.clone())
@@ -25,17 +27,21 @@ fn build_mailer(config: &Config) -> Result<AsyncSmtpTransport<Tokio1Executor>, A
             .map_err(|e| AppError::Internal(format!("TLS params error: {e}")))?;
 
         if config.smtp_port == 465 {
-            Ok(AsyncSmtpTransport::<Tokio1Executor>::builder_dangerous(&config.smtp_host)
-                .port(465)
-                .tls(Tls::Wrapper(tls_params))
-                .credentials(creds)
-                .build())
+            Ok(
+                AsyncSmtpTransport::<Tokio1Executor>::builder_dangerous(&config.smtp_host)
+                    .port(465)
+                    .tls(Tls::Wrapper(tls_params))
+                    .credentials(creds)
+                    .build(),
+            )
         } else {
-            Ok(AsyncSmtpTransport::<Tokio1Executor>::builder_dangerous(&config.smtp_host)
-                .port(config.smtp_port)
-                .tls(Tls::Required(tls_params))
-                .credentials(creds)
-                .build())
+            Ok(
+                AsyncSmtpTransport::<Tokio1Executor>::builder_dangerous(&config.smtp_host)
+                    .port(config.smtp_port)
+                    .tls(Tls::Required(tls_params))
+                    .credentials(creds)
+                    .build(),
+            )
         }
     }
 }

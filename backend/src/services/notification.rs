@@ -41,9 +41,7 @@ pub async fn get_notifications(
         ""
     };
 
-    let count_sql = format!(
-        "SELECT COUNT(*) FROM notifications WHERE user_id = ?{unread_filter}"
-    );
+    let count_sql = format!("SELECT COUNT(*) FROM notifications WHERE user_id = ?{unread_filter}");
     let total = sqlx::query_scalar::<_, i64>(&count_sql)
         .bind(&user_str)
         .fetch_one(read_db)
@@ -73,10 +71,7 @@ pub async fn get_notifications(
     })
 }
 
-pub async fn get_unread_count(
-    user_id: &Uuid,
-    read_db: &SqlitePool,
-) -> Result<i64, AppError> {
+pub async fn get_unread_count(user_id: &Uuid, read_db: &SqlitePool) -> Result<i64, AppError> {
     let count = sqlx::query_scalar::<_, i64>(
         "SELECT COUNT(*) FROM notifications WHERE user_id = ? AND is_read = 0",
     )
@@ -91,13 +86,11 @@ pub async fn mark_read(
     user_id: &Uuid,
     write_db: &SqlitePool,
 ) -> Result<(), AppError> {
-    let result = sqlx::query(
-        "UPDATE notifications SET is_read = 1 WHERE id = ? AND user_id = ?",
-    )
-    .bind(notification_id)
-    .bind(user_id.to_string())
-    .execute(write_db)
-    .await?;
+    let result = sqlx::query("UPDATE notifications SET is_read = 1 WHERE id = ? AND user_id = ?")
+        .bind(notification_id)
+        .bind(user_id.to_string())
+        .execute(write_db)
+        .await?;
 
     if result.rows_affected() == 0 {
         return Err(AppError::NotFound("Notification not found".into()));
@@ -105,16 +98,11 @@ pub async fn mark_read(
     Ok(())
 }
 
-pub async fn mark_all_read(
-    user_id: &Uuid,
-    write_db: &SqlitePool,
-) -> Result<(), AppError> {
-    sqlx::query(
-        "UPDATE notifications SET is_read = 1 WHERE user_id = ? AND is_read = 0",
-    )
-    .bind(user_id.to_string())
-    .execute(write_db)
-    .await?;
+pub async fn mark_all_read(user_id: &Uuid, write_db: &SqlitePool) -> Result<(), AppError> {
+    sqlx::query("UPDATE notifications SET is_read = 1 WHERE user_id = ? AND is_read = 0")
+        .bind(user_id.to_string())
+        .execute(write_db)
+        .await?;
     Ok(())
 }
 
@@ -148,11 +136,21 @@ pub async fn update_preferences(
     let current = get_preferences(user_id, write_db).await?;
 
     let email_enabled = req.email_enabled.unwrap_or(current.email_enabled);
-    let email_application_received = req.email_application_received.unwrap_or(current.email_application_received);
-    let email_application_accepted = req.email_application_accepted.unwrap_or(current.email_application_accepted);
-    let email_application_rejected = req.email_application_rejected.unwrap_or(current.email_application_rejected);
-    let email_review_created = req.email_review_created.unwrap_or(current.email_review_created);
-    let email_review_consented = req.email_review_consented.unwrap_or(current.email_review_consented);
+    let email_application_received = req
+        .email_application_received
+        .unwrap_or(current.email_application_received);
+    let email_application_accepted = req
+        .email_application_accepted
+        .unwrap_or(current.email_application_accepted);
+    let email_application_rejected = req
+        .email_application_rejected
+        .unwrap_or(current.email_application_rejected);
+    let email_review_created = req
+        .email_review_created
+        .unwrap_or(current.email_review_created);
+    let email_review_consented = req
+        .email_review_consented
+        .unwrap_or(current.email_review_consented);
 
     sqlx::query(
         "INSERT INTO notification_preferences (user_id, email_enabled, email_application_received, email_application_accepted, email_application_rejected, email_review_created, email_review_consented) \

@@ -38,7 +38,9 @@ pub async fn delete_my_individual_profile(
 ) -> Result<Json<serde_json::Value>, AppError> {
     let uid = auth.user_id.to_string();
     user_service::delete_profile(&uid, "individual", &state.write_db).await?;
-    Ok(Json(serde_json::json!({"message": "Individual profile deleted"})))
+    Ok(Json(
+        serde_json::json!({"message": "Individual profile deleted"}),
+    ))
 }
 
 pub async fn get_my_organization_profile(
@@ -59,8 +61,7 @@ pub async fn upsert_my_organization_profile(
 ) -> Result<Json<OrganizationProfileResponse>, AppError> {
     req.validate()?;
     let uid = auth.user_id.to_string();
-    let profile =
-        user_service::upsert_organization_profile(&uid, &req, &state.write_db).await?;
+    let profile = user_service::upsert_organization_profile(&uid, &req, &state.write_db).await?;
     let links = user_service::get_profile_links(&uid, "organization", &state.write_db).await?;
     let link_responses: Vec<ProfileLinkResponse> = links.into_iter().map(Into::into).collect();
     Ok(Json(profile.to_response(link_responses)))
@@ -72,7 +73,9 @@ pub async fn delete_my_organization_profile(
 ) -> Result<Json<serde_json::Value>, AppError> {
     let uid = auth.user_id.to_string();
     user_service::delete_profile(&uid, "organization", &state.write_db).await?;
-    Ok(Json(serde_json::json!({"message": "Organization profile deleted"})))
+    Ok(Json(
+        serde_json::json!({"message": "Organization profile deleted"}),
+    ))
 }
 
 pub async fn get_my_profile_links(
@@ -125,8 +128,7 @@ pub async fn get_public_organization_profile(
     Path(user_id): Path<String>,
 ) -> Result<Json<OrganizationProfileResponse>, AppError> {
     let profile = user_service::get_organization_profile(&user_id, &state.read_db).await?;
-    let links =
-        user_service::get_profile_links(&user_id, "organization", &state.read_db).await?;
+    let links = user_service::get_profile_links(&user_id, "organization", &state.read_db).await?;
     let link_responses: Vec<ProfileLinkResponse> = links.into_iter().map(Into::into).collect();
     let mut response = profile.to_response(link_responses);
     response.contact_email = None;

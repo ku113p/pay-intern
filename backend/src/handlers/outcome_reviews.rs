@@ -15,7 +15,8 @@ pub async fn create_review(
     Json(req): Json<CreateOutcomeReviewRequest>,
 ) -> Result<(StatusCode, Json<OutcomeReviewResponse>), AppError> {
     req.validate()?;
-    let review = review_service::create_review(&auth.user_id, &req, &state.write_db, &state.config).await?;
+    let review =
+        review_service::create_review(&auth.user_id, &req, &state.write_db, &state.config).await?;
     Ok((StatusCode::CREATED, Json(review.into())))
 }
 
@@ -34,7 +35,6 @@ pub async fn consent_review(
     Path(id): Path<String>,
     Json(req): Json<ConsentReviewRequest>,
 ) -> Result<Json<OutcomeReviewResponse>, AppError> {
-    let review =
-        review_service::consent_review(&id, &auth.user_id, &req, &state.write_db).await?;
+    let review = review_service::consent_review(&id, &auth.user_id, &req, &state.write_db).await?;
     Ok(Json(review.into()))
 }

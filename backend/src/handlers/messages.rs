@@ -21,7 +21,8 @@ pub async fn get_conversations_unread_count(
     auth: AuthUser,
     State(state): State<AppState>,
 ) -> Result<Json<ConversationsUnreadCount>, AppError> {
-    let count = message_service::get_conversations_unread_count(&auth.user_id, &state.read_db).await?;
+    let count =
+        message_service::get_conversations_unread_count(&auth.user_id, &state.read_db).await?;
     Ok(Json(ConversationsUnreadCount { count }))
 }
 
@@ -32,7 +33,8 @@ pub async fn get_messages(
     State(state): State<AppState>,
 ) -> Result<Json<Vec<MessageResponse>>, AppError> {
     let messages =
-        message_service::get_messages(&application_id, &auth.user_id, &query, &state.read_db).await?;
+        message_service::get_messages(&application_id, &auth.user_id, &query, &state.read_db)
+            .await?;
     Ok(Json(messages))
 }
 
@@ -43,8 +45,14 @@ pub async fn send_message(
     Json(req): Json<SendMessageRequest>,
 ) -> Result<(StatusCode, Json<MessageResponse>), AppError> {
     req.validate()?;
-    let message =
-        message_service::send_message(&application_id, &auth.user_id, &req, &state.read_db, &state.write_db).await?;
+    let message = message_service::send_message(
+        &application_id,
+        &auth.user_id,
+        &req,
+        &state.read_db,
+        &state.write_db,
+    )
+    .await?;
     Ok((StatusCode::CREATED, Json(message)))
 }
 
@@ -53,6 +61,12 @@ pub async fn mark_read(
     Path(application_id): Path<String>,
     State(state): State<AppState>,
 ) -> Result<Json<serde_json::Value>, AppError> {
-    message_service::mark_messages_read(&application_id, &auth.user_id, &state.read_db, &state.write_db).await?;
+    message_service::mark_messages_read(
+        &application_id,
+        &auth.user_id,
+        &state.read_db,
+        &state.write_db,
+    )
+    .await?;
     Ok(Json(serde_json::json!({"ok": true})))
 }

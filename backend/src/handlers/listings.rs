@@ -16,7 +16,8 @@ pub async fn create_listing(
 ) -> Result<(StatusCode, Json<ListingResponse>), AppError> {
     req.validate()?;
     let listing =
-        listing_service::create_listing(&auth.user_id, &auth.active_role, &req, &state.write_db).await?;
+        listing_service::create_listing(&auth.user_id, &auth.active_role, &req, &state.write_db)
+            .await?;
     Ok((StatusCode::CREATED, Json(listing.into())))
 }
 
@@ -66,7 +67,8 @@ pub async fn my_listings(
     auth: AuthUser,
     Query(query): Query<PaginationQuery>,
 ) -> Result<Json<PaginatedResponse<ListingResponse>>, AppError> {
-    let listings = listing_service::get_user_listings(&auth.user_id, &query, &state.read_db).await?;
+    let listings =
+        listing_service::get_user_listings(&auth.user_id, &query, &state.read_db).await?;
     Ok(Json(listings))
 }
 
