@@ -164,6 +164,7 @@ pub async fn issue_tokens(
 
 pub async fn refresh_tokens(
     refresh_token: &str,
+    requested_role: Option<&str>,
     write_db: &SqlitePool,
     config: &Config,
 ) -> Result<TokenResponse, AppError> {
@@ -208,12 +209,12 @@ pub async fn refresh_tokens(
             .fetch_one(&mut *tx)
             .await?;
 
-            let role_for_token = if has_individual {
-                "individual".to_string()
-            } else if has_organization {
-                "organization".to_string()
-            } else {
-                "individual".to_string()
+            let role_for_token = match requested_role {
+                Some("organization") if has_organization => "organization".to_string(),
+                Some("individual") if has_individual => "individual".to_string(),
+                _ if has_individual => "individual".to_string(),
+                _ if has_organization => "organization".to_string(),
+                _ => "individual".to_string(),
             };
 
             // Issue new tokens with same family

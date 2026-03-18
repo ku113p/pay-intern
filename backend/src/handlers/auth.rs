@@ -32,6 +32,7 @@ pub struct MagicLinkVerifyRequest {
 #[derive(Deserialize)]
 pub struct RefreshRequest {
     pub refresh_token: String,
+    pub active_role: Option<String>,
 }
 
 pub async fn google_auth(
@@ -105,8 +106,13 @@ pub async fn refresh(
     State(state): State<AppState>,
     Json(req): Json<RefreshRequest>,
 ) -> Result<Json<auth_service::TokenResponse>, AppError> {
-    let tokens =
-        auth_service::refresh_tokens(&req.refresh_token, &state.write_db, &state.config).await?;
+    let tokens = auth_service::refresh_tokens(
+        &req.refresh_token,
+        req.active_role.as_deref(),
+        &state.write_db,
+        &state.config,
+    )
+    .await?;
     Ok(Json(tokens))
 }
 

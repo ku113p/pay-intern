@@ -32,21 +32,28 @@ export const useAuthStore = create<AuthState>((set) => ({
   accessToken: null,
   refreshToken: localStorage.getItem('refresh_token'),
   user: null,
-  activeRole: null,
+  activeRole: (localStorage.getItem('active_role') as ActiveRole) || null,
   isAuthenticated: false,
 
   setTokens: (accessToken, refreshToken) => {
     localStorage.setItem('refresh_token', refreshToken);
     const activeRole = parseActiveRole(accessToken);
+    if (activeRole) {
+      localStorage.setItem('active_role', activeRole);
+    }
     set({ accessToken, refreshToken, isAuthenticated: true, activeRole });
   },
 
   setUser: (user) => set({ user }),
 
-  setActiveRole: (role) => set({ activeRole: role }),
+  setActiveRole: (role) => {
+    localStorage.setItem('active_role', role);
+    set({ activeRole: role });
+  },
 
   logout: () => {
     localStorage.removeItem('refresh_token');
+    localStorage.removeItem('active_role');
     set({ accessToken: null, refreshToken: null, user: null, activeRole: null, isAuthenticated: false });
   },
 }));

@@ -24,8 +24,9 @@ export function refreshAccessToken(): Promise<string> {
   const refreshToken = useAuthStore.getState().refreshToken;
   if (!refreshToken) return Promise.reject(new Error('No refresh token'));
 
+  const activeRole = useAuthStore.getState().activeRole;
   activeRefreshPromise = axios
-    .post('/api/auth/refresh', { refresh_token: refreshToken })
+    .post('/api/auth/refresh', { refresh_token: refreshToken, active_role: activeRole })
     .then((res) => {
       const { access_token, refresh_token } = res.data;
       useAuthStore.getState().setTokens(access_token, refresh_token);
