@@ -24,7 +24,14 @@ export function BrowsePage() {
       </button>
       <div className="flex flex-col md:flex-row gap-6">
         <aside className={`${showFilters ? 'block' : 'hidden'} md:block w-full md:w-64 flex-shrink-0`}>
-          <FeedFilters filters={filters} onChange={setFilters} defaultAuthorRole={defaultAuthorRole} />
+          <FeedFilters
+            filters={filters}
+            onChange={(f) => {
+              setFilters(f);
+              if (!window.matchMedia('(min-width: 768px)').matches) setShowFilters(false);
+            }}
+            defaultAuthorRole={defaultAuthorRole}
+          />
         </aside>
         <div className="flex-1 space-y-4">
           {data && (

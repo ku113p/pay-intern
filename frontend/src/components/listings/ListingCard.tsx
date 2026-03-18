@@ -10,16 +10,16 @@ export function ListingCard({ listing, currentUserId }: { listing: Listing; curr
 
   const paymentLabel = (dir: string, price: number) => {
     switch (dir) {
-      case 'poster_pays': return `Poster pays $${price.toLocaleString()}`;
-      case 'applicant_pays': return `Applicant pays $${price.toLocaleString()}`;
+      case 'organization_pays': return `Organization pays $${price.toLocaleString()}`;
+      case 'individual_pays': return `Individual pays $${price.toLocaleString()}`;
       case 'negotiable': return `Negotiable $${price.toLocaleString()}`;
       default: return `$${price.toLocaleString()}`;
     }
   };
 
   const paymentColor = (dir: string) =>
-    dir === 'poster_pays' ? 'text-green-600 font-medium'
-    : dir === 'applicant_pays' ? 'text-amber-600 font-medium'
+    dir === 'organization_pays' ? 'text-green-600 font-medium'
+    : dir === 'individual_pays' ? 'text-amber-600 font-medium'
     : 'text-blue-600 font-medium';
 
   return (

@@ -19,7 +19,7 @@ export function ListingForm({ initialData, onSuccess }: ListingFormProps) {
     category: initialData?.category ?? undefined,
     duration_weeks: initialData?.duration_weeks ?? 4,
     price_usd: initialData?.price_usd ?? undefined,
-    payment_direction: initialData?.payment_direction ?? 'poster_pays',
+    payment_direction: initialData?.payment_direction ?? 'organization_pays',
     format: initialData?.format ?? 'remote',
     experience_level: initialData?.experience_level ?? 'any',
     visibility: initialData?.visibility ?? 'public',
@@ -168,12 +168,12 @@ export function ListingForm({ initialData, onSuccess }: ListingFormProps) {
       <div>
         <label className="block text-sm font-medium text-gray-700">Who pays?</label>
         <select
-          value={form.payment_direction || 'poster_pays'}
+          value={form.payment_direction || 'organization_pays'}
           onChange={(e) => setForm({ ...form, payment_direction: e.target.value })}
           className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2"
         >
-          <option value="poster_pays">Poster pays</option>
-          <option value="applicant_pays">Applicant pays</option>
+          <option value="organization_pays">Organization pays (salary)</option>
+          <option value="individual_pays">Individual pays (fee)</option>
           <option value="negotiable">Negotiable</option>
           <option value="unpaid">Unpaid</option>
         </select>

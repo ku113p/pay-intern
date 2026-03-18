@@ -43,8 +43,8 @@ export function ListingDetail({ listing }: { listing: Listing }) {
 
   const paymentLabel = (dir: string, price: number) => {
     switch (dir) {
-      case 'poster_pays': return `Poster pays — $${price.toLocaleString()}`;
-      case 'applicant_pays': return `Applicant pays — $${price.toLocaleString()}`;
+      case 'organization_pays': return `Organization pays — $${price.toLocaleString()}`;
+      case 'individual_pays': return `Individual pays — $${price.toLocaleString()}`;
       case 'negotiable': return `Negotiable — $${price.toLocaleString()}`;
       default: return `$${price.toLocaleString()}`;
     }
@@ -53,13 +53,13 @@ export function ListingDetail({ listing }: { listing: Listing }) {
   const paymentBg = (dir: string) =>
     !listing.price_usd || listing.price_usd === 0
       ? 'bg-gray-50 border border-gray-200'
-      : dir === 'poster_pays' ? 'bg-green-50 border border-green-200'
-      : dir === 'applicant_pays' ? 'bg-amber-50 border border-amber-200'
+      : dir === 'organization_pays' ? 'bg-green-50 border border-green-200'
+      : dir === 'individual_pays' ? 'bg-amber-50 border border-amber-200'
       : 'bg-blue-50 border border-blue-200';
 
   const paymentTextColor = (dir: string) =>
-    dir === 'poster_pays' ? 'text-green-800'
-    : dir === 'applicant_pays' ? 'text-amber-800'
+    dir === 'organization_pays' ? 'text-green-800'
+    : dir === 'individual_pays' ? 'text-amber-800'
     : 'text-blue-800';
 
   return (

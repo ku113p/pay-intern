@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
 import type { ListingFeedParams } from '../../api/listings';
-import { useDebounceWithPending } from '../../hooks/useDebounce';
 
 interface Props {
   filters: ListingFeedParams;
@@ -9,6 +8,7 @@ interface Props {
 }
 
 export function FeedFilters({ filters, onChange, defaultAuthorRole }: Props) {
+  // Text/number input local states
   const [search, setSearch] = useState(filters.search || '');
   const [skills, setSkills] = useState(filters.skills || '');
   const [minWeeks, setMinWeeks] = useState(filters.min_weeks?.toString() || '');
@@ -16,61 +16,95 @@ export function FeedFilters({ filters, onChange, defaultAuthorRole }: Props) {
   const [minPrice, setMinPrice] = useState(filters.min_price?.toString() || '');
   const [maxPrice, setMaxPrice] = useState(filters.max_price?.toString() || '');
 
-  const { debounced: debouncedSearch, isPending: searchPending } = useDebounceWithPending(search, 800);
-  const { debounced: debouncedSkills, isPending: skillsPending } = useDebounceWithPending(skills, 800);
-  const { debounced: debouncedMinWeeks, isPending: minWeeksPending } = useDebounceWithPending(minWeeks, 800);
-  const { debounced: debouncedMaxWeeks, isPending: maxWeeksPending } = useDebounceWithPending(maxWeeks, 800);
-  const { debounced: debouncedMinPrice, isPending: minPricePending } = useDebounceWithPending(minPrice, 800);
-  const { debounced: debouncedMaxPrice, isPending: maxPricePending } = useDebounceWithPending(maxPrice, 800);
+  // Select input local states (draft)
+  const [authorRole, setAuthorRole] = useState(filters.author_role || '');
+  const [category, setCategory] = useState(filters.category || '');
+  const [format, setFormat] = useState(filters.format || '');
+  const [paymentDirection, setPaymentDirection] = useState(filters.payment_direction || '');
+  const [experienceLevel, setExperienceLevel] = useState(filters.experience_level || '');
+  const [sort, setSort] = useState(filters.sort || 'newest');
 
-  const isPending = searchPending || skillsPending || minWeeksPending || maxWeeksPending || minPricePending || maxPricePending;
-
-  const isInitialMount = useRef(true);
-  const filtersRef = useRef(filters);
-  filtersRef.current = filters;
+  const [justApplied, setJustApplied] = useState(false);
+  const appliedTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   useEffect(() => {
-    if (isInitialMount.current) {
-      isInitialMount.current = false;
-      return;
-    }
-    onChange({
-      ...filtersRef.current,
-      search: debouncedSearch || undefined,
-      skills: debouncedSkills || undefined,
-      min_weeks: debouncedMinWeeks ? +debouncedMinWeeks : undefined,
-      max_weeks: debouncedMaxWeeks ? +debouncedMaxWeeks : undefined,
-      min_price: debouncedMinPrice ? +debouncedMinPrice : undefined,
-      max_price: debouncedMaxPrice ? +debouncedMaxPrice : undefined,
-      page: 1,
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedSearch, debouncedSkills, debouncedMinWeeks, debouncedMaxWeeks, debouncedMinPrice, debouncedMaxPrice]);
+    return () => { clearTimeout(appliedTimerRef.current); };
+  }, []);
 
+  // Sync local state from props when filters change externally (URL nav, back/forward)
+  const prevFiltersRef = useRef(filters);
   useEffect(() => {
+    const prev = prevFiltersRef.current;
+    if (prev === filters) return;
+    prevFiltersRef.current = filters;
     setSearch(filters.search || '');
     setSkills(filters.skills || '');
     setMinWeeks(filters.min_weeks?.toString() || '');
     setMaxWeeks(filters.max_weeks?.toString() || '');
     setMinPrice(filters.min_price?.toString() || '');
     setMaxPrice(filters.max_price?.toString() || '');
-  }, [filters.search, filters.skills, filters.min_weeks, filters.max_weeks, filters.min_price, filters.max_price]);
+    setAuthorRole(filters.author_role || '');
+    setCategory(filters.category || '');
+    setFormat(filters.format || '');
+    setPaymentDirection(filters.payment_direction || '');
+    setExperienceLevel(filters.experience_level || '');
+    setSort(filters.sort || 'newest');
+  }, [filters]);
 
-  const authorRoleIsManual = filters.author_role && filters.author_role !== defaultAuthorRole;
+  const isDirty =
+    search !== (filters.search || '') ||
+    skills !== (filters.skills || '') ||
+    minWeeks !== (filters.min_weeks?.toString() || '') ||
+    maxWeeks !== (filters.max_weeks?.toString() || '') ||
+    minPrice !== (filters.min_price?.toString() || '') ||
+    maxPrice !== (filters.max_price?.toString() || '') ||
+    authorRole !== (filters.author_role || '') ||
+    category !== (filters.category || '') ||
+    format !== (filters.format || '') ||
+    paymentDirection !== (filters.payment_direction || '') ||
+    experienceLevel !== (filters.experience_level || '') ||
+    sort !== (filters.sort || 'newest');
+
+  const applyFilters = () => {
+    onChange({
+      search: search || undefined,
+      skills: skills || undefined,
+      min_weeks: minWeeks ? +minWeeks : undefined,
+      max_weeks: maxWeeks ? +maxWeeks : undefined,
+      min_price: minPrice ? +minPrice : undefined,
+      max_price: maxPrice ? +maxPrice : undefined,
+      author_role: authorRole || undefined,
+      category: category || undefined,
+      format: format || undefined,
+      payment_direction: paymentDirection || undefined,
+      experience_level: experienceLevel || undefined,
+      sort: sort || 'newest',
+      page: 1,
+    });
+    setJustApplied(true);
+    clearTimeout(appliedTimerRef.current);
+    appliedTimerRef.current = setTimeout(() => setJustApplied(false), 1500);
+  };
+
+  const appliedAuthorRoleIsManual = filters.author_role && filters.author_role !== defaultAuthorRole;
   const hasFilters = !!(
-    search || skills || filters.format || filters.experience_level ||
-    authorRoleIsManual || filters.payment_direction || filters.category ||
-    minWeeks || maxWeeks ||
-    minPrice || maxPrice ||
+    filters.search || filters.skills || filters.format || filters.experience_level ||
+    appliedAuthorRoleIsManual || filters.payment_direction || filters.category ||
+    filters.min_weeks || filters.max_weeks ||
+    filters.min_price || filters.max_price ||
     (filters.sort && filters.sort !== 'newest')
   );
+
+  const clearFilters = () => {
+    onChange({ sort: 'newest' });
+  };
 
   return (
     <div className="bg-white rounded-lg border border-gray-200 p-4 space-y-4">
       <h3 className="font-medium text-gray-900 flex items-center gap-2">
         Filters
-        {isPending && (
-          <span className="animate-spin h-4 w-4 border-2 border-primary-600 border-t-transparent rounded-full inline-block" />
+        {isDirty && (
+          <span className="w-2 h-2 rounded-full bg-primary-500 inline-block" />
         )}
       </h3>
 
@@ -98,8 +132,8 @@ export function FeedFilters({ filters, onChange, defaultAuthorRole }: Props) {
       <div>
         <label className="block text-sm text-gray-600 mb-1">Author Role</label>
         <select
-          value={filters.author_role || ''}
-          onChange={(e) => onChange({ ...filters, author_role: e.target.value || undefined, page: 1 })}
+          value={authorRole}
+          onChange={(e) => setAuthorRole(e.target.value)}
           className="w-full border border-gray-300 rounded px-3 py-1.5 text-sm"
         >
           <option value="">All</option>
@@ -113,8 +147,8 @@ export function FeedFilters({ filters, onChange, defaultAuthorRole }: Props) {
         <input
           type="text"
           placeholder="e.g. software"
-          value={filters.category || ''}
-          onChange={(e) => onChange({ ...filters, category: e.target.value || undefined, page: 1 })}
+          value={category}
+          onChange={(e) => setCategory(e.target.value)}
           className="w-full border border-gray-300 rounded px-3 py-1.5 text-sm"
         />
       </div>
@@ -122,8 +156,8 @@ export function FeedFilters({ filters, onChange, defaultAuthorRole }: Props) {
       <div>
         <label className="block text-sm text-gray-600 mb-1">Format</label>
         <select
-          value={filters.format || ''}
-          onChange={(e) => onChange({ ...filters, format: e.target.value || undefined, page: 1 })}
+          value={format}
+          onChange={(e) => setFormat(e.target.value)}
           className="w-full border border-gray-300 rounded px-3 py-1.5 text-sm"
         >
           <option value="">All</option>
@@ -134,25 +168,23 @@ export function FeedFilters({ filters, onChange, defaultAuthorRole }: Props) {
       </div>
 
       <div>
-        <label className="block text-sm text-gray-600 mb-1">Payment Direction</label>
+        <label className="block text-sm text-gray-600 mb-1">Payment</label>
         <select
-          value={filters.payment_direction || ''}
-          onChange={(e) => onChange({ ...filters, payment_direction: e.target.value || undefined, page: 1 })}
+          value={paymentDirection}
+          onChange={(e) => setPaymentDirection(e.target.value)}
           className="w-full border border-gray-300 rounded px-3 py-1.5 text-sm"
         >
           <option value="">All</option>
-          <option value="poster_pays">Poster pays</option>
-          <option value="applicant_pays">Applicant pays</option>
-          <option value="negotiable">Negotiable</option>
-          <option value="unpaid">Unpaid</option>
+          <option value="organization_pays">Organization pays</option>
+          <option value="individual_pays">Individual pays</option>
         </select>
       </div>
 
       <div>
         <label className="block text-sm text-gray-600 mb-1">Experience Level</label>
         <select
-          value={filters.experience_level || ''}
-          onChange={(e) => onChange({ ...filters, experience_level: e.target.value || undefined, page: 1 })}
+          value={experienceLevel}
+          onChange={(e) => setExperienceLevel(e.target.value)}
           className="w-full border border-gray-300 rounded px-3 py-1.5 text-sm"
         >
           <option value="">All</option>
@@ -166,8 +198,8 @@ export function FeedFilters({ filters, onChange, defaultAuthorRole }: Props) {
       <div>
         <label className="block text-sm text-gray-600 mb-1">Sort</label>
         <select
-          value={filters.sort || 'newest'}
-          onChange={(e) => onChange({ ...filters, sort: e.target.value })}
+          value={sort}
+          onChange={(e) => setSort(e.target.value)}
           className="w-full border border-gray-300 rounded px-3 py-1.5 text-sm"
         >
           <option value="newest">Newest</option>
@@ -226,10 +258,25 @@ export function FeedFilters({ filters, onChange, defaultAuthorRole }: Props) {
         </div>
       </div>
 
+      <button
+        type="button"
+        onClick={applyFilters}
+        disabled={!isDirty}
+        className={`w-full py-2 px-4 rounded text-sm font-medium transition-colors ${
+          justApplied
+            ? 'bg-green-600 text-white'
+            : isDirty
+              ? 'bg-primary-600 text-white hover:bg-primary-700'
+              : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+        }`}
+      >
+        {justApplied ? 'Applied!' : 'Apply Filters'}
+      </button>
+
       {hasFilters && (
         <button
           type="button"
-          onClick={() => onChange({ sort: 'newest' })}
+          onClick={clearFilters}
           className="text-sm text-primary-600 hover:text-primary-800"
         >
           Clear filters
