@@ -17,6 +17,8 @@ export function useFeedFilters() {
     skills: searchParams.get('skills') || undefined,
     format: searchParams.get('format') || undefined,
     author_role: searchParams.get('author_role') || oppositeRole || undefined,
+    payment_direction: searchParams.get('payment_direction') || undefined,
+    category: searchParams.get('category') || undefined,
     min_weeks: searchParams.get('min_weeks') ? Number(searchParams.get('min_weeks')) : undefined,
     max_weeks: searchParams.get('max_weeks') ? Number(searchParams.get('max_weeks')) : undefined,
     min_price: searchParams.get('min_price') ? Number(searchParams.get('min_price')) : undefined,
