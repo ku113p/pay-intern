@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use sqlx::SqlitePool;
 use uuid::Uuid;
 
@@ -403,7 +405,46 @@ pub async fn get_feed(
     select_query = select_query.bind(query.offset() as i64);
 
     let listings = select_query.fetch_all(read_db).await?;
-    let results: Vec<ListingResponse> = listings.into_iter().map(Into::into).collect();
+    let mut results: Vec<ListingResponse> = listings.into_iter().map(Into::into).collect();
+
+    // Batch-load saved/interested state for the viewer
+    if let Some(uid) = viewer_id {
+        let uid_str = uid.to_string();
+        let listing_ids: Vec<&str> = results.iter().map(|r| r.id.as_str()).collect();
+        if !listing_ids.is_empty() {
+            let placeholders = listing_ids
+                .iter()
+                .map(|_| "?")
+                .collect::<Vec<_>>()
+                .join(",");
+
+            let saved_sql =
+                format!("SELECT listing_id FROM saved_listings WHERE user_id = ? AND listing_id IN ({placeholders})");
+            let mut saved_query = sqlx::query_scalar::<_, String>(&saved_sql).bind(&uid_str);
+            for id in &listing_ids {
+                saved_query = saved_query.bind(*id);
+            }
+            let saved_ids: HashSet<String> =
+                saved_query.fetch_all(read_db).await?.into_iter().collect();
+
+            let interest_sql =
+                format!("SELECT listing_id FROM interests WHERE user_id = ? AND listing_id IN ({placeholders})");
+            let mut interest_query = sqlx::query_scalar::<_, String>(&interest_sql).bind(&uid_str);
+            for id in &listing_ids {
+                interest_query = interest_query.bind(*id);
+            }
+            let interested_ids: HashSet<String> = interest_query
+                .fetch_all(read_db)
+                .await?
+                .into_iter()
+                .collect();
+
+            for r in &mut results {
+                r.is_saved = saved_ids.contains(&r.id);
+                r.is_interested = interested_ids.contains(&r.id);
+            }
+        }
+    }
 
     let per_page = query.per_page();
     let total_pages = total.div_ceil(per_page).max(1);

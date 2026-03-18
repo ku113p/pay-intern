@@ -37,13 +37,13 @@ export function MatchesPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
               <div>
                 <p className="text-gray-500 text-xs mb-1">Your listing</p>
-                <Link to={`/listings/${match.my_listing_id}`} className="text-indigo-600 hover:underline">
+                <Link to={`/listings/${match.my_listing_id}`} className="text-primary-600 hover:underline">
                   {match.my_listing_title}
                 </Link>
               </div>
               <div>
                 <p className="text-gray-500 text-xs mb-1">Their listing</p>
-                <Link to={`/listings/${match.their_listing_id}`} className="text-indigo-600 hover:underline">
+                <Link to={`/listings/${match.their_listing_id}`} className="text-primary-600 hover:underline">
                   {match.their_listing_title}
                 </Link>
               </div>
@@ -52,7 +52,7 @@ export function MatchesPage() {
             <div className="mt-4">
               <Link
                 to={`/listings/${match.their_listing_id}`}
-                className="text-sm bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 inline-block"
+                className="text-sm bg-primary-600 text-white px-4 py-2 rounded-md hover:bg-primary-700 inline-block"
               >
                 View & Apply
               </Link>

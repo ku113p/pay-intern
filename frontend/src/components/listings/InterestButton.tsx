@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { interestsApi } from '../../api/interests';
 
@@ -20,6 +20,7 @@ export function InterestButton({
 }: InterestButtonProps) {
   const [interested, setInterested] = useState(initialInterested);
   const hidden = !userId || userId === listingAuthorId;
+  const queryClient = useQueryClient();
 
   const toggleMutation = useMutation({
     mutationFn: (action: 'add' | 'remove') =>
@@ -35,6 +36,9 @@ export function InterestButton({
     onError: () => {
       setInterested((prev) => !prev);
       toast.error('Failed to update interest');
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['matches'] });
     },
   });
 

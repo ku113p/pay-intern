@@ -1,1 +1,41 @@
 @import "tailwindcss";
+
+@theme inline {
+  --color-primary-50: var(--role-primary-50);
+  --color-primary-100: var(--role-primary-100);
+  --color-primary-200: var(--role-primary-200);
+  --color-primary-300: var(--role-primary-300);
+  --color-primary-400: var(--role-primary-400);
+  --color-primary-500: var(--role-primary-500);
+  --color-primary-600: var(--role-primary-600);
+  --color-primary-700: var(--role-primary-700);
+  --color-primary-800: var(--role-primary-800);
+  --color-primary-900: var(--role-primary-900);
+}
+
+:root,
+[data-role="individual"] {
+  --role-primary-50: #eef2ff;
+  --role-primary-100: #e0e7ff;
+  --role-primary-200: #c7d2fe;
+  --role-primary-300: #a5b4fc;
+  --role-primary-400: #818cf8;
+  --role-primary-500: #6366f1;
+  --role-primary-600: #4f46e5;
+  --role-primary-700: #4338ca;
+  --role-primary-800: #3730a3;
+  --role-primary-900: #312e81;
+}
+
+[data-role="organization"] {
+  --role-primary-50: #f0fdfa;
+  --role-primary-100: #ccfbf1;
+  --role-primary-200: #99f6e4;
+  --role-primary-300: #5eead4;
+  --role-primary-400: #2dd4bf;
+  --role-primary-500: #14b8a6;
+  --role-primary-600: #0d9488;
+  --role-primary-700: #0f766e;
+  --role-primary-800: #115e59;
+  --role-primary-900: #134e4a;
+}

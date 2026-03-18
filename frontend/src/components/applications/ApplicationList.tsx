@@ -46,7 +46,7 @@ export function ApplicationList() {
             {myApps.data.map((app) => (
               <div key={app.id} className="bg-white border border-gray-200 rounded-lg p-4">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center sm:justify-between gap-1">
-                  <Link to={`/listings/${app.listing_id}`} className="text-sm text-indigo-600 hover:text-indigo-500">
+                  <Link to={`/listings/${app.listing_id}`} className="text-sm text-primary-600 hover:text-primary-500">
                     {app.listing_title || app.listing_id.slice(0, 8) + '...'}
                   </Link>
                   <div className="flex items-center gap-2">
@@ -63,7 +63,7 @@ export function ApplicationList() {
                     {app.status === 'accepted' && (
                       <Link
                         to={`/messages/${app.id}`}
-                        className="text-xs text-indigo-600 hover:text-indigo-800 border border-indigo-200 px-2 py-0.5 rounded"
+                        className="text-xs text-primary-600 hover:text-primary-800 border border-primary-200 px-2 py-0.5 rounded"
                       >
                         Message
                       </Link>
@@ -95,11 +95,11 @@ export function ApplicationList() {
               <div key={app.id} className="bg-white border border-gray-200 rounded-lg p-4">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center sm:justify-between gap-1">
                   <p className="text-sm text-gray-600">
-                    <span className="text-indigo-600">
+                    <span className="text-primary-600">
                       {app.applicant_name || 'Applicant'}
                     </span>
                     {' · '}
-                    <Link to={`/listings/${app.listing_id}`} className="text-indigo-600 hover:text-indigo-500">
+                    <Link to={`/listings/${app.listing_id}`} className="text-primary-600 hover:text-primary-500">
                       {app.listing_title || app.listing_id.slice(0, 8) + '...'}
                     </Link>
                   </p>
@@ -129,13 +129,13 @@ export function ApplicationList() {
                         onClick={() => navigate(`/applications/${app.id}/review`, {
                           state: { listingId: app.listing_id, listingTitle: app.listing_title, applicantName: app.applicant_name }
                         })}
-                        className="bg-indigo-600 text-white px-3 py-1 rounded text-sm hover:bg-indigo-700"
+                        className="bg-primary-600 text-white px-3 py-1 rounded text-sm hover:bg-primary-700"
                       >
                         Write Review
                       </button>
                       <Link
                         to={`/messages/${app.id}`}
-                        className="bg-white text-indigo-600 border border-indigo-200 px-3 py-1 rounded text-sm hover:bg-indigo-50"
+                        className="bg-white text-primary-600 border border-primary-200 px-3 py-1 rounded text-sm hover:bg-primary-50"
                       >
                         Message
                       </Link>

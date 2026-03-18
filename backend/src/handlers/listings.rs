@@ -28,7 +28,27 @@ pub async fn get_listing(
 ) -> Result<Json<ListingResponse>, AppError> {
     let viewer_id = auth.0.as_ref().map(|a| &a.user_id);
     let listing = listing_service::get_listing(&id, viewer_id, &state.read_db).await?;
-    Ok(Json(listing.into()))
+    let mut resp: ListingResponse = listing.into();
+    if let Some(uid) = viewer_id {
+        let uid_str = uid.to_string();
+        let saved_count: i64 = sqlx::query_scalar(
+            "SELECT COUNT(*) FROM saved_listings WHERE user_id = ? AND listing_id = ?",
+        )
+        .bind(&uid_str)
+        .bind(&id)
+        .fetch_one(&state.read_db)
+        .await?;
+        resp.is_saved = saved_count > 0;
+        let interest_count: i64 = sqlx::query_scalar(
+            "SELECT COUNT(*) FROM interests WHERE user_id = ? AND listing_id = ?",
+        )
+        .bind(&uid_str)
+        .bind(&id)
+        .fetch_one(&state.read_db)
+        .await?;
+        resp.is_interested = interest_count > 0;
+    }
+    Ok(Json(resp))
 }
 
 pub async fn update_listing(

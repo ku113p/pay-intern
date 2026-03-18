@@ -54,7 +54,7 @@ export function ContactInfoCard({ applicationId }: { applicationId: string }) {
           <span className="text-gray-900">{contact.email}</span>
           <button
             onClick={() => copyEmail(contact.email)}
-            className="text-xs text-indigo-600 hover:text-indigo-500 border border-indigo-200 px-1.5 py-0.5 rounded"
+            className="text-xs text-primary-600 hover:text-primary-500 border border-primary-200 px-1.5 py-0.5 rounded"
           >
             Copy
           </button>
@@ -62,7 +62,7 @@ export function ContactInfoCard({ applicationId }: { applicationId: string }) {
         {contact.links.map((link) => (
           <div key={link.id} className="flex items-center gap-2 text-sm">
             <span className="text-gray-500">{link.label || link.link_type}:</span>
-            <a href={link.url} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:text-indigo-500">
+            <a href={link.url} target="_blank" rel="noopener noreferrer" className="text-primary-600 hover:text-primary-500">
               {link.url}
             </a>
           </div>

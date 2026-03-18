@@ -56,25 +56,25 @@ function Dashboard({ user }: { user: UserResponse }) {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <Link
               to="/browse"
-              className="border border-gray-200 rounded-lg p-4 text-center hover:border-indigo-300 hover:shadow-sm transition"
+              className="border border-gray-200 rounded-lg p-4 text-center hover:border-primary-300 hover:shadow-sm transition"
             >
               <p className="text-sm font-medium text-gray-900">Browse Listings</p>
             </Link>
             <Link
               to="/listings/new"
-              className="border border-gray-200 rounded-lg p-4 text-center hover:border-indigo-300 hover:shadow-sm transition"
+              className="border border-gray-200 rounded-lg p-4 text-center hover:border-primary-300 hover:shadow-sm transition"
             >
               <p className="text-sm font-medium text-gray-900">Post a Listing</p>
             </Link>
             <Link
               to="/applications"
-              className="border border-gray-200 rounded-lg p-4 text-center hover:border-indigo-300 hover:shadow-sm transition"
+              className="border border-gray-200 rounded-lg p-4 text-center hover:border-primary-300 hover:shadow-sm transition"
             >
               <p className="text-sm font-medium text-gray-900">My Applications</p>
             </Link>
             <Link
               to="/profile"
-              className="border border-gray-200 rounded-lg p-4 text-center hover:border-indigo-300 hover:shadow-sm transition"
+              className="border border-gray-200 rounded-lg p-4 text-center hover:border-primary-300 hover:shadow-sm transition"
             >
               <p className="text-sm font-medium text-gray-900">My Profile</p>
             </Link>
@@ -107,7 +107,7 @@ function Dashboard({ user }: { user: UserResponse }) {
                 <p className="text-gray-500 mb-3">You haven't posted any listings yet.</p>
                 <Link
                   to="/listings/new"
-                  className="bg-indigo-600 text-white px-5 py-2 rounded-md text-sm font-medium hover:bg-indigo-700"
+                  className="bg-primary-600 text-white px-5 py-2 rounded-md text-sm font-medium hover:bg-primary-700"
                 >
                   Create Your First Listing
                 </Link>
@@ -128,7 +128,7 @@ function Dashboard({ user }: { user: UserResponse }) {
                 ))}
               </div>
               <div className="text-center mt-4">
-                <Link to="/browse" className="text-sm text-indigo-600 hover:text-indigo-800">
+                <Link to="/browse" className="text-sm text-primary-600 hover:text-primary-800">
                   View all listings →
                 </Link>
               </div>

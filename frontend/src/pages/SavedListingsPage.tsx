@@ -32,7 +32,7 @@ export function SavedListingsPage() {
             onClick={() => { setRoleFilter(t); setPage(1); }}
             className={`text-sm px-3 py-1.5 rounded border ${
               roleFilter === t
-                ? 'bg-indigo-50 border-indigo-200 text-indigo-700'
+                ? 'bg-primary-50 border-primary-200 text-primary-700'
                 : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
             }`}
           >

@@ -129,9 +129,9 @@ export function IndividualProfileForm() {
         </div>
         <div className="flex flex-wrap gap-1.5 mt-2">
           {profile.skills.map((skill) => (
-            <span key={skill} className="text-sm bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded flex items-center gap-1">
+            <span key={skill} className="text-sm bg-primary-100 text-primary-700 px-2 py-0.5 rounded flex items-center gap-1">
               {skill}
-              <button type="button" onClick={() => removeSkill(skill)} className="text-indigo-400 hover:text-indigo-600">&times;</button>
+              <button type="button" onClick={() => removeSkill(skill)} className="text-primary-400 hover:text-primary-600">&times;</button>
             </span>
           ))}
         </div>
@@ -149,7 +149,7 @@ export function IndividualProfileForm() {
         <p className="text-xs text-gray-500 mt-1">Shared when an application is accepted. Leave blank to use your account email.</p>
       </div>
 
-      <button type="submit" disabled={saving} className="bg-indigo-600 text-white px-6 py-2 rounded-md hover:bg-indigo-700 disabled:opacity-50">
+      <button type="submit" disabled={saving} className="bg-primary-600 text-white px-6 py-2 rounded-md hover:bg-primary-700 disabled:opacity-50">
         {saving ? 'Saving...' : 'Save Individual Profile'}
       </button>
     </form>

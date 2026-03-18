@@ -92,11 +92,12 @@ export function ListingDetail({ listing }: { listing: Listing }) {
 
       {user && (
         <div className="flex gap-2">
-          <SaveButton listingId={listing.id} variant="full" />
+          <SaveButton listingId={listing.id} initialSaved={listing.is_saved} variant="full" />
           <InterestButton
             listingId={listing.id}
             listingAuthorId={listing.author_id}
             userId={user.id}
+            initialInterested={listing.is_interested}
             variant="full"
           />
         </div>
@@ -130,12 +131,12 @@ export function ListingDetail({ listing }: { listing: Listing }) {
       </div>
 
       {listing.outcome_criteria && listing.outcome_criteria.length > 0 && (
-        <div className="bg-indigo-50 rounded-lg p-5">
-          <h3 className="font-semibold text-indigo-900 mb-3">Outcome Criteria</h3>
+        <div className="bg-primary-50 rounded-lg p-5">
+          <h3 className="font-semibold text-primary-900 mb-3">Outcome Criteria</h3>
           <ul className="space-y-2">
             {listing.outcome_criteria.map((c, i) => (
-              <li key={i} className="flex items-start gap-2 text-indigo-800">
-                <span className="text-indigo-400 mt-0.5">&#10003;</span>
+              <li key={i} className="flex items-start gap-2 text-primary-800">
+                <span className="text-primary-400 mt-0.5">&#10003;</span>
                 {c}
               </li>
             ))}
@@ -158,7 +159,7 @@ export function ListingDetail({ listing }: { listing: Listing }) {
           <button
             type="submit"
             disabled={applying}
-            className="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm hover:bg-indigo-700 disabled:opacity-50"
+            className="bg-primary-600 text-white px-4 py-2 rounded-md text-sm hover:bg-primary-700 disabled:opacity-50"
           >
             {applying ? 'Sending...' : 'Send Application'}
           </button>
@@ -179,7 +180,7 @@ export function ListingDetail({ listing }: { listing: Listing }) {
         <div>
           <Link
             to={`/profiles/${listing.author_role}/${listing.author_id}`}
-            className="text-sm font-medium text-indigo-600 hover:underline"
+            className="text-sm font-medium text-primary-600 hover:underline"
           >
             {listing.author_role === 'organization'
               ? listing.organization_name || listing.author_display_name

@@ -42,7 +42,7 @@ export function LanguageSwitcher() {
               key={lang.code}
               onClick={() => { i18n.changeLanguage(lang.code); setOpen(false); }}
               className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2 hover:bg-gray-50 transition ${
-                current.code === lang.code ? 'text-indigo-600 font-medium' : 'text-gray-700'
+                current.code === lang.code ? 'text-primary-600 font-medium' : 'text-gray-700'
               }`}
             >
               <span>{lang.flag}</span>

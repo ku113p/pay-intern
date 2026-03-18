@@ -131,9 +131,9 @@ export function ListingForm({ initialData, onSuccess }: ListingFormProps) {
         </div>
         <div className="flex flex-wrap gap-1.5 mt-2">
           {form.skills.map((skill) => (
-            <span key={skill} className="text-sm bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded flex items-center gap-1">
+            <span key={skill} className="text-sm bg-primary-100 text-primary-700 px-2 py-0.5 rounded flex items-center gap-1">
               {skill}
-              <button type="button" onClick={() => removeSkill(skill)} className="text-indigo-400 hover:text-indigo-600">&times;</button>
+              <button type="button" onClick={() => removeSkill(skill)} className="text-primary-400 hover:text-primary-600">&times;</button>
             </span>
           ))}
         </div>
@@ -226,7 +226,7 @@ export function ListingForm({ initialData, onSuccess }: ListingFormProps) {
             </div>
           ))}
         </div>
-        <button type="button" onClick={addCriteria} className="text-sm text-indigo-600 hover:text-indigo-800 mt-2">
+        <button type="button" onClick={addCriteria} className="text-sm text-primary-600 hover:text-primary-800 mt-2">
           + Add criterion
         </button>
       </div>
@@ -234,7 +234,7 @@ export function ListingForm({ initialData, onSuccess }: ListingFormProps) {
       <button
         type="submit"
         disabled={loading}
-        className="w-full bg-indigo-600 text-white py-2 rounded-md hover:bg-indigo-700 disabled:opacity-50"
+        className="w-full bg-primary-600 text-white py-2 rounded-md hover:bg-primary-700 disabled:opacity-50"
       >
         {loading ? (initialData ? 'Saving...' : 'Creating...') : (initialData ? 'Save Changes' : 'Create Listing')}
       </button>

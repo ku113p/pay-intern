@@ -139,6 +139,10 @@ pub struct ListingResponse {
     pub organization_name: Option<String>,
     pub individual_level: Option<String>,
     pub author_email_domain: Option<String>,
+    #[serde(default)]
+    pub is_saved: bool,
+    #[serde(default)]
+    pub is_interested: bool,
 }
 
 impl From<Listing> for ListingResponse {
@@ -170,6 +174,8 @@ impl From<Listing> for ListingResponse {
             organization_name: None,
             individual_level: None,
             author_email_domain: None,
+            is_saved: false,
+            is_interested: false,
         }
     }
 }
@@ -203,6 +209,8 @@ impl From<ListingWithAuthor> for ListingResponse {
             organization_name: l.organization_name,
             individual_level: l.individual_level,
             author_email_domain: l.author_email_domain,
+            is_saved: false,
+            is_interested: false,
         }
     }
 }

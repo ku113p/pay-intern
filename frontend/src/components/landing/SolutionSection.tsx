@@ -30,7 +30,7 @@ export function SolutionSection() {
               delay={i * 150}
               className="bg-white rounded-xl border border-gray-100 p-8 hover:shadow-lg transition-shadow"
             >
-              <div className="w-14 h-14 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center mb-5">
+              <div className="w-14 h-14 rounded-xl bg-primary-50 text-primary-600 flex items-center justify-center mb-5">
                 {icons[i]}
               </div>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">{pillar.title}</h3>

@@ -44,7 +44,7 @@ export function NotificationsPage() {
         <h1 className="text-2xl font-bold text-gray-900">Notifications</h1>
         <button
           onClick={() => markAllReadMutation.mutate()}
-          className="text-sm text-indigo-600 hover:text-indigo-500"
+          className="text-sm text-primary-600 hover:text-primary-500"
         >
           Mark all as read
         </button>
@@ -53,13 +53,13 @@ export function NotificationsPage() {
       <div className="flex gap-2 mb-4">
         <button
           onClick={() => { setUnreadOnly(false); setPage(1); }}
-          className={`px-3 py-1 rounded text-sm ${!unreadOnly ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+          className={`px-3 py-1 rounded text-sm ${!unreadOnly ? 'bg-primary-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
         >
           All
         </button>
         <button
           onClick={() => { setUnreadOnly(true); setPage(1); }}
-          className={`px-3 py-1 rounded text-sm ${unreadOnly ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+          className={`px-3 py-1 rounded text-sm ${unreadOnly ? 'bg-primary-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
         >
           Unread
         </button>
@@ -76,11 +76,11 @@ export function NotificationsPage() {
               key={notif.id}
               onClick={() => handleClick(notif)}
               className={`w-full text-left px-4 py-3 rounded-lg flex gap-3 hover:bg-gray-50 ${
-                !notif.is_read ? 'bg-indigo-50' : 'bg-white'
+                !notif.is_read ? 'bg-primary-50' : 'bg-white'
               }`}
             >
               {!notif.is_read && (
-                <span className="mt-1.5 h-2 w-2 rounded-full bg-indigo-500 flex-shrink-0" />
+                <span className="mt-1.5 h-2 w-2 rounded-full bg-primary-500 flex-shrink-0" />
               )}
               <div className={!notif.is_read ? '' : 'pl-5'}>
                 <p className={`text-sm ${!notif.is_read ? 'font-medium' : ''} text-gray-900`}>

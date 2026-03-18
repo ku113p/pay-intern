@@ -22,6 +22,8 @@ export interface Listing {
   organization_name: string | null;
   individual_level: string | null;
   author_email_domain: string | null;
+  is_saved?: boolean;
+  is_interested?: boolean;
 }
 
 export interface PaginatedResponse<T> {

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { interestsApi } from '../../api/interests';
 
@@ -11,6 +11,7 @@ interface SaveButtonProps {
 
 export function SaveButton({ listingId, initialSaved = false, variant = 'icon' }: SaveButtonProps) {
   const [saved, setSaved] = useState(initialSaved);
+  const queryClient = useQueryClient();
 
   const toggleMutation = useMutation({
     mutationFn: (action: 'save' | 'unsave') =>
@@ -21,6 +22,9 @@ export function SaveButton({ listingId, initialSaved = false, variant = 'icon' }
     onError: () => {
       setSaved((prev) => !prev);
       toast.error('Failed to update bookmark');
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['saved-listings'] });
     },
   });
 
@@ -37,7 +41,7 @@ export function SaveButton({ listingId, initialSaved = false, variant = 'icon' }
         disabled={toggleMutation.isPending}
         className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-sm border ${
           saved
-            ? 'bg-indigo-50 border-indigo-200 text-indigo-700'
+            ? 'bg-primary-50 border-primary-200 text-primary-700'
             : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
         }`}
       >
@@ -53,7 +57,7 @@ export function SaveButton({ listingId, initialSaved = false, variant = 'icon' }
     <button
       onClick={handleClick}
       disabled={toggleMutation.isPending}
-      className="text-gray-400 hover:text-indigo-600"
+      className="text-gray-400 hover:text-primary-600"
       title={saved ? 'Remove bookmark' : 'Save for later'}
     >
       <svg className="h-5 w-5" fill={saved ? 'currentColor' : 'none'} viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

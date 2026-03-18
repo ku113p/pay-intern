@@ -83,7 +83,7 @@ export function NotificationBell() {
             {unreadCount > 0 && (
               <button
                 onClick={() => markAllReadMutation.mutate()}
-                className="text-xs text-indigo-600 hover:text-indigo-500"
+                className="text-xs text-primary-600 hover:text-primary-500"
               >
                 Mark all as read
               </button>
@@ -99,11 +99,11 @@ export function NotificationBell() {
                   key={notif.id}
                   onClick={() => handleNotifClick(notif)}
                   className={`w-full text-left px-4 py-3 border-b border-gray-50 hover:bg-gray-50 flex gap-2.5 ${
-                    !notif.is_read ? 'bg-indigo-50' : ''
+                    !notif.is_read ? 'bg-primary-50' : ''
                   }`}
                 >
                   {!notif.is_read && (
-                    <span className="mt-1.5 h-2 w-2 rounded-full bg-indigo-500 flex-shrink-0" />
+                    <span className="mt-1.5 h-2 w-2 rounded-full bg-primary-500 flex-shrink-0" />
                   )}
                   <div className={!notif.is_read ? '' : 'pl-4'}>
                     <p className={`text-sm ${!notif.is_read ? 'font-medium' : ''} text-gray-900 line-clamp-1`}>
@@ -120,7 +120,7 @@ export function NotificationBell() {
           <div className="border-t border-gray-100 px-4 py-2">
             <button
               onClick={() => { setOpen(false); navigate('/notifications'); }}
-              className="text-xs text-indigo-600 hover:text-indigo-500 w-full text-center"
+              className="text-xs text-primary-600 hover:text-primary-500 w-full text-center"
             >
               View all notifications
             </button>

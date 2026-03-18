@@ -81,13 +81,13 @@ export function MessagesPage() {
               key={conv.application_id}
               onClick={() => navigate(`/messages/${conv.application_id}`)}
               className={`w-full text-left p-4 border-b border-gray-100 hover:bg-gray-50 ${
-                conv.application_id === applicationId ? 'bg-indigo-50' : ''
+                conv.application_id === applicationId ? 'bg-primary-50' : ''
               }`}
             >
               <div className="flex items-center justify-between">
                 <span className="font-medium text-gray-900 text-sm">{conv.other_party_name}</span>
                 {conv.unread_count > 0 && (
-                  <span className="bg-indigo-600 text-white text-xs rounded-full px-1.5 py-0.5 min-w-[20px] text-center">
+                  <span className="bg-primary-600 text-white text-xs rounded-full px-1.5 py-0.5 min-w-[20px] text-center">
                     {conv.unread_count}
                   </span>
                 )}
@@ -134,7 +134,7 @@ export function MessagesPage() {
                       <div
                         className={`max-w-[75%] rounded-lg px-3 py-2 ${
                           isMe
-                            ? 'bg-indigo-600 text-white'
+                            ? 'bg-primary-600 text-white'
                             : 'bg-gray-100 text-gray-900'
                         }`}
                       >
@@ -142,7 +142,7 @@ export function MessagesPage() {
                           <p className="text-xs font-medium text-gray-500 mb-1">{msg.sender_name}</p>
                         )}
                         <p className="text-sm whitespace-pre-wrap">{msg.body}</p>
-                        <p className={`text-xs mt-1 ${isMe ? 'text-indigo-200' : 'text-gray-400'}`}>
+                        <p className={`text-xs mt-1 ${isMe ? 'text-primary-200' : 'text-gray-400'}`}>
                           {format(msg.created_at + 'Z')}
                         </p>
                       </div>
@@ -165,7 +165,7 @@ export function MessagesPage() {
                 <button
                   type="submit"
                   disabled={!newMessage.trim() || sendMutation.isPending}
-                  className="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm hover:bg-indigo-700 disabled:opacity-50"
+                  className="bg-primary-600 text-white px-4 py-2 rounded-md text-sm hover:bg-primary-700 disabled:opacity-50"
                 >
                   Send
                 </button>

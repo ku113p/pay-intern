@@ -90,7 +90,7 @@ export function ReviewForm({ applicationId, criteria, onCreated }: Props) {
       <button
         type="submit"
         disabled={loading}
-        className="bg-indigo-600 text-white px-6 py-2 rounded-md hover:bg-indigo-700 disabled:opacity-50"
+        className="bg-primary-600 text-white px-6 py-2 rounded-md hover:bg-primary-700 disabled:opacity-50"
       >
         {loading ? 'Submitting...' : 'Submit Review'}
       </button>

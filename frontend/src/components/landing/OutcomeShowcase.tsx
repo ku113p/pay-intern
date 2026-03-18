@@ -23,11 +23,11 @@ export function OutcomeShowcase() {
 
         <AnimatedSection delay={200}>
           <div className="bg-white rounded-2xl border border-gray-200 shadow-lg overflow-hidden">
-            <div className="bg-gradient-to-r from-indigo-600 to-indigo-500 px-6 py-4 text-white">
+            <div className="bg-gradient-to-r from-primary-600 to-primary-500 px-6 py-4 text-white">
               <div className="flex items-center justify-between flex-wrap gap-2">
                 <div>
                   <p className="font-semibold text-lg">{card.role}</p>
-                  <p className="text-indigo-100 text-sm">{card.company}</p>
+                  <p className="text-primary-100 text-sm">{card.company}</p>
                 </div>
                 <span className="text-sm bg-white/20 px-3 py-1 rounded-full">{card.duration}</span>
               </div>

@@ -26,7 +26,7 @@ export function PublicIndividualProfile({ profile }: { profile: IndividualProfil
       {profile.links.length > 0 && (
         <div className="flex gap-4 text-sm">
           {profile.links.map((link) => (
-            <a key={link.id} href={link.url} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline">
+            <a key={link.id} href={link.url} target="_blank" rel="noopener noreferrer" className="text-primary-600 hover:underline">
               {link.label || link.link_type}
             </a>
           ))}
@@ -60,7 +60,7 @@ export function PublicOrganizationProfile({ profile }: { profile: OrganizationPr
       {profile.links.length > 0 && (
         <div className="flex gap-4 text-sm">
           {profile.links.map((link) => (
-            <a key={link.id} href={link.url} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline">
+            <a key={link.id} href={link.url} target="_blank" rel="noopener noreferrer" className="text-primary-600 hover:underline">
               {link.label || link.link_type}
             </a>
           ))}

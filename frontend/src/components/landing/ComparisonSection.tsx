@@ -45,7 +45,7 @@ export function ComparisonSection() {
                       key={i}
                       className={`py-3 px-4 font-semibold ${
                         i === 0 ? 'text-left' : 'text-center'
-                      } ${i === 1 ? 'text-indigo-700 bg-indigo-50' : 'text-gray-600'}`}
+                      } ${i === 1 ? 'text-primary-700 bg-primary-50' : 'text-gray-600'}`}
                     >
                       {h}
                     </th>
@@ -59,7 +59,7 @@ export function ComparisonSection() {
                     {row.values.map((v, vi) => (
                       <td
                         key={vi}
-                        className={`py-3 px-4 text-center ${vi === 0 ? 'bg-indigo-50/50' : ''}`}
+                        className={`py-3 px-4 text-center ${vi === 0 ? 'bg-primary-50/50' : ''}`}
                       >
                         <CellIcon value={v} />
                       </td>

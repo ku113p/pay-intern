@@ -17,7 +17,7 @@ export function ReviewPage() {
     return (
       <div className="text-center py-12">
         <p className="text-gray-500 mb-2">Please navigate here from the Applications page.</p>
-        <Link to="/applications" className="text-indigo-600 hover:text-indigo-500 text-sm">
+        <Link to="/applications" className="text-primary-600 hover:text-primary-500 text-sm">
           Go to Applications
         </Link>
       </div>

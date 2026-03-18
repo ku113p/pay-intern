@@ -1,13 +1,14 @@
 import { useState, useEffect, useRef } from 'react';
 import type { ListingFeedParams } from '../../api/listings';
-import { useDebounce } from '../../hooks/useDebounce';
+import { useDebounceWithPending } from '../../hooks/useDebounce';
 
 interface Props {
   filters: ListingFeedParams;
   onChange: (filters: ListingFeedParams) => void;
+  defaultAuthorRole?: string;
 }
 
-export function FeedFilters({ filters, onChange }: Props) {
+export function FeedFilters({ filters, onChange, defaultAuthorRole }: Props) {
   const [search, setSearch] = useState(filters.search || '');
   const [skills, setSkills] = useState(filters.skills || '');
   const [minWeeks, setMinWeeks] = useState(filters.min_weeks?.toString() || '');
@@ -15,12 +16,14 @@ export function FeedFilters({ filters, onChange }: Props) {
   const [minPrice, setMinPrice] = useState(filters.min_price?.toString() || '');
   const [maxPrice, setMaxPrice] = useState(filters.max_price?.toString() || '');
 
-  const debouncedSearch = useDebounce(search, 400);
-  const debouncedSkills = useDebounce(skills, 400);
-  const debouncedMinWeeks = useDebounce(minWeeks, 400);
-  const debouncedMaxWeeks = useDebounce(maxWeeks, 400);
-  const debouncedMinPrice = useDebounce(minPrice, 400);
-  const debouncedMaxPrice = useDebounce(maxPrice, 400);
+  const { debounced: debouncedSearch, isPending: searchPending } = useDebounceWithPending(search, 800);
+  const { debounced: debouncedSkills, isPending: skillsPending } = useDebounceWithPending(skills, 800);
+  const { debounced: debouncedMinWeeks, isPending: minWeeksPending } = useDebounceWithPending(minWeeks, 800);
+  const { debounced: debouncedMaxWeeks, isPending: maxWeeksPending } = useDebounceWithPending(maxWeeks, 800);
+  const { debounced: debouncedMinPrice, isPending: minPricePending } = useDebounceWithPending(minPrice, 800);
+  const { debounced: debouncedMaxPrice, isPending: maxPricePending } = useDebounceWithPending(maxPrice, 800);
+
+  const isPending = searchPending || skillsPending || minWeeksPending || maxWeeksPending || minPricePending || maxPricePending;
 
   const isInitialMount = useRef(true);
   const filtersRef = useRef(filters);
@@ -53,9 +56,10 @@ export function FeedFilters({ filters, onChange }: Props) {
     setMaxPrice(filters.max_price?.toString() || '');
   }, [filters.search, filters.skills, filters.min_weeks, filters.max_weeks, filters.min_price, filters.max_price]);
 
+  const authorRoleIsManual = filters.author_role && filters.author_role !== defaultAuthorRole;
   const hasFilters = !!(
     search || skills || filters.format || filters.experience_level ||
-    filters.author_role || filters.payment_direction || filters.category ||
+    authorRoleIsManual || filters.payment_direction || filters.category ||
     minWeeks || maxWeeks ||
     minPrice || maxPrice ||
     (filters.sort && filters.sort !== 'newest')
@@ -63,7 +67,12 @@ export function FeedFilters({ filters, onChange }: Props) {
 
   return (
     <div className="bg-white rounded-lg border border-gray-200 p-4 space-y-4">
-      <h3 className="font-medium text-gray-900">Filters</h3>
+      <h3 className="font-medium text-gray-900 flex items-center gap-2">
+        Filters
+        {isPending && (
+          <span className="animate-spin h-4 w-4 border-2 border-primary-600 border-t-transparent rounded-full inline-block" />
+        )}
+      </h3>
 
       <div>
         <input
@@ -221,7 +230,7 @@ export function FeedFilters({ filters, onChange }: Props) {
         <button
           type="button"
           onClick={() => onChange({ sort: 'newest' })}
-          className="text-sm text-indigo-600 hover:text-indigo-800"
+          className="text-sm text-primary-600 hover:text-primary-800"
         >
           Clear filters
         </button>

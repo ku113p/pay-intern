@@ -39,7 +39,7 @@ export function ListingCard({ listing, currentUserId }: { listing: Listing; curr
               />
               <button
                 onClick={(e) => { e.preventDefault(); e.stopPropagation(); navigate(`/profiles/${listing.author_role}/${listing.author_id}`); }}
-                className="text-indigo-600 hover:underline cursor-pointer"
+                className="text-primary-600 hover:underline cursor-pointer"
               >
                 {listing.author_role === 'organization'
                   ? listing.organization_name || listing.author_display_name
@@ -78,12 +78,13 @@ export function ListingCard({ listing, currentUserId }: { listing: Listing; curr
                 listingId={listing.id}
                 listingAuthorId={listing.author_id}
                 userId={currentUserId}
+                initialInterested={listing.is_interested}
               />
-              <SaveButton listingId={listing.id} />
+              <SaveButton listingId={listing.id} initialSaved={listing.is_saved} />
             </>
           )}
           {currentUserId && listing.author_id === currentUserId && (
-            <span className="text-xs font-medium px-2 py-1 rounded bg-indigo-100 text-indigo-700">
+            <span className="text-xs font-medium px-2 py-1 rounded bg-primary-100 text-primary-700">
               Yours
             </span>
           )}
@@ -123,7 +124,7 @@ export function ListingCard({ listing, currentUserId }: { listing: Listing; curr
       </div>
 
       {listing.outcome_criteria && listing.outcome_criteria.length > 0 && (
-        <p className="text-xs text-indigo-600 mt-3">
+        <p className="text-xs text-primary-600 mt-3">
           {listing.outcome_criteria.length} outcome criteria
         </p>
       )}

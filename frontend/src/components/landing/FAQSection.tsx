@@ -9,7 +9,7 @@ function FAQItem({ q, a }: { q: string; a: string }) {
     <div className="border-b border-gray-200 last:border-0">
       <button
         onClick={() => setOpen(!open)}
-        className="w-full text-left py-4 flex items-center justify-between gap-4 hover:text-indigo-600 transition-colors"
+        className="w-full text-left py-4 flex items-center justify-between gap-4 hover:text-primary-600 transition-colors"
       >
         <span className="font-medium text-gray-900">{q}</span>
         <svg
