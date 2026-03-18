@@ -1,7 +1,8 @@
-import { useEffect } from 'react';
+import { useCallback, useEffect } from 'react';
 import { useAuthStore } from '../stores/auth';
 import { profilesApi } from '../api/profiles';
 import { refreshAccessToken } from '../api/client';
+import { authApi } from '../api/auth';
 
 export function useAuth() {
   const { isAuthenticated, user, accessToken, refreshToken, setUser, logout } =
@@ -26,5 +27,10 @@ export function useAuth() {
     }
   }, [accessToken, user, setUser]);
 
-  return { isAuthenticated, user, logout };
+  const handleLogout = useCallback(async () => {
+    try { await authApi.logout(); } catch { /* clear local state regardless */ }
+    logout();
+  }, [logout]);
+
+  return { isAuthenticated, user, logout: handleLogout };
 }
