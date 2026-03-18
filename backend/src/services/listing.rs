@@ -35,8 +35,18 @@ pub async fn create_listing(
         }
     }
 
-    let payment_direction = req.payment_direction.as_deref().unwrap_or("organization_pays");
-    if !["organization_pays", "individual_pays", "negotiable", "unpaid"].contains(&payment_direction) {
+    let payment_direction = req
+        .payment_direction
+        .as_deref()
+        .unwrap_or("organization_pays");
+    if ![
+        "organization_pays",
+        "individual_pays",
+        "negotiable",
+        "unpaid",
+    ]
+    .contains(&payment_direction)
+    {
         return Err(AppError::BadRequest("Invalid payment_direction".into()));
     }
 
@@ -165,7 +175,14 @@ pub async fn update_listing(
         .payment_direction
         .as_deref()
         .unwrap_or(&listing.payment_direction);
-    if !["organization_pays", "individual_pays", "negotiable", "unpaid"].contains(&payment_direction) {
+    if ![
+        "organization_pays",
+        "individual_pays",
+        "negotiable",
+        "unpaid",
+    ]
+    .contains(&payment_direction)
+    {
         return Err(AppError::BadRequest("Invalid payment_direction".into()));
     }
     let format = req.format.as_deref().unwrap_or(&listing.format);
@@ -276,7 +293,14 @@ pub async fn get_feed(
         }
     }
     if let Some(pd) = &query.payment_direction {
-        if !["organization_pays", "individual_pays", "negotiable", "unpaid"].contains(&pd.as_str()) {
+        if ![
+            "organization_pays",
+            "individual_pays",
+            "negotiable",
+            "unpaid",
+        ]
+        .contains(&pd.as_str())
+        {
             return Err(AppError::BadRequest(
                 "Invalid payment_direction filter".into(),
             ));

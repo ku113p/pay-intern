@@ -31,25 +31,6 @@ export function FeedFilters({ filters, onChange, defaultAuthorRole }: Props) {
     return () => { clearTimeout(appliedTimerRef.current); };
   }, []);
 
-  // Sync local state from props when filters change externally (URL nav, back/forward)
-  const prevFiltersRef = useRef(filters);
-  useEffect(() => {
-    const prev = prevFiltersRef.current;
-    if (prev === filters) return;
-    prevFiltersRef.current = filters;
-    setSearch(filters.search || '');
-    setSkills(filters.skills || '');
-    setMinWeeks(filters.min_weeks?.toString() || '');
-    setMaxWeeks(filters.max_weeks?.toString() || '');
-    setMinPrice(filters.min_price?.toString() || '');
-    setMaxPrice(filters.max_price?.toString() || '');
-    setAuthorRole(filters.author_role || '');
-    setCategory(filters.category || '');
-    setFormat(filters.format || '');
-    setPaymentDirection(filters.payment_direction || '');
-    setExperienceLevel(filters.experience_level || '');
-    setSort(filters.sort || 'newest');
-  }, [filters]);
 
   const isDirty =
     search !== (filters.search || '') ||
@@ -96,6 +77,18 @@ export function FeedFilters({ filters, onChange, defaultAuthorRole }: Props) {
   );
 
   const clearFilters = () => {
+    setSearch('');
+    setSkills('');
+    setMinWeeks('');
+    setMaxWeeks('');
+    setMinPrice('');
+    setMaxPrice('');
+    setAuthorRole('');
+    setCategory('');
+    setFormat('');
+    setPaymentDirection('');
+    setExperienceLevel('');
+    setSort('newest');
     onChange({ sort: 'newest' });
   };
 
