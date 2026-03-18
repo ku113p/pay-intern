@@ -39,6 +39,7 @@ export function InterestButton({
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['matches'] });
+      queryClient.invalidateQueries({ queryKey: ['notifications', 'unread-count'] });
     },
   });
 

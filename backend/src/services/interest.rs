@@ -3,6 +3,7 @@ use uuid::Uuid;
 
 use crate::error::AppError;
 use crate::models::interest::*;
+use crate::services::notification as notif_service;
 use crate::models::listing::{
     Listing, ListingResponse, ListingWithAuthor, PaginatedResponse, PaginationMeta,
 };
@@ -126,12 +127,13 @@ pub async fn add_interest(
     }
 
     let id = Uuid::new_v4().to_string();
-    sqlx::query("INSERT OR IGNORE INTO interests (id, user_id, listing_id) VALUES (?, ?, ?)")
-        .bind(&id)
-        .bind(user_id.to_string())
-        .bind(listing_id)
-        .execute(write_db)
-        .await?;
+    let insert_result =
+        sqlx::query("INSERT OR IGNORE INTO interests (id, user_id, listing_id) VALUES (?, ?, ?)")
+            .bind(&id)
+            .bind(user_id.to_string())
+            .bind(listing_id)
+            .execute(write_db)
+            .await?;
 
     // Check for mutual match
     let matched = sqlx::query_scalar::<_, i64>(
@@ -144,6 +146,59 @@ pub async fn add_interest(
     .fetch_one(write_db)
     .await?
         > 0;
+
+    // Only notify on a newly inserted interest (rows_affected == 0 means it already existed)
+    if insert_result.rows_affected() > 0 {
+        let user_display_name = sqlx::query_scalar::<_, String>(
+            "SELECT display_name FROM users WHERE id = ?",
+        )
+        .bind(user_id.to_string())
+        .fetch_optional(write_db)
+        .await?
+        .unwrap_or_else(|| "Someone".to_string());
+
+        if matched {
+            let author_display_name = sqlx::query_scalar::<_, String>(
+                "SELECT display_name FROM users WHERE id = ?",
+            )
+            .bind(&listing.author_id)
+            .fetch_optional(write_db)
+            .await?
+            .unwrap_or_else(|| "Someone".to_string());
+
+            let _ = notif_service::create_notification(
+                &user_id.to_string(),
+                "mutual_match",
+                "It's a Match!",
+                &format!("You matched with {}!", author_display_name),
+                "/matches",
+                write_db,
+            )
+            .await;
+            let _ = notif_service::create_notification(
+                &listing.author_id,
+                "mutual_match",
+                "It's a Match!",
+                &format!("You matched with {}!", user_display_name),
+                "/matches",
+                write_db,
+            )
+            .await;
+        } else {
+            let _ = notif_service::create_notification(
+                &listing.author_id,
+                "interest_received",
+                "New Interest in Your Listing",
+                &format!(
+                    "{} is interested in \"{}\"",
+                    user_display_name, listing.title
+                ),
+                "/matches",
+                write_db,
+            )
+            .await;
+        }
+    }
 
     Ok(InterestToggleResponse {
         interested: true,
