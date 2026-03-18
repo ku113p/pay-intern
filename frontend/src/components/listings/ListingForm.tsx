@@ -19,7 +19,12 @@ export function ListingForm({ initialData, onSuccess }: ListingFormProps) {
     category: initialData?.category ?? undefined,
     duration_weeks: initialData?.duration_weeks ?? 4,
     price_usd: initialData?.price_usd ?? undefined,
-    payment_direction: initialData?.payment_direction ?? 'organization_pays',
+    payment_direction: (() => {
+      const d = initialData?.payment_direction;
+      if (d === 'poster_pays') return 'organization_pays';
+      if (d === 'applicant_pays') return 'individual_pays';
+      return d ?? 'organization_pays';
+    })(),
     format: initialData?.format ?? 'remote',
     experience_level: initialData?.experience_level ?? 'any',
     visibility: initialData?.visibility ?? 'public',

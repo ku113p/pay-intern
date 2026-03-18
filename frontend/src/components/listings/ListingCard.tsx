@@ -8,12 +8,22 @@ import { ProfileAvatar } from '../common/ProfileAvatar';
 export function ListingCard({ listing, currentUserId }: { listing: Listing; currentUserId?: string }) {
   const navigate = useNavigate();
 
-  const paymentLabel = (dir: string, price: number) => {
-    switch (dir) {
-      case 'organization_pays': return `Organization pays $${price.toLocaleString()}`;
-      case 'individual_pays': return `Individual pays $${price.toLocaleString()}`;
-      case 'negotiable': return `Negotiable $${price.toLocaleString()}`;
-      default: return `$${price.toLocaleString()}`;
+  const paymentLabel = (dir: string, price: number, authorRole: string) => {
+    const fmt = `$${price.toLocaleString()}`;
+    if (authorRole === 'organization') {
+      switch (dir) {
+        case 'organization_pays': return `Salary · ${fmt}`;
+        case 'individual_pays': return `Fee · ${fmt}`;
+        case 'negotiable': return `Negotiable · ${fmt}`;
+        default: return fmt;
+      }
+    } else {
+      switch (dir) {
+        case 'organization_pays': return `Org pays · ${fmt}`;
+        case 'individual_pays': return `Ind. pays · ${fmt}`;
+        case 'negotiable': return `Negotiable · ${fmt}`;
+        default: return fmt;
+      }
     }
   };
 
@@ -58,7 +68,7 @@ export function ListingCard({ listing, currentUserId }: { listing: Listing; curr
             {listing.price_usd != null && listing.price_usd > 0 ? (
               <span className={paymentColor(listing.payment_direction)}>
                 {' · '}
-                {paymentLabel(listing.payment_direction, listing.price_usd)}
+                {paymentLabel(listing.payment_direction, listing.price_usd, listing.author_role)}
                 {listing.duration_weeks > 0 && (
                   <span className="font-normal opacity-70">
                     {` ($${Math.round(listing.price_usd / listing.duration_weeks).toLocaleString()}/wk)`}

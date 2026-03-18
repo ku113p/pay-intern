@@ -41,12 +41,22 @@ export function ListingDetail({ listing }: { listing: Listing }) {
     }
   };
 
-  const paymentLabel = (dir: string, price: number) => {
-    switch (dir) {
-      case 'organization_pays': return `Organization pays — $${price.toLocaleString()}`;
-      case 'individual_pays': return `Individual pays — $${price.toLocaleString()}`;
-      case 'negotiable': return `Negotiable — $${price.toLocaleString()}`;
-      default: return `$${price.toLocaleString()}`;
+  const paymentLabel = (dir: string, price: number, authorRole: string) => {
+    const fmt = `$${price.toLocaleString()}`;
+    if (authorRole === 'organization') {
+      switch (dir) {
+        case 'organization_pays': return `Organization pays you — ${fmt} (salary)`;
+        case 'individual_pays': return `You pay the organization — ${fmt} (fee)`;
+        case 'negotiable': return `Negotiable — ${fmt}`;
+        default: return fmt;
+      }
+    } else {
+      switch (dir) {
+        case 'organization_pays': return `Organization pays individual — ${fmt}`;
+        case 'individual_pays': return `Individual pays organization — ${fmt}`;
+        case 'negotiable': return `Negotiable — ${fmt}`;
+        default: return fmt;
+      }
     }
   };
 
@@ -106,7 +116,7 @@ export function ListingDetail({ listing }: { listing: Listing }) {
       <div className={`rounded-lg p-4 ${paymentBg(listing.payment_direction)}`}>
         {listing.price_usd != null && listing.price_usd > 0 ? (
           <p className={`font-semibold ${paymentTextColor(listing.payment_direction)}`}>
-            {paymentLabel(listing.payment_direction, listing.price_usd)}
+            {paymentLabel(listing.payment_direction, listing.price_usd, listing.author_role)}
             {listing.duration_weeks > 0 && (
               <span className="font-normal text-sm ml-2">
                 (${Math.round(listing.price_usd / listing.duration_weeks).toLocaleString()}/wk)
