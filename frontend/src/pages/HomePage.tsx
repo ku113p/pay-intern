@@ -1,8 +1,10 @@
+import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useFeed, useMyListings } from '../hooks/useListings';
 import { ListingCard } from '../components/listings/ListingCard';
 import { Header } from '../components/layout/Header';
+import { RoleToggle } from '../components/layout/RoleToggle';
 import { LandingPage } from '../components/landing/LandingPage';
 import type { UserResponse } from '../api/profiles';
 import { useAuthStore } from '../stores/auth';
@@ -11,6 +13,10 @@ function Dashboard({ user }: { user: UserResponse }) {
   const activeRole = useAuthStore((s) => s.activeRole);
   const { data: myListings } = useMyListings();
   const { data: feed } = useFeed({ per_page: 4 });
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-role', activeRole || 'individual');
+  }, [activeRole]);
 
   const needsProfile = !user.has_individual_profile && !user.has_organization_profile;
 
@@ -136,15 +142,21 @@ function Dashboard({ user }: { user: UserResponse }) {
           )}
         </div>
       </main>
+      <RoleToggle />
     </div>
   );
 }
 
 export function HomePage() {
   const { isAuthenticated, user } = useAuth();
+  const refreshToken = useAuthStore((s) => s.refreshToken);
 
   if (isAuthenticated && user) {
     return <Dashboard user={user} />;
+  }
+
+  if (!isAuthenticated && refreshToken) {
+    return null;
   }
 
   return <LandingPage />;
