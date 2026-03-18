@@ -291,6 +291,19 @@ pub async fn create_magic_link_token(
         .execute(write_db)
         .await?;
 
+    let already_sent = sqlx::query_scalar::<_, bool>(
+        "SELECT EXISTS(SELECT 1 FROM magic_link_tokens WHERE email = ? AND used = 0 AND expires_at > datetime('now'))"
+    )
+    .bind(email)
+    .fetch_one(write_db)
+    .await?;
+
+    if already_sent {
+        return Err(AppError::BadRequest(
+            "A magic link was already sent. Check your email or wait 15 minutes.".into(),
+        ));
+    }
+
     let raw_token = jwt::generate_raw_token();
     let token_hash = jwt::hash_token(&raw_token);
     let id = Uuid::new_v4().to_string();
