@@ -4,6 +4,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useFeed, useMyListings } from '../hooks/useListings';
 import { ListingCard } from '../components/listings/ListingCard';
 import { Header } from '../components/layout/Header';
+import { Footer } from '../components/layout/Footer';
 import { RoleToggle } from '../components/layout/RoleToggle';
 import { LandingPage } from '../components/landing/LandingPage';
 import type { UserResponse } from '../api/profiles';
@@ -142,6 +143,7 @@ function Dashboard({ user }: { user: UserResponse }) {
           )}
         </div>
       </main>
+      <Footer />
       <RoleToggle />
     </div>
   );
