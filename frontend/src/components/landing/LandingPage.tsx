@@ -13,6 +13,7 @@ import { TechSection } from './TechSection';
 import { FAQSection } from './FAQSection';
 import { FinalCTASection } from './FinalCTASection';
 import { StickyMobileCTA } from './StickyMobileCTA';
+import { Footer } from '../layout/Footer';
 
 export function LandingPage() {
   const [perspective, setPerspective] = useState<Perspective>('company');
@@ -32,6 +33,7 @@ export function LandingPage() {
       <TechSection />
       <FAQSection perspective={perspective} />
       <FinalCTASection perspective={perspective} />
+      <Footer />
       <StickyMobileCTA perspective={perspective} />
     </div>
   );

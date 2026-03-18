@@ -19,7 +19,8 @@
   "footer": {
     "rights": "Все права защищены.",
     "privacy": "Конфиденциальность",
-    "terms": "Условия"
+    "terms": "Условия",
+    "email": "Эл. почта"
   },
   "languages": {
     "en": "English",

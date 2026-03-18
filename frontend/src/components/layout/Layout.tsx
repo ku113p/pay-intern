@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
+import { Footer } from './Footer';
 import { Header } from './Header';
 import { RoleToggle } from './RoleToggle';
 import { useAuthStore } from '../../stores/auth';
@@ -17,6 +18,7 @@ export function Layout() {
       <main className="max-w-7xl mx-auto px-4 py-8">
         <Outlet />
       </main>
+      <Footer />
       <RoleToggle />
     </div>
   );
