@@ -3,10 +3,10 @@ use uuid::Uuid;
 
 use crate::error::AppError;
 use crate::models::interest::*;
-use crate::services::notification as notif_service;
 use crate::models::listing::{
     Listing, ListingResponse, ListingWithAuthor, PaginatedResponse, PaginationMeta,
 };
+use crate::services::notification as notif_service;
 
 pub async fn save_listing(
     user_id: &Uuid,
@@ -149,22 +149,20 @@ pub async fn add_interest(
 
     // Only notify on a newly inserted interest (rows_affected == 0 means it already existed)
     if insert_result.rows_affected() > 0 {
-        let user_display_name = sqlx::query_scalar::<_, String>(
-            "SELECT display_name FROM users WHERE id = ?",
-        )
-        .bind(user_id.to_string())
-        .fetch_optional(write_db)
-        .await?
-        .unwrap_or_else(|| "Someone".to_string());
+        let user_display_name =
+            sqlx::query_scalar::<_, String>("SELECT display_name FROM users WHERE id = ?")
+                .bind(user_id.to_string())
+                .fetch_optional(write_db)
+                .await?
+                .unwrap_or_else(|| "Someone".to_string());
 
         if matched {
-            let author_display_name = sqlx::query_scalar::<_, String>(
-                "SELECT display_name FROM users WHERE id = ?",
-            )
-            .bind(&listing.author_id)
-            .fetch_optional(write_db)
-            .await?
-            .unwrap_or_else(|| "Someone".to_string());
+            let author_display_name =
+                sqlx::query_scalar::<_, String>("SELECT display_name FROM users WHERE id = ?")
+                    .bind(&listing.author_id)
+                    .fetch_optional(write_db)
+                    .await?
+                    .unwrap_or_else(|| "Someone".to_string());
 
             let _ = notif_service::create_notification(
                 &user_id.to_string(),
