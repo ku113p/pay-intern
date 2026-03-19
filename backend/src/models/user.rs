@@ -77,15 +77,17 @@ pub struct UpdateOrganizationProfileRequest {
     pub contact_email: Option<String>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Validate)]
 pub struct UpdateProfileLinksRequest {
+    #[validate(nested)]
     pub links: Vec<ProfileLinkInput>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Validate)]
 pub struct ProfileLinkInput {
     pub link_type: String,
     pub label: String,
+    #[validate(url)]
     pub url: String,
     pub display_order: Option<i32>,
 }

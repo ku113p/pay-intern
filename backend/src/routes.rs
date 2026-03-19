@@ -135,7 +135,11 @@ pub fn build_router(state: AppState) -> Router {
             "/received",
             get(handlers::interests::get_received_interests),
         )
-        .route("/matches", get(handlers::interests::get_matches));
+        .route("/matches", get(handlers::interests::get_matches))
+        .route(
+            "/matches/{user_id}/contact",
+            get(handlers::interests::get_match_contact_info),
+        );
 
     let notification_routes = Router::new()
         .route("/", get(handlers::notifications::get_notifications))

@@ -1,8 +1,10 @@
 use axum::extract::{Path, Query, State};
 use axum::Json;
+use uuid::Uuid;
 
 use crate::auth::middleware::AuthUser;
 use crate::error::AppError;
+use crate::models::application::ContactInfoResponse;
 use crate::models::interest::*;
 use crate::models::listing::{ListingResponse, PaginatedResponse};
 use crate::services::interest as interest_service;
@@ -68,4 +70,14 @@ pub async fn get_matches(
 ) -> Result<Json<Vec<MatchResponse>>, AppError> {
     let result = interest_service::get_matches(&auth.user_id, &state.read_db).await?;
     Ok(Json(result))
+}
+
+pub async fn get_match_contact_info(
+    State(state): State<AppState>,
+    auth: AuthUser,
+    Path(user_id): Path<Uuid>,
+) -> Result<Json<ContactInfoResponse>, AppError> {
+    let contact =
+        interest_service::get_match_contact_info(&auth.user_id, &user_id, &state.read_db).await?;
+    Ok(Json(contact))
 }

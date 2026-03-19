@@ -1,6 +1,74 @@
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
+import { toast } from 'sonner';
 import { interestsApi } from '../api/interests';
+
+function MatchContactReveal({ userId }: { userId: string }) {
+  const [revealed, setRevealed] = useState(false);
+
+  const { data: contact, isLoading } = useQuery({
+    queryKey: ['match-contact', userId],
+    queryFn: () => interestsApi.getMatchContact(userId).then((r) => r.data),
+    enabled: revealed,
+  });
+
+  const copyEmail = (email: string) => {
+    navigator.clipboard.writeText(email)
+      .then(() => toast.success('Email copied!'))
+      .catch(() => toast.error('Failed to copy email'));
+  };
+
+  if (!revealed) {
+    return (
+      <div className="mt-3 bg-green-50 border border-green-200 rounded-lg p-3 flex items-center justify-between">
+        <span className="text-sm text-green-800">Contact info available</span>
+        <button
+          onClick={() => setRevealed(true)}
+          className="text-sm bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700"
+        >
+          Reveal Contact Details
+        </button>
+      </div>
+    );
+  }
+
+  if (isLoading || !contact) {
+    return (
+      <div className="mt-3 bg-green-50 border border-green-200 rounded-lg p-3">
+        <p className="text-sm text-gray-500">Loading contact info...</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-3 bg-green-50 border border-green-200 rounded-lg p-4 space-y-2">
+      <p className="text-sm font-medium text-green-900">
+        Contact Details for {contact.display_name}
+      </p>
+      <div className="space-y-1.5">
+        <div className="flex items-center gap-2 text-sm">
+          <span className="text-gray-500">Email:</span>
+          <span className="text-gray-900">{contact.email}</span>
+          <button
+            onClick={() => copyEmail(contact.email)}
+            className="text-xs text-primary-600 hover:text-primary-500 border border-primary-200 px-1.5 py-0.5 rounded"
+          >
+            Copy
+          </button>
+        </div>
+        {contact.links.map((link) => (
+          <div key={link.id} className="flex items-center gap-2 text-sm">
+            <span className="text-gray-500">{link.label || link.link_type}:</span>
+            <a href={link.url} target="_blank" rel="noopener noreferrer" className="text-primary-600 hover:text-primary-500">
+              {link.url}
+            </a>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export function MatchesPage() {
   const { data: matches, isLoading, error } = useQuery({
@@ -48,6 +116,8 @@ export function MatchesPage() {
                 </Link>
               </div>
             </div>
+
+            <MatchContactReveal userId={match.matched_user_id} />
 
             <div className="mt-4">
               <Link

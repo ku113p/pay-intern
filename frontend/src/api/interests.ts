@@ -1,4 +1,5 @@
 import api from './client';
+import type { ContactInfo } from './applications';
 import type { PaginatedResponse, Listing } from './listings';
 
 export interface SaveToggleResponse {
@@ -40,4 +41,7 @@ export const interestsApi = {
 
   getMatches: () =>
     api.get<MatchResponse[]>('/interests/matches'),
+
+  getMatchContact: (userId: string) =>
+    api.get<ContactInfo>(`/interests/matches/${userId}/contact`),
 };

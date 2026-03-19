@@ -98,6 +98,7 @@ pub async fn replace_my_profile_links(
     Path(profile_type): Path<String>,
     Json(req): Json<UpdateProfileLinksRequest>,
 ) -> Result<Json<Vec<ProfileLinkResponse>>, AppError> {
+    req.validate()?;
     if !["individual", "organization"].contains(&profile_type.as_str()) {
         return Err(AppError::BadRequest("Invalid profile type".into()));
     }

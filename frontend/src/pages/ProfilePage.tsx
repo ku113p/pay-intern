@@ -26,6 +26,13 @@ export function ProfilePage() {
     }
   }, [user?.display_name, editingName]);
 
+  useEffect(() => {
+    if (activeRole && activeRole !== tab) {
+      setTab(activeRole);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeRole]);
+
   const saveName = async () => {
     try {
       const res = await profilesApi.updateMe(displayName);

@@ -1,11 +1,15 @@
+use std::collections::HashSet;
+
 use sqlx::SqlitePool;
 use uuid::Uuid;
 
 use crate::error::AppError;
+use crate::models::application::ContactInfoResponse;
 use crate::models::interest::*;
 use crate::models::listing::{
     Listing, ListingResponse, ListingWithAuthor, PaginatedResponse, PaginationMeta,
 };
+use crate::models::user::{ProfileLink, User};
 use crate::services::notification as notif_service;
 
 pub async fn save_listing(
@@ -93,11 +97,39 @@ pub async fn get_saved_listings(
     select_q = select_q.bind(query.offset() as i64);
     let listings = select_q.fetch_all(read_db).await?;
 
+    let mut data: Vec<ListingResponse> = listings.into_iter().map(Into::into).collect();
+
+    // Batch-load is_interested state
+    // Dynamic placeholders needed because SQLx doesn't support binding a list
+    let listing_ids: Vec<&str> = data.iter().map(|r| r.id.as_str()).collect();
+    let interested_ids: HashSet<String> = if !listing_ids.is_empty() {
+        let placeholders = listing_ids
+            .iter()
+            .map(|_| "?")
+            .collect::<Vec<_>>()
+            .join(",");
+        let sql = format!(
+            "SELECT listing_id FROM interests WHERE user_id = ? AND listing_id IN ({placeholders})"
+        );
+        let mut q = sqlx::query_scalar::<_, String>(&sql).bind(&user_str);
+        for id in &listing_ids {
+            q = q.bind(*id);
+        }
+        q.fetch_all(read_db).await?.into_iter().collect()
+    } else {
+        HashSet::new()
+    };
+
+    for r in &mut data {
+        r.is_saved = true;
+        r.is_interested = interested_ids.contains(&r.id);
+    }
+
     let per_page = query.per_page();
     let total_pages = total.div_ceil(per_page).max(1);
 
     Ok(PaginatedResponse {
-        data: listings.into_iter().map(Into::into).collect(),
+        data,
         pagination: PaginationMeta {
             page: query.page(),
             per_page,
@@ -266,4 +298,80 @@ pub async fn get_matches(
     .await?;
 
     Ok(matches)
+}
+
+pub async fn get_match_contact_info(
+    caller_id: &Uuid,
+    matched_user_id: &Uuid,
+    read_db: &SqlitePool,
+) -> Result<ContactInfoResponse, AppError> {
+    let caller_str = caller_id.to_string();
+    let matched_str = matched_user_id.to_string();
+
+    // Verify mutual match: caller interested in matched_user's listing AND vice versa
+    let is_matched = sqlx::query_scalar::<_, i64>(
+        "SELECT COUNT(*) FROM interests i1 \
+         JOIN listings l1 ON l1.id = i1.listing_id AND l1.author_id = ? \
+         WHERE i1.user_id = ? \
+         AND EXISTS ( \
+             SELECT 1 FROM interests i2 \
+             JOIN listings l2 ON l2.id = i2.listing_id AND l2.author_id = ? \
+             WHERE i2.user_id = ? \
+         )",
+    )
+    .bind(&matched_str)
+    .bind(&caller_str)
+    .bind(&caller_str)
+    .bind(&matched_str)
+    .fetch_one(read_db)
+    .await?;
+
+    if is_matched == 0 {
+        return Err(AppError::Forbidden(
+            "Contact info is only available for mutual matches".into(),
+        ));
+    }
+
+    let other_user = sqlx::query_as::<_, User>("SELECT * FROM users WHERE id = ?")
+        .bind(&matched_str)
+        .fetch_optional(read_db)
+        .await?
+        .ok_or_else(|| AppError::NotFound("User not found".into()))?;
+
+    // Try individual profile first, then organization profile
+    let contact_email: Option<String> = sqlx::query_scalar(
+        "SELECT contact_email FROM individual_profiles WHERE user_id = ? AND contact_email IS NOT NULL",
+    )
+    .bind(&matched_str)
+    .fetch_optional(read_db)
+    .await?;
+
+    let contact_email = match contact_email {
+        Some(email) => Some(email),
+        None => {
+            sqlx::query_scalar(
+                "SELECT contact_email FROM organization_profiles WHERE user_id = ? AND contact_email IS NOT NULL",
+            )
+            .bind(&matched_str)
+            .fetch_optional(read_db)
+            .await?
+        }
+    };
+
+    let links = sqlx::query_as::<_, ProfileLink>(
+        "SELECT * FROM profile_links WHERE user_id = ? ORDER BY display_order",
+    )
+    .bind(&matched_str)
+    .fetch_all(read_db)
+    .await?;
+
+    // Fall back to auth email if no contact_email is set on either profile
+    let email = contact_email.unwrap_or(other_user.email);
+
+    Ok(ContactInfoResponse {
+        user_id: other_user.id,
+        display_name: other_user.display_name,
+        email,
+        links: links.into_iter().map(Into::into).collect(),
+    })
 }
