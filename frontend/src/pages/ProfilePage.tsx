@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useAuthStore } from '../stores/auth';
@@ -12,22 +12,6 @@ export function ProfilePage() {
   const [editingName, setEditingName] = useState(false);
   const [displayName, setDisplayName] = useState(user?.display_name || '');
   const [deleting, setDeleting] = useState(false);
-  const [tab, setTab] = useState<'individual' | 'organization'>(
-    activeRole === 'organization' ? 'organization' : 'individual'
-  );
-
-  useEffect(() => {
-    if (!editingName) {
-      setDisplayName(user?.display_name || '');
-    }
-  }, [user?.display_name, editingName]);
-
-  useEffect(() => {
-    if (activeRole && activeRole !== tab) {
-      setTab(activeRole);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeRole]);
 
   const saveName = async () => {
     try {
@@ -68,7 +52,7 @@ export function ProfilePage() {
         <div className="flex items-center justify-between mb-4">
           <h2 className="font-semibold text-gray-900">Display Name</h2>
           {!editingName && (
-            <button onClick={() => setEditingName(true)} className="text-sm text-primary-600 hover:underline">
+            <button onClick={() => { setDisplayName(user.display_name); setEditingName(true); }} className="text-sm text-primary-600 hover:underline">
               Edit
             </button>
           )}
@@ -81,7 +65,7 @@ export function ProfilePage() {
               className="flex-1 rounded-md border border-gray-300 px-3 py-2"
             />
             <button onClick={saveName} className="bg-primary-600 text-white px-4 py-2 rounded-md text-sm">Save</button>
-            <button onClick={() => setEditingName(false)} className="text-gray-500 text-sm">Cancel</button>
+            <button onClick={() => { setEditingName(false); setDisplayName(user.display_name); }} className="text-gray-500 text-sm">Cancel</button>
           </div>
         ) : (
           <p className="text-gray-700">{user.display_name}</p>
@@ -89,30 +73,15 @@ export function ProfilePage() {
       </div>
 
       <div className="bg-white border border-gray-200 rounded-lg">
-        <div className="flex border-b border-gray-200">
-          <button
-            onClick={() => setTab('individual')}
-            className={`flex-1 py-3 text-sm font-medium text-center ${
-              tab === 'individual'
-                ? 'border-b-2 border-primary-600 text-primary-600'
-                : 'text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            Professional Profile
-          </button>
-          <button
-            onClick={() => setTab('organization')}
-            className={`flex-1 py-3 text-sm font-medium text-center ${
-              tab === 'organization'
-                ? 'border-b-2 border-primary-600 text-primary-600'
-                : 'text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            Organization Profile
-          </button>
+        <div className="px-5 pt-4 pb-2 border-b border-gray-200">
+          <h2 className="font-semibold text-gray-900">
+            {activeRole === 'organization' ? 'Organization Profile' : 'Professional Profile'}
+          </h2>
         </div>
         <div className="p-5">
-          {tab === 'individual' ? <IndividualProfileForm /> : <OrganizationProfileForm />}
+          {activeRole === 'organization'
+            ? <OrganizationProfileForm key="org" />
+            : <IndividualProfileForm key="ind" />}
         </div>
       </div>
 
