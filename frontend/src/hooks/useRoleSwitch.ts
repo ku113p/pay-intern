@@ -11,7 +11,7 @@ export function useRoleSwitch() {
     mutationFn: (role: ActiveRole) => authApi.switchRole(role),
     onSuccess: (res) => {
       setTokens(res.data.access_token, res.data.refresh_token);
-      queryClient.invalidateQueries();
+      queryClient.removeQueries();
       toast.success('Switched mode');
     },
     onError: () => {
