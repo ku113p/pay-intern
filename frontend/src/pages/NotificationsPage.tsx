@@ -3,6 +3,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { notificationsApi } from '../api/notifications';
 import { Pagination } from '../components/common/Pagination';
+import { EmptyState } from '../components/common/EmptyState';
+import { SkeletonList } from '../components/common/Skeleton';
 import { format } from 'timeago.js';
 
 export function NotificationsPage() {
@@ -66,9 +68,13 @@ export function NotificationsPage() {
       </div>
 
       {isLoading ? (
-        <p className="text-gray-500">Loading...</p>
+        <SkeletonList count={3} />
       ) : !data?.data.length ? (
-        <p className="text-gray-500 text-center py-12">No notifications</p>
+        <EmptyState
+          icon="notifications"
+          heading="No notifications"
+          description="You're all caught up! Notifications about applications, matches, and messages will appear here."
+        />
       ) : (
         <div className="space-y-1">
           {data.data.map((notif) => (

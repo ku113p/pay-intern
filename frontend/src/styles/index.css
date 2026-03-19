@@ -1,6 +1,7 @@
 @import "tailwindcss";
 
 @theme inline {
+  /* Primary palette (role-switched) */
   --color-primary-50: var(--role-primary-50);
   --color-primary-100: var(--role-primary-100);
   --color-primary-200: var(--role-primary-200);
@@ -11,31 +12,125 @@
   --color-primary-700: var(--role-primary-700);
   --color-primary-800: var(--role-primary-800);
   --color-primary-900: var(--role-primary-900);
+
+  /* Accent (role-switched) */
+  --color-accent-500: var(--role-accent-500);
+  --color-accent-600: var(--role-accent-600);
+
+  /* Surface (role-switched) */
+  --color-surface-bg: var(--role-surface-bg);
+  --color-surface-card: var(--role-surface-card);
+  --color-surface-hover: var(--role-surface-hover);
+
+  /* Text (role-switched) */
+  --color-text-heading: var(--role-text-primary);
+  --color-text-body: var(--role-text-secondary);
+  --color-text-muted: var(--role-text-muted);
+
+  /* Semantic (shared) */
+  --color-success-50: #F0FDF4;
+  --color-success-500: #22C55E;
+  --color-success-600: #16A34A;
+  --color-error-50: #FEF2F2;
+  --color-error-500: #EF4444;
+  --color-error-600: #DC2626;
+  --color-warning-50: #FFFBEB;
+  --color-warning-500: #F59E0B;
+  --color-warning-600: #D97706;
 }
 
+/* ================================================================
+   Candidate / Professional Mode (default)
+   Blue palette — trust, calm, reassurance
+   ================================================================ */
 :root,
 [data-role="individual"] {
-  --role-primary-50: #eef2ff;
-  --role-primary-100: #e0e7ff;
-  --role-primary-200: #c7d2fe;
-  --role-primary-300: #a5b4fc;
-  --role-primary-400: #818cf8;
-  --role-primary-500: #6366f1;
-  --role-primary-600: #4f46e5;
-  --role-primary-700: #4338ca;
-  --role-primary-800: #3730a3;
-  --role-primary-900: #312e81;
+  --role-primary-50:  #EFF6FF;
+  --role-primary-100: #DBEAFE;
+  --role-primary-200: #BFDBFE;
+  --role-primary-300: #93C5FD;
+  --role-primary-400: #60A5FA;
+  --role-primary-500: #3B82F6;
+  --role-primary-600: #2563EB;
+  --role-primary-700: #1D4ED8;
+  --role-primary-800: #1E40AF;
+  --role-primary-900: #1E3A5F;
+
+  --role-accent-500: #F59E0B;
+  --role-accent-600: #D97706;
+
+  --role-surface-bg:   #F8FAFC;
+  --role-surface-card: #FFFFFF;
+  --role-surface-hover: #F1F5F9;
+  --role-surface-active: #E2E8F0;
+
+  --role-text-primary:   #0F172A;
+  --role-text-secondary: #64748B;
+  --role-text-muted:     #94A3B8;
 }
 
+/* ================================================================
+   Organization / Recruiter Mode
+   Green palette — growth, action, progress
+   ================================================================ */
 [data-role="organization"] {
-  --role-primary-50: #f0fdfa;
-  --role-primary-100: #ccfbf1;
-  --role-primary-200: #99f6e4;
-  --role-primary-300: #5eead4;
-  --role-primary-400: #2dd4bf;
-  --role-primary-500: #14b8a6;
-  --role-primary-600: #0d9488;
-  --role-primary-700: #0f766e;
-  --role-primary-800: #115e59;
-  --role-primary-900: #134e4a;
+  --role-primary-50:  #F0FDF4;
+  --role-primary-100: #DCFCE7;
+  --role-primary-200: #BBF7D0;
+  --role-primary-300: #86EFAC;
+  --role-primary-400: #4ADE80;
+  --role-primary-500: #22C55E;
+  --role-primary-600: #16A34A;
+  --role-primary-700: #15803D;
+  --role-primary-800: #166534;
+  --role-primary-900: #14532D;
+
+  --role-accent-500: #6366F1;
+  --role-accent-600: #4F46E5;
+
+  --role-surface-bg:   #FAFAFA;
+  --role-surface-card: #FFFFFF;
+  --role-surface-hover: #F5F5F5;
+  --role-surface-active: #E5E5E5;
+
+  --role-text-primary:   #171717;
+  --role-text-secondary: #525252;
+  --role-text-muted:     #A3A3A3;
+}
+
+/* ================================================================
+   Typography
+   ================================================================ */
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+    'Helvetica Neue', Arial, sans-serif;
+}
+
+/* ================================================================
+   Shared foundations
+   ================================================================ */
+
+/* Skeleton shimmer animation */
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--role-surface-hover) 25%,
+    var(--role-surface-active) 50%,
+    var(--role-surface-hover) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 0.375rem;
+}
+
+/* Respect reduced motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  .skeleton {
+    animation: none;
+  }
 }

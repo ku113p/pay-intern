@@ -178,7 +178,7 @@ export function ListingForm({ initialData, onSuccess }: ListingFormProps) {
           className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2"
         >
           <option value="organization_pays">Organization pays (salary)</option>
-          <option value="individual_pays">Individual pays (fee)</option>
+          <option value="individual_pays">Professional pays (fee)</option>
           <option value="negotiable">Negotiable</option>
           <option value="unpaid">Unpaid</option>
         </select>

@@ -150,7 +150,7 @@ export function FeedFilters({ filters, onChange }: Props) {
         >
           <option value="">All</option>
           <option value="organization_pays">Organization pays</option>
-          <option value="individual_pays">Individual pays</option>
+          <option value="individual_pays">Professional pays</option>
         </select>
       </div>
 

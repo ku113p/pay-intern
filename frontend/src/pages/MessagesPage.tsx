@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { messagesApi } from '../api/messages';
 import { useAuthStore } from '../stores/auth';
+import { EmptyState } from '../components/common/EmptyState';
 import { format } from 'timeago.js';
 
 export function MessagesPage() {
@@ -74,7 +75,12 @@ export function MessagesPage() {
         {/* Conversation list */}
         <div className={`w-full md:w-80 flex-shrink-0 border-r border-gray-200 overflow-y-auto ${applicationId ? 'hidden md:block' : ''}`}>
           {!conversations?.length && (
-            <p className="text-gray-500 text-sm p-4">No conversations yet. Messages appear after an application is accepted.</p>
+              <EmptyState
+                icon="messages"
+                heading="No conversations yet"
+                description="Messages appear after an application is accepted."
+                compact
+              />
           )}
           {conversations?.map((conv) => (
             <button

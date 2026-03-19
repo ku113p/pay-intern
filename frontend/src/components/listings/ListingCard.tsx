@@ -20,7 +20,7 @@ export function ListingCard({ listing, currentUserId }: { listing: Listing; curr
     } else {
       switch (dir) {
         case 'organization_pays': return `Org pays · ${fmt}`;
-        case 'individual_pays': return `Ind. pays · ${fmt}`;
+        case 'individual_pays': return `Prof. pays · ${fmt}`;
         case 'negotiable': return `Negotiable · ${fmt}`;
         default: return fmt;
       }

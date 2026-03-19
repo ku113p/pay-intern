@@ -52,8 +52,8 @@ export function ListingDetail({ listing }: { listing: Listing }) {
       }
     } else {
       switch (dir) {
-        case 'organization_pays': return `Organization pays individual — ${fmt}`;
-        case 'individual_pays': return `Individual pays organization — ${fmt}`;
+        case 'organization_pays': return `Organization pays professional — ${fmt}`;
+        case 'individual_pays': return `Professional pays organization — ${fmt}`;
         case 'negotiable': return `Negotiable — ${fmt}`;
         default: return fmt;
       }

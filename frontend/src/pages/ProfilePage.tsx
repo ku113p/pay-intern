@@ -98,7 +98,7 @@ export function ProfilePage() {
                 : 'text-gray-500 hover:text-gray-700'
             }`}
           >
-            Individual Profile
+            Professional Profile
           </button>
           <button
             onClick={() => setTab('organization')}

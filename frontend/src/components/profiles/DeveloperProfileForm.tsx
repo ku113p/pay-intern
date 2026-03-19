@@ -55,7 +55,7 @@ export function IndividualProfileForm() {
       });
       setProfile(res.data);
       setNotFound(false);
-      toast.success('Individual profile saved!');
+      toast.success('Professional profile saved!');
     } catch (err: unknown) {
       toast.error(getApiErrorMessage(err, 'Failed to save profile'));
     } finally {
@@ -150,7 +150,7 @@ export function IndividualProfileForm() {
       </div>
 
       <button type="submit" disabled={saving} className="bg-primary-600 text-white px-6 py-2 rounded-md hover:bg-primary-700 disabled:opacity-50">
-        {saving ? 'Saving...' : 'Save Individual Profile'}
+        {saving ? 'Saving...' : 'Save Professional Profile'}
       </button>
     </form>
   );

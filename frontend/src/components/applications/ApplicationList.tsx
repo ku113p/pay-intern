@@ -5,6 +5,8 @@ import { applicationsApi } from '../../api/applications';
 import { useAuthStore } from '../../stores/auth';
 import { StatusBadge } from '../common/StatusBadge';
 import { ContactInfoCard } from './ContactInfoCard';
+import { EmptyState } from '../common/EmptyState';
+import { SkeletonList } from '../common/Skeleton';
 
 export function ApplicationList() {
   const queryClient = useQueryClient();
@@ -34,7 +36,7 @@ export function ApplicationList() {
   });
 
   if (loadingMine || loadingReceived) {
-    return <p className="text-gray-500">Loading...</p>;
+    return <SkeletonList count={3} />;
   }
 
   return (
@@ -42,7 +44,13 @@ export function ApplicationList() {
       <section>
         <h2 className="text-lg font-semibold text-gray-900 mb-4">My Applications</h2>
         {!myApps?.data.length ? (
-          <p className="text-gray-500 text-sm">No applications yet.</p>
+          <EmptyState
+            icon="applications"
+            heading="No applications yet"
+            description="Browse listings and apply to get started."
+            ctaLabel="Browse Listings"
+            ctaTo="/browse"
+          />
         ) : (
           <div className="space-y-3">
             {myApps.data.map((app) => (
@@ -90,7 +98,11 @@ export function ApplicationList() {
           Received Applications
         </h2>
         {!received?.data.length ? (
-          <p className="text-gray-500 text-sm">No applications received.</p>
+          <EmptyState
+            icon="applications"
+            heading="No applications received"
+            description="Applications from others will appear here once they apply to your listings."
+          />
         ) : (
           <div className="space-y-3">
             {received.data.map((app) => (

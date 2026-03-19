@@ -6,6 +6,7 @@ import { useMyListings } from '../hooks/useListings';
 import { listingsApi } from '../api/listings';
 import { StatusBadge } from '../components/common/StatusBadge';
 import { Pagination } from '../components/common/Pagination';
+import { SkeletonList } from '../components/common/Skeleton';
 
 export function MyListingsPage() {
   const [page, setPage] = useState(1);
@@ -41,7 +42,7 @@ export function MyListingsPage() {
         </Link>
       </div>
 
-      {isPending && <p className="text-gray-500">Loading...</p>}
+      {isPending && <SkeletonList count={3} />}
       {error && <p className="text-red-600">Failed to load listings</p>}
 
       {data?.data.length === 0 && (

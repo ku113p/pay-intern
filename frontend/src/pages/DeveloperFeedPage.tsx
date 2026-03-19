@@ -5,6 +5,8 @@ import { useAuthStore } from '../stores/auth';
 import { ListingCard } from '../components/listings/ListingCard';
 import { FeedFilters } from '../components/listings/FeedFilters';
 import { Pagination } from '../components/common/Pagination';
+import { EmptyState } from '../components/common/EmptyState';
+import { SkeletonList } from '../components/common/Skeleton';
 
 export function BrowsePage() {
   const { filters, setFilters } = useFeedFilters();
@@ -38,14 +40,15 @@ export function BrowsePage() {
               {data.pagination.total} {data.pagination.total === 1 ? 'listing' : 'listings'} found
             </p>
           )}
-          {isLoading && (
-            <div className="flex items-center gap-2 text-gray-500">
-              <span className="animate-spin h-5 w-5 border-2 border-primary-600 border-t-transparent rounded-full inline-block" />
-              Loading...
-            </div>
-          )}
+          {isLoading && <SkeletonList count={3} />}
           {error && <p className="text-red-600">Failed to load listings</p>}
-          {data?.data.length === 0 && <p className="text-gray-500">No listings found.</p>}
+          {data?.data.length === 0 && (
+            <EmptyState
+              icon="search"
+              heading="No listings found"
+              description="Try adjusting your filters or check back later for new listings."
+            />
+          )}
           {data?.data.map((listing) => (
             <ListingCard key={listing.id} listing={listing} currentUserId={user?.id} />
           ))}

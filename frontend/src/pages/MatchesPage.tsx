@@ -4,6 +4,8 @@ import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { interestsApi } from '../api/interests';
 import { useAuthStore } from '../stores/auth';
+import { EmptyState } from '../components/common/EmptyState';
+import { SkeletonList } from '../components/common/Skeleton';
 
 function MatchContactReveal({ userId }: { userId: string }) {
   const [revealed, setRevealed] = useState(false);
@@ -83,10 +85,16 @@ export function MatchesPage() {
       <h1 className="text-2xl font-bold text-gray-900">Matches</h1>
       <p className="text-sm text-gray-500 mt-1 mb-6">Both you and the other party signaled interest</p>
 
-      {isLoading && <p className="text-gray-500">Loading...</p>}
+      {isLoading && <SkeletonList count={3} />}
       {error && <p className="text-red-600">Failed to load matches</p>}
       {matches?.length === 0 && (
-        <p className="text-gray-500">No matches yet. Signal interest on listings in the feed to find mutual matches.</p>
+        <EmptyState
+          icon="matches"
+          heading="No matches yet"
+          description="Signal interest on listings in the feed. When someone signals interest back, you'll see your mutual matches here."
+          ctaLabel="Browse Listings"
+          ctaTo="/browse"
+        />
       )}
 
       <div className="space-y-4">
