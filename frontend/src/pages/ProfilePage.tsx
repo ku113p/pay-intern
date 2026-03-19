@@ -3,14 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useAuthStore } from '../stores/auth';
 import { profilesApi } from '../api/profiles';
-import { authApi } from '../api/auth';
-import { getApiErrorMessage } from '../lib/errors';
 import { IndividualProfileForm } from '../components/profiles/DeveloperProfileForm';
 import { OrganizationProfileForm } from '../components/profiles/CompanyProfileForm';
-import type { ActiveRole } from '../stores/auth';
 
 export function ProfilePage() {
-  const { user, setUser, activeRole, setTokens, logout } = useAuthStore();
+  const { user, setUser, activeRole, logout } = useAuthStore();
   const navigate = useNavigate();
   const [editingName, setEditingName] = useState(false);
   const [displayName, setDisplayName] = useState(user?.display_name || '');
@@ -18,7 +15,6 @@ export function ProfilePage() {
   const [tab, setTab] = useState<'individual' | 'organization'>(
     activeRole === 'organization' ? 'organization' : 'individual'
   );
-  const [switching, setSwitching] = useState(false);
 
   useEffect(() => {
     if (!editingName) {
@@ -40,19 +36,6 @@ export function ProfilePage() {
       setEditingName(false);
     } catch {
       // ignore
-    }
-  };
-
-  const handleSwitchRole = async (role: ActiveRole) => {
-    setSwitching(true);
-    try {
-      const res = await authApi.switchRole(role);
-      setTokens(res.data.access_token, res.data.refresh_token);
-      toast.success(`Switched to ${role} mode`);
-    } catch (err: unknown) {
-      toast.error(getApiErrorMessage(err, 'Failed to switch role'));
-    } finally {
-      setSwitching(false);
     }
   };
 
@@ -78,30 +61,8 @@ export function ProfilePage() {
     <div className="max-w-2xl mx-auto space-y-8">
       <div>
         <h1 className="text-2xl font-bold text-gray-900 mb-1">My Profile</h1>
-        <p className="text-sm text-gray-500">
-          {user.email}
-          {activeRole && (
-            <span className={`ml-2 inline-block text-xs font-medium px-2 py-0.5 rounded ${
-              activeRole === 'organization' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'
-            }`}>
-              {activeRole}
-            </span>
-          )}
-        </p>
+        <p className="text-sm text-gray-500">{user.email}</p>
       </div>
-
-      {user.has_individual_profile && user.has_organization_profile && activeRole && (
-        <div className="bg-white border border-gray-200 rounded-lg p-4 flex items-center justify-between">
-          <span className="text-sm text-gray-700">Active role: <strong>{activeRole}</strong></span>
-          <button
-            onClick={() => handleSwitchRole(activeRole === 'individual' ? 'organization' : 'individual')}
-            disabled={switching}
-            className="text-sm bg-primary-600 text-white px-4 py-1.5 rounded-md hover:bg-primary-700 disabled:opacity-50"
-          >
-            {switching ? 'Switching...' : `Switch to ${activeRole === 'individual' ? 'organization' : 'individual'}`}
-          </button>
-        </div>
-      )}
 
       <div className="bg-white border border-gray-200 rounded-lg p-5">
         <div className="flex items-center justify-between mb-4">

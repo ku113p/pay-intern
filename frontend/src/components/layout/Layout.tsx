@@ -2,7 +2,6 @@ import { useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
 import { Footer } from './Footer';
 import { Header } from './Header';
-import { RoleToggle } from './RoleToggle';
 import { useAuthStore } from '../../stores/auth';
 
 export function Layout() {
@@ -19,7 +18,6 @@ export function Layout() {
         <Outlet />
       </main>
       <Footer />
-      <RoleToggle />
     </div>
   );
 }

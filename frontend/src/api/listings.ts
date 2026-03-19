@@ -41,7 +41,6 @@ export interface ListingFeedParams {
   per_page?: number;
   skills?: string;
   category?: string;
-  author_role?: string;
   payment_direction?: string;
   format?: string;
   min_weeks?: number;

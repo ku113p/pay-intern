@@ -51,7 +51,6 @@ pub struct MatchResponse {
 pub struct SavedListingsQuery {
     pub page: Option<u32>,
     pub per_page: Option<u32>,
-    pub author_role: Option<String>,
 }
 
 impl SavedListingsQuery {

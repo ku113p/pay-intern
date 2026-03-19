@@ -3,8 +3,9 @@ import { listingsApi, type ListingFeedParams } from '../api/listings';
 import { useAuthStore } from '../stores/auth';
 
 export function useFeed(params?: ListingFeedParams) {
+  const activeRole = useAuthStore((s) => s.activeRole);
   return useQuery({
-    queryKey: ['listings', 'feed', params],
+    queryKey: ['listings', 'feed', activeRole, params],
     queryFn: () => listingsApi.getFeed(params).then((r) => r.data),
   });
 }
@@ -19,8 +20,9 @@ export function useListing(id: string) {
 
 export function useMyListings(params?: { page?: number; per_page?: number }) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const activeRole = useAuthStore((s) => s.activeRole);
   return useQuery({
-    queryKey: ['listings', 'mine', params],
+    queryKey: ['listings', 'mine', activeRole, params],
     queryFn: () => listingsApi.getMyListings(params).then((r) => r.data),
     enabled: isAuthenticated,
   });

@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { interestsApi } from '../api/interests';
+import { useAuthStore } from '../stores/auth';
 
 function MatchContactReveal({ userId }: { userId: string }) {
   const [revealed, setRevealed] = useState(false);
@@ -71,8 +72,9 @@ function MatchContactReveal({ userId }: { userId: string }) {
 }
 
 export function MatchesPage() {
+  const activeRole = useAuthStore((s) => s.activeRole);
   const { data: matches, isLoading, error } = useQuery({
-    queryKey: ['matches'],
+    queryKey: ['matches', activeRole],
     queryFn: () => interestsApi.getMatches().then((r) => r.data),
   });
 

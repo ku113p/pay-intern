@@ -110,22 +110,32 @@ pub async fn create_application(
 
 pub async fn get_applications(
     user_id: &Uuid,
+    active_role: &str,
     query: &ApplicationQuery,
     read_db: &SqlitePool,
 ) -> Result<PaginatedResponse<ApplicationResponse>, AppError> {
     let user_str = user_id.to_string();
 
-    let (where_sql, bind_user) = if query.r#as.as_deref() == Some("listing_owner") {
+    let opposite_role = crate::models::opposite_role(active_role);
+
+    let (where_sql, bind_values_init) = if query.r#as.as_deref() == Some("listing_owner") {
+        // As listing owner: show apps on MY listings created under current role
         (
-            "a.listing_id IN (SELECT id FROM listings WHERE author_id = ?)".to_string(),
-            user_str.clone(),
+            "a.listing_id IN (SELECT id FROM listings WHERE author_id = ? AND author_role = ?)"
+                .to_string(),
+            vec![user_str.clone(), active_role.to_string()],
         )
     } else {
-        ("a.applicant_id = ?".to_string(), user_str.clone())
+        // As applicant: show my apps to opposite-role listings
+        (
+            "a.applicant_id = ? AND a.listing_id IN (SELECT id FROM listings WHERE author_role = ?)"
+                .to_string(),
+            vec![user_str.clone(), opposite_role.to_string()],
+        )
     };
 
     let mut extra_where = String::new();
-    let mut bind_values: Vec<String> = vec![bind_user];
+    let mut bind_values: Vec<String> = bind_values_init;
 
     if let Some(status) = &query.status {
         extra_where.push_str(" AND a.status = ?");
@@ -379,4 +389,121 @@ pub async fn get_contact_info(
         email,
         links: links.into_iter().map(Into::into).collect(),
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::models::application::ApplicationQuery;
+    use sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions};
+
+    async fn setup_test_db() -> SqlitePool {
+        let db_path = format!("/tmp/test_app_{}.db", Uuid::new_v4());
+        let migrate_pool = SqlitePoolOptions::new()
+            .connect_with(
+                SqliteConnectOptions::new()
+                    .filename(&db_path)
+                    .create_if_missing(true)
+                    .foreign_keys(false),
+            )
+            .await
+            .unwrap();
+        sqlx::migrate!().run(&migrate_pool).await.unwrap();
+        migrate_pool.close().await;
+        SqlitePoolOptions::new()
+            .connect_with(
+                SqliteConnectOptions::new()
+                    .filename(&db_path)
+                    .foreign_keys(true),
+            )
+            .await
+            .unwrap()
+    }
+
+    async fn insert_user(db: &SqlitePool, id: &str, email: &str) {
+        sqlx::query(
+            "INSERT INTO users (id, email, display_name, auth_provider) VALUES (?, ?, 'Test', 'email')",
+        )
+        .bind(id)
+        .bind(email)
+        .execute(db)
+        .await
+        .unwrap();
+    }
+
+    async fn insert_listing(db: &SqlitePool, id: &str, author_id: &str, author_role: &str) {
+        sqlx::query(
+            "INSERT INTO listings (id, author_id, title, description, author_role, format, duration_weeks, skills, status, visibility, category) \
+             VALUES (?, ?, 'Test', 'Desc', ?, 'remote', 4, '[\"rust\"]', 'active', 'public', 'technology')",
+        )
+        .bind(id)
+        .bind(author_id)
+        .bind(author_role)
+        .execute(db)
+        .await
+        .unwrap();
+    }
+
+    #[tokio::test]
+    async fn test_applications_scoped_by_role() {
+        let db = setup_test_db().await;
+        let org_owner_id = Uuid::new_v4();
+        let ind_applicant_id = Uuid::new_v4();
+        let org_owner = org_owner_id.to_string();
+        let ind_applicant = ind_applicant_id.to_string();
+
+        insert_user(&db, &org_owner, "org@test.com").await;
+        insert_user(&db, &ind_applicant, "ind@test.com").await;
+
+        let org_listing = Uuid::new_v4().to_string();
+        insert_listing(&db, &org_listing, &org_owner, "organization").await;
+
+        // Individual applies to org listing
+        let app_id = Uuid::new_v4().to_string();
+        sqlx::query(
+            "INSERT INTO applications (id, listing_id, applicant_id, message) VALUES (?, ?, ?, 'Hello')",
+        )
+        .bind(&app_id)
+        .bind(&org_listing)
+        .bind(&ind_applicant)
+        .execute(&db)
+        .await
+        .unwrap();
+
+        // As applicant in individual mode → sees the application (org is opposite)
+        let query = ApplicationQuery {
+            r#as: None,
+            status: None,
+            page: None,
+            per_page: None,
+        };
+        let result = get_applications(&ind_applicant_id, "individual", &query, &db)
+            .await
+            .unwrap();
+        assert_eq!(result.pagination.total, 1);
+
+        // As applicant in org mode → no results (individual is opposite, but listing is org)
+        let result = get_applications(&ind_applicant_id, "organization", &query, &db)
+            .await
+            .unwrap();
+        assert_eq!(result.pagination.total, 0);
+
+        // As listing owner in org mode → sees the application
+        let owner_query = ApplicationQuery {
+            r#as: Some("listing_owner".to_string()),
+            status: None,
+            page: None,
+            per_page: None,
+        };
+        let result = get_applications(&org_owner_id, "organization", &owner_query, &db)
+            .await
+            .unwrap();
+        assert_eq!(result.pagination.total, 1);
+
+        // As listing owner in individual mode → no results (listing is org-role)
+        let result = get_applications(&org_owner_id, "individual", &owner_query, &db)
+            .await
+            .unwrap();
+        assert_eq!(result.pagination.total, 0);
+    }
 }

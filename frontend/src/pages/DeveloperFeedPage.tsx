@@ -7,7 +7,7 @@ import { FeedFilters } from '../components/listings/FeedFilters';
 import { Pagination } from '../components/common/Pagination';
 
 export function BrowsePage() {
-  const { filters, setFilters, defaultAuthorRole } = useFeedFilters();
+  const { filters, setFilters } = useFeedFilters();
   const { data, isLoading, error } = useFeed(filters);
   const [showFilters, setShowFilters] = useState(false);
   const user = useAuthStore((s) => s.user);
@@ -30,7 +30,6 @@ export function BrowsePage() {
               setFilters(f);
               if (!window.matchMedia('(min-width: 768px)').matches) setShowFilters(false);
             }}
-            defaultAuthorRole={defaultAuthorRole}
           />
         </aside>
         <div className="flex-1 space-y-4">

@@ -7,39 +7,19 @@ import { Pagination } from '../components/common/Pagination';
 
 export function SavedListingsPage() {
   const user = useAuthStore((s) => s.user);
+  const activeRole = useAuthStore((s) => s.activeRole);
   const [page, setPage] = useState(1);
-  const [roleFilter, setRoleFilter] = useState<string>('');
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ['saved-listings', page, roleFilter],
+    queryKey: ['saved-listings', activeRole, page],
     queryFn: () =>
-      interestsApi.getSavedListings({
-        page,
-        per_page: 20,
-        ...(roleFilter ? { author_role: roleFilter } : {}),
-      }).then((r) => r.data),
+      interestsApi.getSavedListings({ page, per_page: 20 }).then((r) => r.data),
   });
 
   return (
     <div>
       <h1 className="text-2xl font-bold text-gray-900">Saved Listings</h1>
       <p className="text-sm text-gray-500 mt-1 mb-6">Listings you've bookmarked for later</p>
-
-      <div className="flex gap-2 mb-4">
-        {['', 'individual', 'organization'].map((t) => (
-          <button
-            key={t}
-            onClick={() => { setRoleFilter(t); setPage(1); }}
-            className={`text-sm px-3 py-1.5 rounded border ${
-              roleFilter === t
-                ? 'bg-primary-50 border-primary-200 text-primary-700'
-                : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
-            }`}
-          >
-            {t === '' ? 'All' : t === 'individual' ? 'Individual' : 'Organization'}
-          </button>
-        ))}
-      </div>
 
       {isLoading && <p className="text-gray-500">Loading...</p>}
       {error && <p className="text-red-600">Failed to load saved listings</p>}

@@ -33,8 +33,13 @@ pub async fn get_saved_listings(
     auth: AuthUser,
     Query(query): Query<SavedListingsQuery>,
 ) -> Result<Json<PaginatedResponse<ListingResponse>>, AppError> {
-    let result =
-        interest_service::get_saved_listings(&auth.user_id, &query, &state.read_db).await?;
+    let result = interest_service::get_saved_listings(
+        &auth.user_id,
+        &auth.active_role,
+        &query,
+        &state.read_db,
+    )
+    .await?;
     Ok(Json(result))
 }
 
@@ -60,7 +65,9 @@ pub async fn get_received_interests(
     State(state): State<AppState>,
     auth: AuthUser,
 ) -> Result<Json<Vec<ReceivedInterest>>, AppError> {
-    let result = interest_service::get_received_interests(&auth.user_id, &state.read_db).await?;
+    let result =
+        interest_service::get_received_interests(&auth.user_id, &auth.active_role, &state.read_db)
+            .await?;
     Ok(Json(result))
 }
 
@@ -68,7 +75,8 @@ pub async fn get_matches(
     State(state): State<AppState>,
     auth: AuthUser,
 ) -> Result<Json<Vec<MatchResponse>>, AppError> {
-    let result = interest_service::get_matches(&auth.user_id, &state.read_db).await?;
+    let result =
+        interest_service::get_matches(&auth.user_id, &auth.active_role, &state.read_db).await?;
     Ok(Json(result))
 }
 

@@ -36,7 +36,9 @@ pub async fn get_applications(
     auth: AuthUser,
     Query(query): Query<ApplicationQuery>,
 ) -> Result<Json<PaginatedResponse<ApplicationResponse>>, AppError> {
-    let result = app_service::get_applications(&auth.user_id, &query, &state.read_db).await?;
+    let result =
+        app_service::get_applications(&auth.user_id, &auth.active_role, &query, &state.read_db)
+            .await?;
     Ok(Json(result))
 }
 

@@ -4,10 +4,9 @@ import type { ListingFeedParams } from '../../api/listings';
 interface Props {
   filters: ListingFeedParams;
   onChange: (filters: ListingFeedParams) => void;
-  defaultAuthorRole?: string;
 }
 
-export function FeedFilters({ filters, onChange, defaultAuthorRole }: Props) {
+export function FeedFilters({ filters, onChange }: Props) {
   // Text/number input local states
   const [search, setSearch] = useState(filters.search || '');
   const [skills, setSkills] = useState(filters.skills || '');
@@ -17,7 +16,6 @@ export function FeedFilters({ filters, onChange, defaultAuthorRole }: Props) {
   const [maxPrice, setMaxPrice] = useState(filters.max_price?.toString() || '');
 
   // Select input local states (draft)
-  const [authorRole, setAuthorRole] = useState(filters.author_role || '');
   const [category, setCategory] = useState(filters.category || '');
   const [format, setFormat] = useState(filters.format || '');
   const [paymentDirection, setPaymentDirection] = useState(filters.payment_direction || '');
@@ -39,7 +37,6 @@ export function FeedFilters({ filters, onChange, defaultAuthorRole }: Props) {
     maxWeeks !== (filters.max_weeks?.toString() || '') ||
     minPrice !== (filters.min_price?.toString() || '') ||
     maxPrice !== (filters.max_price?.toString() || '') ||
-    authorRole !== (filters.author_role || '') ||
     category !== (filters.category || '') ||
     format !== (filters.format || '') ||
     paymentDirection !== (filters.payment_direction || '') ||
@@ -54,7 +51,6 @@ export function FeedFilters({ filters, onChange, defaultAuthorRole }: Props) {
       max_weeks: maxWeeks ? +maxWeeks : undefined,
       min_price: minPrice ? +minPrice : undefined,
       max_price: maxPrice ? +maxPrice : undefined,
-      author_role: authorRole || undefined,
       category: category || undefined,
       format: format || undefined,
       payment_direction: paymentDirection || undefined,
@@ -67,10 +63,9 @@ export function FeedFilters({ filters, onChange, defaultAuthorRole }: Props) {
     appliedTimerRef.current = setTimeout(() => setJustApplied(false), 1500);
   };
 
-  const appliedAuthorRoleIsManual = filters.author_role && filters.author_role !== defaultAuthorRole;
   const hasFilters = !!(
     filters.search || filters.skills || filters.format || filters.experience_level ||
-    appliedAuthorRoleIsManual || filters.payment_direction || filters.category ||
+    filters.payment_direction || filters.category ||
     filters.min_weeks || filters.max_weeks ||
     filters.min_price || filters.max_price ||
     (filters.sort && filters.sort !== 'newest')
@@ -83,7 +78,6 @@ export function FeedFilters({ filters, onChange, defaultAuthorRole }: Props) {
     setMaxWeeks('');
     setMinPrice('');
     setMaxPrice('');
-    setAuthorRole('');
     setCategory('');
     setFormat('');
     setPaymentDirection('');
@@ -120,19 +114,6 @@ export function FeedFilters({ filters, onChange, defaultAuthorRole }: Props) {
           onChange={(e) => setSkills(e.target.value)}
           className="w-full border border-gray-300 rounded px-3 py-1.5 text-sm"
         />
-      </div>
-
-      <div>
-        <label className="block text-sm text-gray-600 mb-1">Author Role</label>
-        <select
-          value={authorRole}
-          onChange={(e) => setAuthorRole(e.target.value)}
-          className="w-full border border-gray-300 rounded px-3 py-1.5 text-sm"
-        >
-          <option value="">All</option>
-          <option value="individual">Individual</option>
-          <option value="organization">Organization</option>
-        </select>
       </div>
 
       <div>

@@ -2,20 +2,22 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { applicationsApi } from '../../api/applications';
+import { useAuthStore } from '../../stores/auth';
 import { StatusBadge } from '../common/StatusBadge';
 import { ContactInfoCard } from './ContactInfoCard';
 
 export function ApplicationList() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const activeRole = useAuthStore((s) => s.activeRole);
 
   const { data: myApps, isLoading: loadingMine } = useQuery({
-    queryKey: ['applications', 'mine'],
+    queryKey: ['applications', 'mine', activeRole],
     queryFn: () => applicationsApi.getMine({ per_page: 20 }).then((r) => r.data),
   });
 
   const { data: received, isLoading: loadingReceived } = useQuery({
-    queryKey: ['applications', 'received'],
+    queryKey: ['applications', 'received', activeRole],
     queryFn: () => applicationsApi.getMine({ as: 'listing_owner', per_page: 20 }).then((r) => r.data),
   });
 

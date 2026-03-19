@@ -90,7 +90,6 @@ pub struct ListingFeedQuery {
     pub per_page: Option<u32>,
     pub skills: Option<String>,
     pub category: Option<String>,
-    pub author_role: Option<String>,
     pub payment_direction: Option<String>,
     pub format: Option<String>,
     pub min_weeks: Option<i32>,

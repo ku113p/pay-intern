@@ -260,18 +260,16 @@ pub async fn delete_listing(
 pub async fn get_feed(
     query: &ListingFeedQuery,
     viewer_id: Option<&Uuid>,
+    viewer_role: Option<&str>,
     read_db: &SqlitePool,
 ) -> Result<PaginatedResponse<ListingResponse>, AppError> {
     let mut where_clauses = vec!["l.status = 'active'".to_string()];
     let mut bind_values: Vec<String> = vec![];
 
-    // Author role filter (replaces old listing_type path parameter)
-    if let Some(author_role) = &query.author_role {
-        if !["individual", "organization"].contains(&author_role.as_str()) {
-            return Err(AppError::BadRequest("Invalid author_role filter".into()));
-        }
+    // Auto-scope feed to opposite role based on viewer's active_role from token
+    if let Some(role) = viewer_role {
         where_clauses.push("l.author_role = ?".to_string());
-        bind_values.push(author_role.clone());
+        bind_values.push(crate::models::opposite_role(role).to_string());
     }
 
     // Validate enum filter values
@@ -486,13 +484,17 @@ pub async fn get_feed(
 
 pub async fn get_user_listings(
     user_id: &Uuid,
+    active_role: &str,
     query: &PaginationQuery,
     read_db: &SqlitePool,
 ) -> Result<PaginatedResponse<ListingResponse>, AppError> {
-    let total = sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM listings WHERE author_id = ?")
-        .bind(user_id.to_string())
-        .fetch_one(read_db)
-        .await? as u32;
+    let total = sqlx::query_scalar::<_, i64>(
+        "SELECT COUNT(*) FROM listings WHERE author_id = ? AND author_role = ?",
+    )
+    .bind(user_id.to_string())
+    .bind(active_role)
+    .fetch_one(read_db)
+    .await? as u32;
 
     let listings = sqlx::query_as::<_, ListingWithAuthor>(
         "SELECT l.id, l.author_id, l.author_role, l.title, l.description, l.category, l.skills, \
@@ -506,11 +508,12 @@ pub async fn get_user_listings(
          JOIN users u ON u.id = l.author_id \
          LEFT JOIN organization_profiles op ON op.user_id = l.author_id \
          LEFT JOIN individual_profiles ip ON ip.user_id = l.author_id \
-         WHERE l.author_id = ? \
+         WHERE l.author_id = ? AND l.author_role = ? \
          ORDER BY l.created_at DESC \
          LIMIT ? OFFSET ?",
     )
     .bind(user_id.to_string())
+    .bind(active_role)
     .bind(query.per_page() as i64)
     .bind(query.offset() as i64)
     .fetch_all(read_db)
@@ -573,4 +576,174 @@ pub async fn get_similar_listings(
     .await?;
 
     Ok(results.into_iter().map(Into::into).collect())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::models::listing::{ListingFeedQuery, PaginationQuery};
+    use sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions};
+
+    async fn setup_test_db() -> SqlitePool {
+        let db_path = format!("/tmp/test_listing_{}.db", Uuid::new_v4());
+        let migrate_pool = SqlitePoolOptions::new()
+            .connect_with(
+                SqliteConnectOptions::new()
+                    .filename(&db_path)
+                    .create_if_missing(true)
+                    .foreign_keys(false),
+            )
+            .await
+            .unwrap();
+        sqlx::migrate!().run(&migrate_pool).await.unwrap();
+        migrate_pool.close().await;
+        SqlitePoolOptions::new()
+            .connect_with(
+                SqliteConnectOptions::new()
+                    .filename(&db_path)
+                    .foreign_keys(true),
+            )
+            .await
+            .unwrap()
+    }
+
+    async fn insert_user(db: &SqlitePool, id: &str, email: &str) {
+        sqlx::query(
+            "INSERT INTO users (id, email, display_name, auth_provider) VALUES (?, ?, 'Test', 'email')",
+        )
+        .bind(id)
+        .bind(email)
+        .execute(db)
+        .await
+        .unwrap();
+    }
+
+    async fn insert_listing(db: &SqlitePool, id: &str, author_id: &str, author_role: &str) {
+        sqlx::query(
+            "INSERT INTO listings (id, author_id, title, description, author_role, format, duration_weeks, skills, status, visibility, category) \
+             VALUES (?, ?, 'Test', 'Desc', ?, 'remote', 4, '[\"rust\"]', 'active', 'public', 'technology')",
+        )
+        .bind(id)
+        .bind(author_id)
+        .bind(author_role)
+        .execute(db)
+        .await
+        .unwrap();
+    }
+
+    fn empty_feed_query() -> ListingFeedQuery {
+        ListingFeedQuery {
+            page: None,
+            per_page: None,
+            skills: None,
+            category: None,
+            payment_direction: None,
+            format: None,
+            min_weeks: None,
+            max_weeks: None,
+            min_price: None,
+            max_price: None,
+            sort: None,
+            experience_level: None,
+            search: None,
+        }
+    }
+
+    #[tokio::test]
+    async fn test_feed_individual_viewer_sees_org_listings() {
+        let db = setup_test_db().await;
+        let ind_user = Uuid::new_v4().to_string();
+        let org_user = Uuid::new_v4().to_string();
+        insert_user(&db, &ind_user, "ind@test.com").await;
+        insert_user(&db, &org_user, "org@test.com").await;
+
+        let ind_listing = Uuid::new_v4().to_string();
+        let org_listing = Uuid::new_v4().to_string();
+        insert_listing(&db, &ind_listing, &ind_user, "individual").await;
+        insert_listing(&db, &org_listing, &org_user, "organization").await;
+
+        let viewer_id = Uuid::parse_str(&ind_user).unwrap();
+        let result = get_feed(
+            &empty_feed_query(),
+            Some(&viewer_id),
+            Some("individual"),
+            &db,
+        )
+        .await
+        .unwrap();
+
+        assert_eq!(result.data.len(), 1);
+        assert_eq!(result.data[0].author_role, "organization");
+    }
+
+    #[tokio::test]
+    async fn test_feed_org_viewer_sees_individual_listings() {
+        let db = setup_test_db().await;
+        let ind_user = Uuid::new_v4().to_string();
+        let org_user = Uuid::new_v4().to_string();
+        insert_user(&db, &ind_user, "ind@test.com").await;
+        insert_user(&db, &org_user, "org@test.com").await;
+
+        let ind_listing = Uuid::new_v4().to_string();
+        let org_listing = Uuid::new_v4().to_string();
+        insert_listing(&db, &ind_listing, &ind_user, "individual").await;
+        insert_listing(&db, &org_listing, &org_user, "organization").await;
+
+        let viewer_id = Uuid::parse_str(&org_user).unwrap();
+        let result = get_feed(
+            &empty_feed_query(),
+            Some(&viewer_id),
+            Some("organization"),
+            &db,
+        )
+        .await
+        .unwrap();
+
+        assert_eq!(result.data.len(), 1);
+        assert_eq!(result.data[0].author_role, "individual");
+    }
+
+    #[tokio::test]
+    async fn test_feed_unauthenticated_sees_all() {
+        let db = setup_test_db().await;
+        let ind_user = Uuid::new_v4().to_string();
+        let org_user = Uuid::new_v4().to_string();
+        insert_user(&db, &ind_user, "ind@test.com").await;
+        insert_user(&db, &org_user, "org@test.com").await;
+
+        insert_listing(&db, &Uuid::new_v4().to_string(), &ind_user, "individual").await;
+        insert_listing(&db, &Uuid::new_v4().to_string(), &org_user, "organization").await;
+
+        let result = get_feed(&empty_feed_query(), None, None, &db)
+            .await
+            .unwrap();
+        assert_eq!(result.data.len(), 2);
+    }
+
+    #[tokio::test]
+    async fn test_user_listings_scoped_by_role() {
+        let db = setup_test_db().await;
+        let user_id = Uuid::new_v4();
+        let uid = user_id.to_string();
+        insert_user(&db, &uid, "both@test.com").await;
+
+        insert_listing(&db, &Uuid::new_v4().to_string(), &uid, "individual").await;
+        insert_listing(&db, &Uuid::new_v4().to_string(), &uid, "individual").await;
+        insert_listing(&db, &Uuid::new_v4().to_string(), &uid, "organization").await;
+
+        let query = PaginationQuery {
+            page: None,
+            per_page: None,
+        };
+
+        let ind_result = get_user_listings(&user_id, "individual", &query, &db)
+            .await
+            .unwrap();
+        assert_eq!(ind_result.pagination.total, 2);
+
+        let org_result = get_user_listings(&user_id, "organization", &query, &db)
+            .await
+            .unwrap();
+        assert_eq!(org_result.pagination.total, 1);
+    }
 }

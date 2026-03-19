@@ -27,7 +27,7 @@ export const interestsApi = {
   unsaveListing: (listingId: string) =>
     api.delete<SaveToggleResponse>(`/listings/${listingId}/save`),
 
-  getSavedListings: (params?: { author_role?: string; page?: number; per_page?: number }) =>
+  getSavedListings: (params?: { page?: number; per_page?: number }) =>
     api.get<PaginatedResponse<Listing>>('/listings/saved', { params }),
 
   addInterest: (listingId: string) =>

@@ -3,13 +3,56 @@ import { Link, useLocation } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../../hooks/useAuth';
 import { useAuthStore } from '../../stores/auth';
+import { useRoleSwitch } from '../../hooks/useRoleSwitch';
 import { NotificationBell } from '../notifications/NotificationBell';
 import { messagesApi } from '../../api/messages';
 
 const NAV_LABELS = {
-  individual: { post: 'Post', mine: 'Listings', applications: 'Applications' },
-  organization: { post: 'Post', mine: 'Listings', applications: 'Applications' },
+  individual: { post: 'Offer Services', mine: 'My Offers', applications: 'Applications' },
+  organization: { post: 'Post Opportunity', mine: 'My Opportunities', applications: 'Applications' },
 } as const;
+
+function ModeToggle() {
+  const activeRole = useAuthStore((s) => s.activeRole);
+  const roleSwitch = useRoleSwitch();
+
+  if (!activeRole) return null;
+
+  const isIndividual = activeRole === 'individual';
+
+  return (
+    <div className="inline-flex rounded-lg border border-gray-200 bg-gray-50 p-0.5">
+      <button
+        onClick={() => !isIndividual && roleSwitch.mutate('individual')}
+        disabled={roleSwitch.isPending}
+        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+          isIndividual
+            ? 'bg-green-600 text-white shadow-sm'
+            : 'text-gray-500 hover:text-gray-700'
+        }`}
+      >
+        <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+        </svg>
+        Individual
+      </button>
+      <button
+        onClick={() => isIndividual && roleSwitch.mutate('organization')}
+        disabled={roleSwitch.isPending}
+        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+          !isIndividual
+            ? 'bg-blue-600 text-white shadow-sm'
+            : 'text-gray-500 hover:text-gray-700'
+        }`}
+      >
+        <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+        </svg>
+        Organization
+      </button>
+    </div>
+  );
+}
 
 export function Header() {
   const { isAuthenticated, user, logout } = useAuth();
@@ -100,6 +143,11 @@ export function Header() {
               <Link to="/applications" className={navLinkClass('/applications')}>{labels.applications}</Link>
               <Link to="/matches" className={navLinkClass('/matches')}>Matches</Link>
 
+              {/* Mode toggle */}
+              <div className="border-l border-gray-200 pl-3">
+                <ModeToggle />
+              </div>
+
               {/* Zone B — Icon buttons */}
               <div className="flex items-center gap-1 border-l border-gray-200 pl-3">
                 <Link
@@ -140,20 +188,6 @@ export function Header() {
                   <div className="absolute right-0 mt-2 w-56 bg-white border border-gray-200 rounded-lg shadow-lg z-50 py-1">
                     <div className="px-4 py-2.5 border-b border-gray-100">
                       <p className="text-sm font-medium text-gray-900 truncate">{user?.display_name || 'User'}</p>
-                      {activeRole && (
-                        <span className="inline-flex items-center gap-1 mt-1 text-xs text-primary-600">
-                          {activeRole === 'individual' ? (
-                            <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                            </svg>
-                          ) : (
-                            <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                            </svg>
-                          )}
-                          {activeRole === 'individual' ? 'Individual' : 'Organization'}
-                        </span>
-                      )}
                     </div>
                     <Link to="/profile" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50" onClick={() => setUserMenuOpen(false)}>
                       Profile
@@ -190,6 +224,8 @@ export function Header() {
 
           {isAuthenticated ? (
             <>
+              <ModeToggle />
+              <div className="border-t border-gray-200 w-full pt-2 mt-1" />
               <Link to="/listings/new" className={navLinkClass('/listings/new')}>{labels.post}</Link>
               <Link to="/listings/mine" className={navLinkClass('/listings/mine')}>{labels.mine}</Link>
               <Link to="/applications" className={navLinkClass('/applications')}>{labels.applications}</Link>

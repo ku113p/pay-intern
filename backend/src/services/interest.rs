@@ -51,18 +51,17 @@ pub async fn unsave_listing(
 
 pub async fn get_saved_listings(
     user_id: &Uuid,
+    active_role: &str,
     query: &SavedListingsQuery,
     read_db: &SqlitePool,
 ) -> Result<PaginatedResponse<ListingResponse>, AppError> {
     let user_str = user_id.to_string();
 
-    let mut type_filter = String::new();
-    let mut bind_values: Vec<String> = vec![user_str.clone()];
-
-    if let Some(ar) = &query.author_role {
-        type_filter = " AND l.author_role = ?".to_string();
-        bind_values.push(ar.clone());
-    }
+    let type_filter = " AND l.author_role = ?".to_string();
+    let bind_values: Vec<String> = vec![
+        user_str.clone(),
+        crate::models::opposite_role(active_role).to_string(),
+    ];
 
     let count_sql = format!(
         "SELECT COUNT(*) FROM saved_listings sl JOIN listings l ON l.id = sl.listing_id WHERE sl.user_id = ?{type_filter}"
@@ -255,6 +254,7 @@ pub async fn remove_interest(
 
 pub async fn get_received_interests(
     user_id: &Uuid,
+    active_role: &str,
     read_db: &SqlitePool,
 ) -> Result<Vec<ReceivedInterest>, AppError> {
     let rows = sqlx::query_as::<_, ReceivedInterest>(
@@ -263,10 +263,11 @@ pub async fn get_received_interests(
          FROM interests i \
          JOIN listings l ON l.id = i.listing_id \
          JOIN users u ON u.id = i.user_id \
-         WHERE l.author_id = ? \
+         WHERE l.author_id = ? AND l.author_role = ? \
          ORDER BY i.created_at DESC",
     )
     .bind(user_id.to_string())
+    .bind(active_role)
     .fetch_all(read_db)
     .await?;
 
@@ -275,6 +276,7 @@ pub async fn get_received_interests(
 
 pub async fn get_matches(
     user_id: &Uuid,
+    active_role: &str,
     read_db: &SqlitePool,
 ) -> Result<Vec<MatchResponse>, AppError> {
     let matches = sqlx::query_as::<_, MatchResponse>(
@@ -290,10 +292,11 @@ pub async fn get_matches(
          JOIN users other_user ON other_user.id = their_listing.author_id \
          JOIN interests i2 ON i2.user_id = other_user.id \
          JOIN listings my_listing ON my_listing.id = i2.listing_id AND my_listing.author_id = ? \
-         WHERE i1.user_id = ?",
+         WHERE i1.user_id = ? AND my_listing.author_role = ?",
     )
     .bind(user_id.to_string())
     .bind(user_id.to_string())
+    .bind(active_role)
     .fetch_all(read_db)
     .await?;
 
@@ -374,4 +377,140 @@ pub async fn get_match_contact_info(
         email,
         links: links.into_iter().map(Into::into).collect(),
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::models::interest::SavedListingsQuery;
+    use sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions};
+
+    async fn setup_test_db() -> SqlitePool {
+        let db_path = format!("/tmp/test_interest_{}.db", Uuid::new_v4());
+        let migrate_pool = SqlitePoolOptions::new()
+            .connect_with(
+                SqliteConnectOptions::new()
+                    .filename(&db_path)
+                    .create_if_missing(true)
+                    .foreign_keys(false),
+            )
+            .await
+            .unwrap();
+        sqlx::migrate!().run(&migrate_pool).await.unwrap();
+        migrate_pool.close().await;
+        SqlitePoolOptions::new()
+            .connect_with(
+                SqliteConnectOptions::new()
+                    .filename(&db_path)
+                    .foreign_keys(true),
+            )
+            .await
+            .unwrap()
+    }
+
+    async fn insert_user(db: &SqlitePool, id: &str, email: &str) {
+        sqlx::query(
+            "INSERT INTO users (id, email, display_name, auth_provider) VALUES (?, ?, 'Test', 'email')",
+        )
+        .bind(id)
+        .bind(email)
+        .execute(db)
+        .await
+        .unwrap();
+    }
+
+    async fn insert_listing(db: &SqlitePool, id: &str, author_id: &str, author_role: &str) {
+        sqlx::query(
+            "INSERT INTO listings (id, author_id, title, description, author_role, format, duration_weeks, skills, status, visibility, category) \
+             VALUES (?, ?, 'Test', 'Desc', ?, 'remote', 4, '[\"rust\"]', 'active', 'public', 'technology')",
+        )
+        .bind(id)
+        .bind(author_id)
+        .bind(author_role)
+        .execute(db)
+        .await
+        .unwrap();
+    }
+
+    #[tokio::test]
+    async fn test_saved_listings_scoped_to_opposite_role() {
+        let db = setup_test_db().await;
+        let user_id = Uuid::new_v4();
+        let uid = user_id.to_string();
+        insert_user(&db, &uid, "saver@test.com").await;
+
+        let other_ind = Uuid::new_v4().to_string();
+        let other_org = Uuid::new_v4().to_string();
+        insert_user(&db, &other_ind, "ind@test.com").await;
+        insert_user(&db, &other_org, "org@test.com").await;
+
+        let ind_listing = Uuid::new_v4().to_string();
+        let org_listing = Uuid::new_v4().to_string();
+        insert_listing(&db, &ind_listing, &other_ind, "individual").await;
+        insert_listing(&db, &org_listing, &other_org, "organization").await;
+
+        // Save both listings
+        for lid in [&ind_listing, &org_listing] {
+            sqlx::query("INSERT INTO saved_listings (id, user_id, listing_id) VALUES (?, ?, ?)")
+                .bind(Uuid::new_v4().to_string())
+                .bind(&uid)
+                .bind(lid)
+                .execute(&db)
+                .await
+                .unwrap();
+        }
+
+        let query = SavedListingsQuery {
+            page: None,
+            per_page: None,
+        };
+
+        // Individual user should see org saved listings
+        let result = get_saved_listings(&user_id, "individual", &query, &db)
+            .await
+            .unwrap();
+        assert_eq!(result.data.len(), 1);
+        assert_eq!(result.data[0].author_role, "organization");
+
+        // Org user should see individual saved listings
+        let result = get_saved_listings(&user_id, "organization", &query, &db)
+            .await
+            .unwrap();
+        assert_eq!(result.data.len(), 1);
+        assert_eq!(result.data[0].author_role, "individual");
+    }
+
+    #[tokio::test]
+    async fn test_received_interests_scoped_by_role() {
+        let db = setup_test_db().await;
+        let owner_id = Uuid::new_v4();
+        let owner = owner_id.to_string();
+        let other = Uuid::new_v4().to_string();
+        insert_user(&db, &owner, "owner@test.com").await;
+        insert_user(&db, &other, "other@test.com").await;
+
+        let ind_listing = Uuid::new_v4().to_string();
+        insert_listing(&db, &ind_listing, &owner, "individual").await;
+
+        // Other user expresses interest in owner's individual listing
+        sqlx::query("INSERT INTO interests (id, user_id, listing_id) VALUES (?, ?, ?)")
+            .bind(Uuid::new_v4().to_string())
+            .bind(&other)
+            .bind(&ind_listing)
+            .execute(&db)
+            .await
+            .unwrap();
+
+        // Owner in individual mode sees the interest
+        let result = get_received_interests(&owner_id, "individual", &db)
+            .await
+            .unwrap();
+        assert_eq!(result.len(), 1);
+
+        // Owner in org mode sees nothing
+        let result = get_received_interests(&owner_id, "organization", &db)
+            .await
+            .unwrap();
+        assert_eq!(result.len(), 0);
+    }
 }

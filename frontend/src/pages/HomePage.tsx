@@ -5,7 +5,6 @@ import { useFeed, useMyListings } from '../hooks/useListings';
 import { ListingCard } from '../components/listings/ListingCard';
 import { Header } from '../components/layout/Header';
 import { Footer } from '../components/layout/Footer';
-import { RoleToggle } from '../components/layout/RoleToggle';
 import { LandingPage } from '../components/landing/LandingPage';
 import type { UserResponse } from '../api/profiles';
 import { useAuthStore } from '../stores/auth';
@@ -30,17 +29,6 @@ function Dashboard({ user }: { user: UserResponse }) {
             <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
               Welcome back, {user.display_name}!
             </h1>
-            {activeRole && (
-              <span
-                className={`inline-block mt-2 text-xs font-medium px-2.5 py-1 rounded ${
-                  activeRole === 'organization'
-                    ? 'bg-blue-100 text-blue-700'
-                    : 'bg-green-100 text-green-700'
-                }`}
-              >
-                {activeRole}
-              </span>
-            )}
           </div>
 
           {needsProfile && (
@@ -144,7 +132,6 @@ function Dashboard({ user }: { user: UserResponse }) {
         </div>
       </main>
       <Footer />
-      <RoleToggle />
     </div>
   );
 }

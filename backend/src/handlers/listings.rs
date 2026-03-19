@@ -78,7 +78,8 @@ pub async fn feed(
     Query(query): Query<ListingFeedQuery>,
 ) -> Result<Json<PaginatedResponse<ListingResponse>>, AppError> {
     let viewer_id = auth.0.as_ref().map(|a| &a.user_id);
-    let feed = listing_service::get_feed(&query, viewer_id, &state.read_db).await?;
+    let viewer_role = auth.0.as_ref().map(|a| a.active_role.as_str());
+    let feed = listing_service::get_feed(&query, viewer_id, viewer_role, &state.read_db).await?;
     Ok(Json(feed))
 }
 
@@ -87,8 +88,13 @@ pub async fn my_listings(
     auth: AuthUser,
     Query(query): Query<PaginationQuery>,
 ) -> Result<Json<PaginatedResponse<ListingResponse>>, AppError> {
-    let listings =
-        listing_service::get_user_listings(&auth.user_id, &query, &state.read_db).await?;
+    let listings = listing_service::get_user_listings(
+        &auth.user_id,
+        &auth.active_role,
+        &query,
+        &state.read_db,
+    )
+    .await?;
     Ok(Json(listings))
 }
 
