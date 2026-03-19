@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { getApiErrorMessage } from '../../lib/errors';
 import { listingsApi, type CreateListingRequest, type Listing } from '../../api/listings';
+import { CATEGORIES, sanitizeCategory } from '../../lib/categories';
 
 interface ListingFormProps {
   initialData?: Listing;
@@ -16,7 +17,7 @@ export function ListingForm({ initialData, onSuccess }: ListingFormProps) {
     title: initialData?.title ?? '',
     description: initialData?.description ?? '',
     skills: initialData?.skills ?? [],
-    category: initialData?.category ?? undefined,
+    category: initialData?.category ? sanitizeCategory(initialData.category) || undefined : undefined,
     duration_weeks: initialData?.duration_weeks ?? 4,
     price_usd: initialData?.price_usd ?? undefined,
     payment_direction: (() => {
@@ -112,12 +113,16 @@ export function ListingForm({ initialData, onSuccess }: ListingFormProps) {
 
       <div>
         <label className="block text-sm font-medium text-gray-700">Category</label>
-        <input
+        <select
           value={form.category ?? ''}
           onChange={(e) => setForm({ ...form, category: e.target.value || undefined })}
           className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2"
-          placeholder="e.g. software, design, marketing"
-        />
+        >
+          <option value="">Select a category...</option>
+          {CATEGORIES.map((c) => (
+            <option key={c.value} value={c.value}>{c.label}</option>
+          ))}
+        </select>
       </div>
 
       <div>

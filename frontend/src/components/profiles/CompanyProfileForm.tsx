@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { getApiErrorMessage } from '../../lib/errors';
 import { profilesApi, type OrganizationProfile } from '../../api/profiles';
+import { CATEGORIES, sanitizeCategory } from '../../lib/categories';
 
 export function OrganizationProfileForm() {
   const [profile, setProfile] = useState<OrganizationProfile | null>(null);
@@ -11,7 +12,7 @@ export function OrganizationProfileForm() {
 
   useEffect(() => {
     profilesApi.getMyOrganizationProfile()
-      .then((r) => setProfile(r.data))
+      .then((r) => setProfile({ ...r.data, industry: sanitizeCategory(r.data.industry) }))
       .catch(() => {
         setNotFound(true);
         setProfile({
@@ -83,12 +84,16 @@ export function OrganizationProfileForm() {
 
       <div>
         <label className="block text-sm font-medium text-gray-700">Industry</label>
-        <input
+        <select
           value={profile.industry}
           onChange={(e) => setProfile({ ...profile, industry: e.target.value })}
           className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2"
-          placeholder="e.g. technology, healthcare, finance"
-        />
+        >
+          <option value="">Select an industry...</option>
+          {CATEGORIES.map((c) => (
+            <option key={c.value} value={c.value}>{c.label}</option>
+          ))}
+        </select>
       </div>
 
       <div>

@@ -70,6 +70,7 @@ pub async fn create_listing(
     }
 
     let category = req.category.as_deref().unwrap_or("other");
+    super::user::validate_category(category)?;
 
     sqlx::query(
         "INSERT INTO listings (id, author_id, author_role, title, description, category, skills, duration_weeks, price_usd, payment_direction, format, outcome_criteria, visibility, experience_level, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active')"
@@ -164,6 +165,7 @@ pub async fn update_listing(
     let title = req.title.as_deref().unwrap_or(&listing.title);
     let description = req.description.as_deref().unwrap_or(&listing.description);
     let category = req.category.as_deref().unwrap_or(&listing.category);
+    super::user::validate_category(category)?;
     let skills = req
         .skills
         .as_ref()

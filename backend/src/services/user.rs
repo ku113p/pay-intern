@@ -542,7 +542,7 @@ pub async fn delete_account(user_id: &Uuid, write_db: &SqlitePool) -> Result<(),
     Ok(())
 }
 
-fn validate_category(cat: &str) -> Result<(), AppError> {
+pub fn validate_category(cat: &str) -> Result<(), AppError> {
     let valid = [
         "technology",
         "design",

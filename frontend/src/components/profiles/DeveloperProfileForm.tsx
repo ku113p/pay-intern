@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { getApiErrorMessage } from '../../lib/errors';
 import { profilesApi, type IndividualProfile } from '../../api/profiles';
+import { CATEGORIES, sanitizeCategory } from '../../lib/categories';
 
 export function IndividualProfileForm() {
   const [profile, setProfile] = useState<IndividualProfile | null>(null);
@@ -11,7 +12,7 @@ export function IndividualProfileForm() {
 
   useEffect(() => {
     profilesApi.getMyIndividualProfile()
-      .then((r) => setProfile(r.data))
+      .then((r) => setProfile({ ...r.data, profession: sanitizeCategory(r.data.profession) }))
       .catch(() => {
         setNotFound(true);
         setProfile({
@@ -83,12 +84,16 @@ export function IndividualProfileForm() {
 
       <div>
         <label className="block text-sm font-medium text-gray-700">Profession</label>
-        <input
+        <select
           value={profile.profession}
           onChange={(e) => setProfile({ ...profile, profession: e.target.value })}
           className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2"
-          placeholder="e.g. software_engineering, design, marketing"
-        />
+        >
+          <option value="">Select a profession...</option>
+          {CATEGORIES.map((c) => (
+            <option key={c.value} value={c.value}>{c.label}</option>
+          ))}
+        </select>
       </div>
 
       <div>

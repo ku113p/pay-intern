@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import type { ListingFeedParams } from '../../api/listings';
+import { CATEGORIES } from '../../lib/categories';
 
 interface Props {
   filters: ListingFeedParams;
@@ -118,13 +119,16 @@ export function FeedFilters({ filters, onChange }: Props) {
 
       <div>
         <label className="block text-sm text-gray-600 mb-1">Category</label>
-        <input
-          type="text"
-          placeholder="e.g. software"
+        <select
           value={category}
           onChange={(e) => setCategory(e.target.value)}
           className="w-full border border-gray-300 rounded px-3 py-1.5 text-sm"
-        />
+        >
+          <option value="">All categories</option>
+          {CATEGORIES.map((c) => (
+            <option key={c.value} value={c.value}>{c.label}</option>
+          ))}
+        </select>
       </div>
 
       <div>
