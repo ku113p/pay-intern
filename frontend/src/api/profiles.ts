@@ -1,3 +1,4 @@
+import type { AxiosRequestConfig } from 'axios';
 import api from './client';
 
 export interface UserResponse {
@@ -62,12 +63,12 @@ export const profilesApi = {
   updateMe: (displayName: string) => api.put<UserResponse>('/users/me', { display_name: displayName }),
   deleteAccount: () => api.delete('/users/me'),
 
-  getMyIndividualProfile: () => api.get<IndividualProfile>('/profiles/individual'),
+  getMyIndividualProfile: (config?: AxiosRequestConfig) => api.get<IndividualProfile>('/profiles/individual', config),
   upsertIndividualProfile: (data: Partial<Omit<IndividualProfile, 'user_id' | 'links'>>) =>
     api.put<IndividualProfile>('/profiles/individual', data),
   deleteIndividualProfile: () => api.delete('/profiles/individual'),
 
-  getMyOrganizationProfile: () => api.get<OrganizationProfile>('/profiles/organization'),
+  getMyOrganizationProfile: (config?: AxiosRequestConfig) => api.get<OrganizationProfile>('/profiles/organization', config),
   upsertOrganizationProfile: (data: Partial<Omit<OrganizationProfile, 'user_id' | 'links'>>) =>
     api.put<OrganizationProfile>('/profiles/organization', data),
   deleteOrganizationProfile: () => api.delete('/profiles/organization'),

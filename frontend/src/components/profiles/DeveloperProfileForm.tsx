@@ -9,25 +9,34 @@ export function IndividualProfileForm() {
   const [skillInput, setSkillInput] = useState('');
   const [saving, setSaving] = useState(false);
   const [notFound, setNotFound] = useState(false);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
-    profilesApi.getMyIndividualProfile()
+    const controller = new AbortController();
+    profilesApi.getMyIndividualProfile({ signal: controller.signal })
       .then((r) => setProfile({ ...r.data, profession: sanitizeCategory(r.data.profession) }))
-      .catch(() => {
-        setNotFound(true);
-        setProfile({
-          user_id: '',
-          bio: '',
-          headline: '',
-          profession: '',
-          skills: [],
-          experience_level: 'entry',
-          contact_email: null,
-          links: [],
-        });
+      .catch((err) => {
+        if (controller.signal.aborted) return;
+        if (err?.response?.status === 404) {
+          setNotFound(true);
+          setProfile({
+            user_id: '',
+            bio: '',
+            headline: '',
+            profession: '',
+            skills: [],
+            experience_level: 'entry',
+            contact_email: null,
+            links: [],
+          });
+        } else {
+          setError(true);
+        }
       });
+    return () => controller.abort();
   }, []);
 
+  if (error) return <p className="text-sm text-red-600">Failed to load profile. Try refreshing the page.</p>;
   if (!profile) return <p className="text-gray-500">Loading profile...</p>;
 
   const addSkill = () => {
